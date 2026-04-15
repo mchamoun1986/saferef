@@ -446,8 +446,8 @@ export default function StepGasApp({
         )}
       </div>
 
-      {/* ── 2. Technical Options ──────────────────────────────── */}
-      <div className="bg-white rounded-xl shadow-[0_2px_12px_rgba(22,53,75,0.08)] p-5 space-y-5">
+      {/* ── 2. Technical Options (hidden — M2 product selection, not used by M1 engine) ──── */}
+      <div className="hidden bg-white rounded-xl shadow-[0_2px_12px_rgba(22,53,75,0.08)] p-5 space-y-5">
         <h3 className="text-base font-bold text-[#16354B] flex items-center gap-2.5">
           <span className="w-1 h-5 bg-[#16354B] rounded-full flex-shrink-0" />
           <Gauge className="w-4 h-4 text-[#16354B]" />
