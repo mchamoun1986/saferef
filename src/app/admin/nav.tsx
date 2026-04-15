@@ -11,6 +11,7 @@ const links = [
   { href: '/admin/calc-sheets', label: 'Calc Sheets' },
   { href: '/admin/engine', label: 'Engine' },
   { href: '/admin/testlab', label: 'TestLab' },
+  { href: '/admin/simulator', label: 'Simulator' },
 ];
 
 export default function AdminNav() {
