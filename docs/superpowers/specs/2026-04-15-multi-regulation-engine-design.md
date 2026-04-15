@@ -1,4 +1,4 @@
-# DetectCalc — Multi-Regulation Engine Design Spec
+# RefCalc — Multi-Regulation Engine Design Spec
 
 **Date**: 2026-04-15
 **Scope**: Refactor the M1 calculation engine to support EN 378-3:2016, ASHRAE 15-2022, and ISO 5149-3:2014 via a single engine with interchangeable rule profiles.
@@ -7,7 +7,7 @@
 
 ## 1. Problem
 
-DetectCalc currently hardcodes EN 378-3:2016 logic in `m1-engine.ts` (~700 lines). SAMON sells globally — EU (EN 378), US/Middle East (ASHRAE 15), and international markets (ISO 5149). The tool must produce compliant calculation sheets for all three standards from a single codebase.
+RefCalc currently hardcodes EN 378-3:2016 logic in `m1-engine.ts` (~700 lines). SAMON sells globally — EU (EN 378), US/Middle East (ASHRAE 15), and international markets (ISO 5149). The tool must produce compliant calculation sheets for all three standards from a single codebase.
 
 ## 2. Architecture
 

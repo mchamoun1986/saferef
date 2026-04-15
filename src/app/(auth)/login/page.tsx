@@ -43,7 +43,7 @@ export default function AdminLoginPage() {
         {/* Brand header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2">
-            <span className="text-red-600 font-bold text-3xl tracking-tight">DetectCalc</span>
+            <span className="text-red-600 font-bold text-3xl tracking-tight">RefCalc</span>
           </div>
           <p className="text-gray-500 text-sm mt-2">Admin — restricted access</p>
         </div>
@@ -69,7 +69,7 @@ export default function AdminLoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                placeholder="admin@detectcalc.com"
+                placeholder="admin@refcalc.com"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
               />
             </div>
@@ -98,7 +98,7 @@ export default function AdminLoginPage() {
         </form>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          DetectCalc &mdash; Gas Detection Calculator
+          RefCalc &mdash; Refrigerant Calculator
         </p>
       </div>
     </div>

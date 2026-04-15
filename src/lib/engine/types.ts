@@ -1,4 +1,4 @@
-// engine/types.ts — DetectCalc unified type definitions
+// engine/types.ts — RefCalc unified type definitions
 // All types for multi-regulation engine (EN 378, ASHRAE 15, ISO 5149)
 
 // ─── Regulation Identifier ───────────────────────────────────────────

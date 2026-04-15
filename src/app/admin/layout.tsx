@@ -4,7 +4,7 @@ import AdminNav from './nav';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
-  const session = cookieStore.get('detectcalc-admin-session');
+  const session = cookieStore.get('refcalc-admin-session');
 
   if (!session?.value) {
     redirect('/login');

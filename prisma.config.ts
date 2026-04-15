@@ -1,4 +1,4 @@
-// Prisma config for DetectCalc
+// Prisma config for RefCalc
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 

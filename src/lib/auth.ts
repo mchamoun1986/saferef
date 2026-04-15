@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import crypto from 'crypto';
 
-export const ADMIN_SESSION_COOKIE = 'detectcalc-admin-session';
+export const ADMIN_SESSION_COOKIE = 'refcalc-admin-session';
 
 // Secret for HMAC signing — MUST be set via SESSION_SECRET in production
 function getSecret(): string {
@@ -10,7 +10,7 @@ function getSecret(): string {
   if (process.env.NODE_ENV === 'production' && !secret) {
     throw new Error('SESSION_SECRET environment variable is required in production');
   }
-  return secret || 'detectcalc-dev-secret-change-in-prod';
+  return secret || 'refcalc-dev-secret-change-in-prod';
 }
 let _secret: string | undefined;
 function secret(): string {

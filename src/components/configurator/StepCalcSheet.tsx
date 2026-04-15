@@ -169,7 +169,7 @@ export default function StepCalcSheet({
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text("DetectCalc — Gas Detection Calculation Sheet", margin, 12);
+      doc.text("RefCalc — Gas Detection Calculation Sheet", margin, 12);
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.text(`${regulationName} — SAMON AB`, margin, 19);
@@ -343,7 +343,7 @@ export default function StepCalcSheet({
       doc.text(t.disclaimerText, margin + 3, y + 8, { maxWidth: cw - 6 });
 
       // ── Save ──
-      doc.save(`DetectCalc_${sheetRef}.pdf`);
+      doc.save(`RefCalc_${sheetRef}.pdf`);
       toast.success(lang === "fr" ? "PDF téléchargé" : "PDF downloaded");
     } catch (err) {
       console.error("PDF generation error:", err);

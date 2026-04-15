@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Refactor the DetectCalc M1 engine to support EN 378-3:2016, ASHRAE 15-2022, and ISO 5149-3:2014 via a single engine with interchangeable rule profiles.
+**Goal:** Refactor the RefCalc M1 engine to support EN 378-3:2016, ASHRAE 15-2022, and ISO 5149-3:2014 via a single engine with interchangeable rule profiles.
 
 **Architecture:** Extract shared physics from `m1-engine.ts` into `engine/core.ts`, define a `RuleSet` interface in `engine/rule-set.ts`, move EN 378 logic into `rules/en378.ts`, then add ASHRAE 15 and ISO 5149 profiles. The orchestrator in `engine/evaluate.ts` accepts any RuleSet. The existing `m1-engine.ts` becomes a backward-compatible wrapper.
 

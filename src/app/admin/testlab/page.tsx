@@ -938,7 +938,7 @@ export default function TestLabPage() {
                 SAMON TESTLAB
               </span>
             </div>
-            <h1 className="text-lg font-bold text-white mt-2">DetectCalc Engine Simulator</h1>
+            <h1 className="text-lg font-bold text-white mt-2">RefCalc Engine Simulator</h1>
             <p className="text-xs text-gray-500 mt-1">
               Interactive sandbox for the multi-regulation gas detection engine
             </p>
