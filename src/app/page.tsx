@@ -9,9 +9,14 @@ export default function Home() {
           <span className="text-[#E63946] font-extrabold text-xl tracking-wide">Safe</span>
           <span className="text-white font-extrabold text-xl">Ref</span>
         </div>
-        <Link href="/admin" className="text-sm text-gray-300 hover:text-white transition-colors">
-          Admin
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/sales" className="text-sm text-gray-300 hover:text-white transition-colors">
+            Sales
+          </Link>
+          <Link href="/admin" className="text-sm text-gray-300 hover:text-white transition-colors">
+            Admin
+          </Link>
+        </div>
       </nav>
 
       {/* Hero */}

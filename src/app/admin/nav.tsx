@@ -13,6 +13,7 @@ const links = [
   { href: '/admin/engine', label: 'Engine' },
   { href: '/admin/testlab', label: 'TestLab' },
   { href: '/admin/simulator', label: 'Simulator' },
+  { href: '/sales', label: 'Sales' },
 ];
 
 export default function AdminNav() {
