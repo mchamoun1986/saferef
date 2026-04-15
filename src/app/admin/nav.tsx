@@ -21,7 +21,7 @@ export default function AdminNav() {
   return (
     <nav className="bg-[#1a2332] text-white px-6 py-3 flex items-center gap-6">
       <Link href="/admin" className="text-red-500 font-bold text-lg tracking-wide">
-        RefCalc <span className="text-gray-400 font-normal text-sm ml-1">Admin</span>
+        SafeRef <span className="text-gray-400 font-normal text-sm ml-1">Admin</span>
       </Link>
       <div className="flex gap-1 ml-4">
         {links.map((link) => (

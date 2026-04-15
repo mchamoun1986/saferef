@@ -216,7 +216,7 @@ export default function EngineDocPage() {
             <span className="text-gray-400 font-normal">/ Calculation Engine</span>
           </h1>
           <p className="text-gray-400 text-sm mt-2">
-            Technical reference for all formulas, regulation rules, and decision logic used by RefCalc.
+            Technical reference for all formulas, regulation rules, and decision logic used by SafeRef.
             <br />
             Covers EN 378-3:2016, ASHRAE 15-2022, and ISO 5149-3:2014.
           </p>

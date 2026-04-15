@@ -78,13 +78,13 @@ async function main() {
   const hash = await bcryptjs.hash("admin2026", 10);
   await prisma.adminUser.create({
     data: {
-      email: "admin@samon.com",
+      email: "admin@saferef.com",
       password: hash,
       name: "Admin",
       role: "admin",
     },
   });
-  console.log("  ✓ Admin user created: admin@samon.com");
+  console.log("  ✓ Admin user created: admin@saferef.com");
 
   // Seed Products
   for (const p of PRODUCTS) {

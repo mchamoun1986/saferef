@@ -43,7 +43,7 @@ export default function AdminLoginPage() {
         {/* Brand header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2">
-            <span className="text-red-600 font-bold text-3xl tracking-tight">RefCalc</span>
+            <span className="text-red-600 font-bold text-3xl tracking-tight">SafeRef</span>
           </div>
           <p className="text-gray-500 text-sm mt-2">Admin — restricted access</p>
         </div>
@@ -98,7 +98,7 @@ export default function AdminLoginPage() {
         </form>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          RefCalc &mdash; Refrigerant Calculator
+          SafeRef &mdash; Refrigerant Gas Detection
         </p>
       </div>
     </div>

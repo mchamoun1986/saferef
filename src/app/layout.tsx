@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RefCalc — Refrigerant Gas Detection Calculator",
+  title: "SafeRef — Refrigerant Gas Detection",
   description: "Calculate refrigerant gas detection requirements per EN 378, ASHRAE 15, and ISO 5149. Powered by SAMON AB.",
 };
 

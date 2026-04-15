@@ -447,7 +447,7 @@ export default function StepCalcSheet({
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text("RefCalc — Gas Detection Calculation Sheet", margin, 12);
+      doc.text("SafeRef Designer — Gas Detection Calculation Sheet", margin, 12);
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.text(`${regulationName} — SAMON AB`, margin, 19);
@@ -809,7 +809,7 @@ export default function StepCalcSheet({
       const url = URL.createObjectURL(pdfBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `RefCalc_${sheetRef}.pdf`;
+      a.download = `SafeRef_${sheetRef}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

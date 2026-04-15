@@ -102,10 +102,11 @@ export default function SelectorWizard() {
   return (
     <div className="min-h-screen flex flex-col">
       <nav className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] text-white px-6 py-4 flex items-center justify-between border-b-2 border-[#E63946]">
-        <div className="flex items-center gap-1">
-          <span className="text-[#E63946] font-extrabold text-xl">SAMON</span>
-          <span className="text-white font-extrabold text-xl ml-2">Product Selector</span>
-        </div>
+        <a href="/" className="flex items-center gap-1 hover:opacity-80 transition-opacity">
+          <span className="text-[#E63946] font-extrabold text-xl">Safe</span>
+          <span className="text-white font-extrabold text-xl">Ref</span>
+          <span className="ml-3 text-sm text-[#6b8da5]">Selector</span>
+        </a>
       </nav>
 
       <div className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] py-5">

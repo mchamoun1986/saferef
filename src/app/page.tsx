@@ -6,8 +6,8 @@ export default function Home() {
       {/* Navbar */}
       <nav className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] text-white px-6 py-4 flex items-center justify-between border-b-2 border-[#E63946]">
         <div className="flex items-center gap-1">
-          <span className="text-[#E63946] font-extrabold text-xl tracking-wide">Ref</span>
-          <span className="text-white font-extrabold text-xl">Calc</span>
+          <span className="text-[#E63946] font-extrabold text-xl tracking-wide">Safe</span>
+          <span className="text-white font-extrabold text-xl">Ref</span>
         </div>
         <Link href="/admin" className="text-sm text-gray-300 hover:text-white transition-colors">
           Admin
@@ -17,10 +17,10 @@ export default function Home() {
       {/* Hero */}
       <section className="flex-1 flex flex-col items-center justify-center px-6 py-20 text-center bg-gradient-to-b from-[#16354B] to-[#1e4a6a]">
         <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4 tracking-tight">
-          <span className="text-[#E63946]">Ref</span>Calc
+          <span className="text-[#E63946]">Safe</span>Ref
         </h1>
         <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mb-2">
-          Refrigerant Gas Detection — Calculate & Configure
+          Refrigerant Gas Detection — Design & Configure
         </p>
         <p className="text-sm sm:text-base text-gray-400 max-w-xl mb-12">
           From regulatory compliance to product selection, everything you need for gas detection sizing.
@@ -28,7 +28,7 @@ export default function Home() {
 
         {/* Two entry points */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl w-full">
-          {/* Regulatory Calculator */}
+          {/* SafeRef Designer */}
           <Link
             href="/configurator"
             className="group bg-white/5 backdrop-blur border-2 border-white/10 hover:border-[#E63946] rounded-2xl p-8 text-left transition-all hover:bg-white/10"
@@ -38,19 +38,19 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Regulatory Calculator</h2>
+            <h2 className="text-xl font-bold text-white mb-2">SafeRef Designer</h2>
             <p className="text-gray-400 text-sm leading-relaxed mb-4">
               Full compliance calculation per EN 378, ASHRAE 15, and ISO 5149. Zone-by-zone analysis with detection requirements and alarm thresholds.
             </p>
             <span className="inline-flex items-center gap-1 text-[#E63946] font-semibold text-sm group-hover:gap-2 transition-all">
-              Start Calculator
+              Start Designer
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </span>
           </Link>
 
-          {/* Product Selector */}
+          {/* SafeRef Selector */}
           <Link
             href="/selector"
             className="group bg-white/5 backdrop-blur border-2 border-white/10 hover:border-[#A7C031] rounded-2xl p-8 text-left transition-all hover:bg-white/10"
@@ -60,7 +60,7 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Product Selector</h2>
+            <h2 className="text-xl font-bold text-white mb-2">SafeRef Selector</h2>
             <p className="text-gray-400 text-sm leading-relaxed mb-4">
               Quick product configuration and quoting. Select your application, gas, and technical requirements to get a complete Bill of Materials with pricing.
             </p>
