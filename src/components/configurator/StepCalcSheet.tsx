@@ -1042,7 +1042,7 @@ export default function StepCalcSheet({
                 )}
 
                 {/* ── Zone Plan Preview (collapsible) ── */}
-                {zonesWithSources.has(zr.zoneId) && (() => {
+                {zone && (() => {
                   const sourceCount = (zone.leakSources?.length ?? 0) + (zone.evaporatorPositions?.length ?? 0);
                   const isOpen = planVisibility[zr.zoneId] ?? false;
                   const includeInPdf = includePlanInPdf[zr.zoneId] ?? true;
