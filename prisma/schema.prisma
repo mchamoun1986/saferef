@@ -53,6 +53,7 @@ model Application {
   productFamilies   String  @default("[]")  // JSON: ["MIDI","MP"]
   defaultRanges     String  @default("{}")  // JSON: {"R744":"0-10000ppm"}
   suggestedGases    String  @default("[]")  // JSON: ["co2","hfc1"]
+  applicableSpaceTypes String @default("[]") // JSON array of space type IDs
   sortOrder         Int     @default(0)
 }
 

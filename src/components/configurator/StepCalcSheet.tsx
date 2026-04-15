@@ -582,6 +582,22 @@ export default function StepCalcSheet({
           y += 5;
         }
 
+        // Emergency ventilation
+        if (zr.result.ventilation) {
+          checkPage(10);
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(...navy);
+          doc.text(`${t.emergencyVent}:`, margin + 4, y);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(60, 60, 60);
+          doc.text(
+            `${zr.result.ventilation.flowRateM3s.toFixed(3)} m³/s  |  ${t.ventFormula}: ${zr.result.ventilation.formula}  |  ${zr.result.ventilation.clause}`,
+            margin + 40, y
+          );
+          y += 5;
+        }
+
         y += 4;
 
         // ── Zone Plan in PDF ──
@@ -1055,6 +1071,24 @@ export default function StepCalcSheet({
                     <span className="font-semibold text-[#16354B]">{coveragePerDetector} m&sup2;{t.perDetector}</span>
                   </span>
                 </div>
+
+                {/* Emergency ventilation */}
+                {zr.result.ventilation && (
+                  <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs">
+                    <span>
+                      <span className="text-[#6b8da5]">{t.emergencyVent}:</span>{" "}
+                      <span className="font-semibold text-[#16354B]">{zr.result.ventilation.flowRateM3s.toFixed(3)} m&sup3;/s</span>
+                    </span>
+                    <span>
+                      <span className="text-[#6b8da5]">{t.ventFormula}:</span>{" "}
+                      <span className="font-medium text-[#16354B]">{zr.result.ventilation.formula}</span>
+                    </span>
+                    <span>
+                      <span className="text-[#6b8da5]">{t.ventClause}:</span>{" "}
+                      <span className="font-medium text-[#16354B]">{zr.result.ventilation.clause}</span>
+                    </span>
+                  </div>
+                )}
 
                 {/* Review flags */}
                 {zr.result.reviewFlags.length > 0 && (

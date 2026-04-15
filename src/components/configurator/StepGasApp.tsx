@@ -6,11 +6,20 @@ import { Flame, Gauge, ShieldAlert, Search, Check, X, ChevronDown } from "lucide
 import { type Lang, GAS_APP, MOUNTING_TYPES } from "./i18n";
 import { AVAILABLE_REGULATIONS } from "@/lib/rules";
 
+interface AppItem {
+  id: string;
+  labelFr: string;
+  labelEn: string;
+  icon: string;
+  suggestedGases?: string;   // JSON: ["co2","hfc1"]
+  defaultRanges?: string;    // JSON: {"R744":"0-10000ppm"}
+}
+
 interface StepGasAppProps {
   data: GasAppData;
   onChange: (data: GasAppData) => void;
   refrigerants: { id: string; name: string; safetyClass: string; gasGroup: string }[];
-  applications?: { id: string; labelFr: string; labelEn: string; icon: string }[];
+  applications?: AppItem[];
   lang?: Lang;
   country?: string;
 }
@@ -61,14 +70,28 @@ const REF_RANGES: Record<string, { value: string; label: string }[]> = {
   ],
 };
 
-/** Default range per application + refrigerant */
-const APP_DEFAULT_RANGE: Record<string, Record<string, string>> = {
-  machinery_room: { R717: '0-1000ppm', R744: '0-10000ppm' },
-  cold_storage:   { R717: '0-100ppm', R744: '0-10000ppm' },
-  ice_rink:       { R717: '0-500ppm', R744: '0-10000ppm' },
-  supermarket:    { R744: '0-10000ppm' },
-  cold_room:      { R744: '0-10000ppm' },
-  parking:        { CO: '0-100ppm', NO2: '0-5ppm' },
+/** Parse defaultRanges from DB app, with fallback */
+function getAppDefaultRanges(app: AppItem | null | undefined): Record<string, string> {
+  if (!app?.defaultRanges) return {};
+  try { return JSON.parse(app.defaultRanges); } catch { return {}; }
+}
+
+/** Parse suggestedGases from DB app */
+function getAppSuggestedGases(app: AppItem | null | undefined): string[] {
+  if (!app?.suggestedGases) return [];
+  try { return JSON.parse(app.suggestedGases); } catch { return []; }
+}
+
+/** Map gas group codes (co2, hfc1, nh3...) to refrigerant IDs */
+const GAS_GROUP_TO_REFS: Record<string, string[]> = {
+  co2: ['R744'],
+  nh3: ['R717'],
+  r290: ['R290'],
+  hfc1: ['R-404A', 'R-407C', 'R-410A', 'R-134a', 'R32'],
+  hfc2: ['R-448A', 'R-449A', 'R-452A', 'R-513A', 'R1234yf', 'R1234ze(E)'],
+  co: ['CO'],
+  no2: ['NO2'],
+  o2: ['O2'],
 };
 
 /** Common refrigerants shown first */
@@ -135,7 +158,27 @@ export default function StepGasApp({
   }, [refOpen]);
 
   // Applications: DB or fallback
-  const appList = applications && applications.length > 0 ? applications : fallbackApplications;
+  const appList = applications && applications.length > 0 ? applications : fallbackApplications as AppItem[];
+
+  // Selected application object (with suggestedGases/defaultRanges)
+  const selectedApp = useMemo(() => {
+    if (!data.zoneType) return null;
+    return appList.find(a => a.id === data.zoneType) ?? null;
+  }, [data.zoneType, appList]);
+
+  // DB-driven default ranges for the selected app
+  const appDefaultRanges = useMemo(() => getAppDefaultRanges(selectedApp), [selectedApp]);
+
+  // Suggested refrigerant IDs from the selected app's suggestedGases
+  const suggestedRefIds = useMemo(() => {
+    const gases = getAppSuggestedGases(selectedApp);
+    const ids = new Set<string>();
+    for (const g of gases) {
+      const refs = GAS_GROUP_TO_REFS[g];
+      if (refs) refs.forEach(r => ids.add(r));
+    }
+    return ids;
+  }, [selectedApp]);
 
   const update = <K extends keyof GasAppData>(field: K, value: GasAppData[K]) => {
     onChange({ ...data, [field]: value });
@@ -158,35 +201,32 @@ export default function StepGasApp({
     return REF_RANGES[data.selectedRefrigerant] ?? [];
   }, [hasRangeOptions, data.selectedRefrigerant]);
 
-  // Recommended range based on application + refrigerant
+  // Recommended range based on application + refrigerant (from DB)
   const recommendedRange = useMemo(() => {
-    if (!data.zoneType || !data.selectedRefrigerant) return null;
-    return APP_DEFAULT_RANGE[data.zoneType]?.[data.selectedRefrigerant] ?? null;
-  }, [data.zoneType, data.selectedRefrigerant]);
+    if (!data.selectedRefrigerant) return null;
+    return appDefaultRanges[data.selectedRefrigerant] ?? null;
+  }, [appDefaultRanges, data.selectedRefrigerant]);
 
-  // When refrigerant changes, auto-select recommended range if available
+  // When refrigerant changes, auto-select recommended range from DB
   const handleRefrigerantChange = (refId: string) => {
     const newData: GasAppData = { ...data, selectedRefrigerant: refId };
-    if (RANGE_REFRIGERANTS.has(refId) && data.zoneType) {
-      const defaultRange = APP_DEFAULT_RANGE[data.zoneType]?.[refId];
-      if (defaultRange) {
-        newData.selectedRange = defaultRange;
-      } else {
-        newData.selectedRange = "";
-      }
+    if (RANGE_REFRIGERANTS.has(refId)) {
+      const defaultRange = appDefaultRanges[refId];
+      newData.selectedRange = defaultRange ?? "";
     } else {
       newData.selectedRange = "";
     }
     onChange(newData);
   };
 
-  // When zone changes, update recommended range too
+  // When zone changes, update recommended range from the new app's DB defaults
   const handleZoneChange = (zone: string) => {
     const newData: GasAppData = { ...data, zoneType: zone };
     if (data.selectedRefrigerant && RANGE_REFRIGERANTS.has(data.selectedRefrigerant)) {
-      const defaultRange = APP_DEFAULT_RANGE[zone]?.[data.selectedRefrigerant];
-      if (defaultRange) {
-        newData.selectedRange = defaultRange;
+      const newApp = appList.find(a => a.id === zone);
+      const ranges = getAppDefaultRanges(newApp);
+      if (ranges[data.selectedRefrigerant]) {
+        newData.selectedRange = ranges[data.selectedRefrigerant];
       }
     }
     onChange(newData);
@@ -209,11 +249,13 @@ export default function StepGasApp({
   }, [refrigerants, searchLower]);
 
   const groupedRefs = useMemo(() => {
+    const recommendedLabel = lang === 'fr' ? '\u2b50 Recommande pour cette application' : '\u2b50 Recommended for this application';
     const groups: {
       key: string;
       label: string;
       refs: typeof refrigerants;
     }[] = [
+      ...(suggestedRefIds.size > 0 ? [{ key: "recommended", label: recommendedLabel, refs: [] as typeof refrigerants }] : []),
       { key: "common", label: t.groupCommon, refs: [] },
       { key: "hfc_hfo", label: t.groupHfcHfo, refs: [] },
       { key: "natural", label: t.groupNatural, refs: [] },
@@ -224,6 +266,18 @@ export default function StepGasApp({
     const added = new Map<string, Set<string>>();
 
     for (const r of filteredRefs) {
+      // Add to recommended group if applicable
+      if (suggestedRefIds.has(r.id)) {
+        const recGroup = groupMap.get("recommended");
+        if (recGroup) {
+          if (!added.has("recommended")) added.set("recommended", new Set());
+          if (!added.get("recommended")!.has(r.id)) {
+            added.get("recommended")!.add(r.id);
+            recGroup.refs.push(r);
+          }
+        }
+      }
+
       const cats = categorizeRef(r);
       for (const cat of cats) {
         const group = groupMap.get(cat);
@@ -238,7 +292,7 @@ export default function StepGasApp({
     }
 
     return groups.filter((g) => g.refs.length > 0);
-  }, [filteredRefs]);
+  }, [filteredRefs, suggestedRefIds, lang]);
 
   // Selected refrigerant object
   const selectedRefObj = useMemo(() => {
@@ -383,8 +437,14 @@ export default function StepGasApp({
                   groupedRefs.map((group) => (
                     <div key={group.key}>
                       {/* Group header */}
-                      <div className="sticky top-0 px-3.5 py-1.5 bg-[#f1f5f9] border-b border-[#e2e8f0]">
-                        <span className="text-[10px] font-bold text-[#6b8da5] uppercase tracking-wider">
+                      <div className={`sticky top-0 px-3.5 py-1.5 border-b ${
+                        group.key === 'recommended'
+                          ? 'bg-amber-50 border-amber-200'
+                          : 'bg-[#f1f5f9] border-[#e2e8f0]'
+                      }`}>
+                        <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                          group.key === 'recommended' ? 'text-amber-700' : 'text-[#6b8da5]'
+                        }`}>
                           {group.label}
                         </span>
                       </div>

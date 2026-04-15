@@ -79,7 +79,7 @@ export default function ConfiguratorPage() {
 
   // API data
   const [refrigerants, setRefrigerants] = useState<RefrigerantV5[]>([]);
-  const [applications, setApplications] = useState<{ id: string; labelFr: string; labelEn: string; icon: string; accessCategory: string; locationClass: string; belowGround: boolean; isMachineryRoom: boolean; isOccupiedSpace: boolean; humanComfort: boolean; c3Applicable: boolean; mechVentilation: boolean; }[]>([]);
+  const [applications, setApplications] = useState<{ id: string; labelFr: string; labelEn: string; icon: string; accessCategory: string; locationClass: string; belowGround: boolean; isMachineryRoom: boolean; isOccupiedSpace: boolean; humanComfort: boolean; c3Applicable: boolean; mechVentilation: boolean; applicableSpaceTypes: string; }[]>([]);
   const [spaceTypes, setSpaceTypes] = useState<{ id: string; labelFr: string; labelEn: string; icon: string; accessCategory: string; locationClass: string; belowGround: boolean; isMachineryRoom: boolean; isOccupiedSpace: boolean; humanComfort: boolean; c3Applicable: boolean; mechVentilation: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -229,6 +229,18 @@ export default function ConfiguratorPage() {
     if (!gasAppData.zoneType) return null;
     return applications.find((a) => a.id === gasAppData.zoneType) ?? null;
   }, [gasAppData.zoneType, applications]);
+
+  // Filter space types to only those applicable to the selected application
+  const filteredSpaceTypes = useMemo(() => {
+    if (!selectedApplication) return spaceTypes;
+    try {
+      const applicableIds: string[] = JSON.parse(selectedApplication.applicableSpaceTypes || '[]');
+      if (applicableIds.length === 0) return spaceTypes;
+      return spaceTypes.filter((st) => applicableIds.includes(st.id));
+    } catch {
+      return spaceTypes;
+    }
+  }, [selectedApplication, spaceTypes]);
 
   // ─── Run M1 engine on all zones ──────────────────────────────────────
 
@@ -434,6 +446,8 @@ export default function ConfiguratorPage() {
               labelFr: a.labelFr,
               labelEn: a.labelEn,
               icon: a.icon,
+              suggestedGases: (a as Record<string, unknown>).suggestedGases as string | undefined,
+              defaultRanges: (a as Record<string, unknown>).defaultRanges as string | undefined,
             }))}
             lang={lang}
             country={clientData.country}
@@ -447,7 +461,7 @@ export default function ConfiguratorPage() {
             onZonesChange={setZones}
             refrigerant={selectedRefrigerant}
             zoneType={gasAppData.zoneType}
-            spaceTypes={spaceTypes}
+            spaceTypes={filteredSpaceTypes}
             lang={lang}
           />
         )}

@@ -102,8 +102,10 @@ export function evaluateRegulation(
   const baseCount = useCluster ? clusters : areaBased;
   const extraDetector = detection.extraDetector ? 1 : 0;
 
-  // 7. Ventilation
-  const ventilation = ruleSet.getEmergencyVentilation(input.charge, volume, ref);
+  // 7. Ventilation — only applicable to machinery rooms (EN 378-3 Cl.6.4.4, ASHRAE 15 §8.11.5)
+  const ventilation = input.isMachineryRoom
+    ? ruleSet.getEmergencyVentilation(input.charge, volume, ref)
+    : null;
 
   // 8. Extra requirements
   const extraRequirements = ruleSet.getExtraRequirements(ref, effectiveInput);
@@ -140,8 +142,8 @@ export function evaluateRegulation(
       thresholdBasis: threshold.basis,
       stage2ThresholdPpm: stage2Ppm,
       alarmThresholds,
-      ventilation,
-      extraRequirements,
+      ventilation: null,
+      extraRequirements: [],
       requiredActions: [...detection.requiredActions, ...thresholdActions],
       assumptions: detection.assumptions,
       missingInputs: [],
@@ -178,8 +180,8 @@ export function evaluateRegulation(
     thresholdBasis: threshold.basis,
     stage2ThresholdPpm: stage2Ppm,
     alarmThresholds,
-    ventilation,
-    extraRequirements,
+    ventilation: detection.detectionRequired === 'YES' ? ventilation : null,
+    extraRequirements: detection.detectionRequired === 'YES' ? extraRequirements : [],
     requiredActions: Array.from(
       new Set([...detection.requiredActions, ...thresholdActions]),
     ),

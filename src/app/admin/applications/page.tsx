@@ -24,7 +24,15 @@ interface AppItem {
   productFamilies: string;
   defaultRanges: string;
   suggestedGases: string;
+  applicableSpaceTypes: string;
   sortOrder: number;
+}
+
+interface SpaceTypeItem {
+  id: string;
+  labelFr: string;
+  labelEn: string;
+  icon: string;
 }
 
 const EMPTY_APP: AppItem = {
@@ -33,6 +41,7 @@ const EMPTY_APP: AppItem = {
   belowGround: false, isMachineryRoom: false, isOccupiedSpace: false,
   humanComfort: false, c3Applicable: false, mechVentilation: false,
   productFamilies: '[]', defaultRanges: '{}', suggestedGases: '[]',
+  applicableSpaceTypes: '[]',
   sortOrder: 99,
 };
 
@@ -42,6 +51,7 @@ const FAMILIES = ['MIDI', 'X5', 'G', 'GXR', 'GEX', 'TR', 'MP', 'RM', 'AQUIS', 'G
 
 export default function ApplicationsPage() {
   const [apps, setApps] = useState<AppItem[]>([]);
+  const [allSpaceTypes, setAllSpaceTypes] = useState<SpaceTypeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogTab, setDialogTab] = useState<'identity' | 'regulatory' | 'selection'>('identity');
@@ -54,9 +64,14 @@ export default function ApplicationsPage() {
   async function fetchApps() {
     setLoading(true);
     try {
-      const res = await fetch('/api/applications');
-      const data = await res.json();
-      setApps(Array.isArray(data) ? data : []);
+      const [appsRes, stRes] = await Promise.all([
+        fetch('/api/applications'),
+        fetch('/api/space-types'),
+      ]);
+      const appsData = await appsRes.json();
+      const stData = await stRes.json();
+      setApps(Array.isArray(appsData) ? appsData : []);
+      setAllSpaceTypes(Array.isArray(stData) ? stData : []);
     } catch { /* ignore */ }
     setLoading(false);
   }
@@ -167,6 +182,7 @@ export default function ApplicationsPage() {
         {apps.map(app => {
           const families = (() => { try { return JSON.parse(app.productFamilies) as string[]; } catch { return []; } })();
           const gases = (() => { try { return JSON.parse(app.suggestedGases) as string[]; } catch { return []; } })();
+          const zoneIds = (() => { try { return JSON.parse(app.applicableSpaceTypes || '[]') as string[]; } catch { return []; } })();
           return (
             <div key={app.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
               <div className="bg-[#16354B] px-5 py-4 flex items-center justify-between">
@@ -207,6 +223,21 @@ export default function ApplicationsPage() {
                     {gases.map(g => <span key={g} className="bg-[#A7C031]/15 text-[#6b7d1e] text-[10px] font-semibold px-2 py-0.5 rounded-full">{g}</span>)}
                   </div>
                 </div>
+                {zoneIds.length > 0 && (
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase">Zones:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {zoneIds.map(zId => {
+                        const st = allSpaceTypes.find(s => s.id === zId);
+                        return (
+                          <span key={zId} className="bg-cyan-100 text-cyan-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                            {st ? `${st.icon} ${st.labelEn}` : zId}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-3 pt-3 border-t border-gray-100">
                   <button onClick={() => openEdit(app)} className="text-blue-600 hover:text-blue-800 text-xs font-semibold">Edit</button>
@@ -306,6 +337,27 @@ export default function ApplicationsPage() {
               {/* ── Selection Tab (M2) ── */}
               {dialogTab === 'selection' && (<>
                 <p className="text-xs text-gray-500">Familles de produits prioritaires et ranges par defaut pour le moteur de selection M2.</p>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-2 uppercase">Zones applicables</label>
+                  <div className="flex flex-wrap gap-2">
+                    {allSpaceTypes.map(st => {
+                      const currentIds: string[] = (() => { try { return JSON.parse(form.applicableSpaceTypes || '[]'); } catch { return []; } })();
+                      const active = currentIds.includes(st.id);
+                      return (
+                        <button key={st.id} type="button" onClick={() => {
+                          const next = active ? currentIds.filter(x => x !== st.id) : [...currentIds, st.id];
+                          setForm({ ...form, applicableSpaceTypes: JSON.stringify(next) });
+                        }}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                            active ? 'bg-cyan-600 text-white border-cyan-600' : 'bg-gray-100 text-gray-500 border-gray-200 hover:border-gray-400'
+                          }`}>
+                          {st.icon} {st.labelEn}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
                 <div>
                   <label className="block text-xs font-bold text-gray-600 mb-2 uppercase">Familles produits prioritaires</label>
