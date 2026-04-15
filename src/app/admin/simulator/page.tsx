@@ -355,6 +355,65 @@ export default function SimulatorPage() {
     setNextId((n) => n + 1);
   }, [liveResults, selectedRef, inputs, nextId]);
 
+  // Run N random simulations and save all to history
+  const runBatchRandom = useCallback((count: number) => {
+    if (refrigerants.length === 0) return;
+    const common = ['R32', 'R410A', 'R744', 'R290', 'R717', 'R134a', 'R404A', 'R1234yf', 'R454B', 'R600a'];
+    const pool = [...common, ...common, ...common, ...refrigerants.map(r => r.id)];
+    const entries: SimResult[] = [];
+    let id = nextId;
+
+    for (let i = 0; i < count; i++) {
+      // Pick random refrigerant (weighted toward common ones)
+      const refId = pool[Math.floor(Math.random() * pool.length)];
+      const ref = refrigerants.find(r => r.id === refId) || refrigerants[0];
+
+      // Random zone parameters (log-distributed for realistic spread)
+      const charge = Math.round(Math.exp(Math.random() * Math.log(200)) * 10) / 10;
+      const surface = Math.round(Math.exp(Math.random() * Math.log(50) + Math.log(10)));
+      const height = Math.round((2.5 + Math.random() * 3.5) * 10) / 10;
+      const volume = surface * height;
+
+      // Random regulatory context (weighted)
+      const catRoll = Math.random();
+      const accessCategory: 'a' | 'b' | 'c' = catRoll < 0.2 ? 'a' : catRoll < 0.7 ? 'b' : 'c';
+      const locRoll = Math.random();
+      const locationClass: 'I' | 'II' | 'III' | 'IV' = locRoll < 0.15 ? 'I' : locRoll < 0.6 ? 'II' : locRoll < 0.9 ? 'III' : 'IV';
+      const isMachineryRoom = accessCategory === 'c' && Math.random() > 0.5;
+      const isOccupiedSpace = !isMachineryRoom && accessCategory !== 'c';
+      const humanComfort = isOccupiedSpace && Math.random() > 0.3;
+      const c3Applicable = isOccupiedSpace && humanComfort;
+      const belowGround = Math.random() > 0.8;
+      const mechanicalVentilation = isMachineryRoom || Math.random() > 0.7;
+
+      // Build input and evaluate all 3 regulations
+      const regInput: RegulationInput = {
+        refrigerant: ref, charge, roomArea: surface, roomHeight: height, roomVolume: volume,
+        accessCategory, locationClass, belowGround, isMachineryRoom, isOccupiedSpace,
+        humanComfort, c3Applicable, mechanicalVentilation,
+      };
+
+      const simInputs: SimInputs = {
+        refrigerantId: ref.id, spaceTypeId: '', surface: String(surface), height: String(height),
+        charge: String(charge), volumeOverride: '', accessCategory, locationClass,
+        belowGround, isMachineryRoom, isOccupiedSpace, humanComfort, c3Applicable, mechanicalVentilation,
+      };
+
+      entries.push({
+        id: id++,
+        timestamp: new Date().toISOString(),
+        inputs: simInputs,
+        refrigerant: ref,
+        en378: evaluateRegulation(en378RuleSet, regInput),
+        ashrae15: evaluateRegulation(ashrae15RuleSet, regInput),
+        iso5149: evaluateRegulation(iso5149RuleSet, regInput),
+      });
+    }
+
+    setHistory(prev => [...entries.reverse(), ...prev]);
+    setNextId(id);
+  }, [refrigerants, nextId]);
+
   // ── Render helpers ──────────────────────────────────────────────────
 
   const decisionBadge = (d: string) => {
@@ -617,14 +676,24 @@ export default function SimulatorPage() {
             </div>
           </section>
 
-          {/* Save Button */}
-          <button
-            onClick={saveToHistory}
-            disabled={!liveResults}
-            className="w-full py-2 rounded text-sm font-semibold transition-colors bg-[#E63946] text-white hover:bg-[#d32f3b] disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Save to History
-          </button>
+          {/* Save Buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={saveToHistory}
+              disabled={!liveResults}
+              className="flex-1 py-2 rounded text-sm font-semibold transition-colors bg-[#E63946] text-white hover:bg-[#d32f3b] disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Save to History
+            </button>
+            <button
+              onClick={() => runBatchRandom(50)}
+              disabled={refrigerants.length === 0}
+              className="px-3 py-2 rounded text-sm font-semibold transition-colors bg-[#16354B] text-white hover:bg-[#1e4a66] disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Generate 50 random simulations"
+            >
+              50 Random
+            </button>
+          </div>
 
           {/* Live summary */}
           {liveResults && (
