@@ -15,6 +15,12 @@ const RULE_SETS: Record<RegulationId, RuleSet> = {
   iso5149: iso5149RuleSet,
 };
 
+const ALL_REGULATIONS: { id: RegulationId; label: string; flag: string }[] = [
+  { id: 'en378', label: 'EN 378', flag: 'EU' },
+  { id: 'ashrae15', label: 'ASHRAE 15', flag: 'US' },
+  { id: 'iso5149', label: 'ISO 5149', flag: 'INT' },
+];
+
 // ── Preset scenarios ─────────────────────────────────────────────────────
 interface Preset {
   label: string;
@@ -115,6 +121,87 @@ const PRESETS: Preset[] = [
     regulation: 'en378',
   },
 ];
+
+// ── Random scenario generator ────────────────────────────────────────────
+interface RandomScenario {
+  ref: RefrigerantV5;
+  charge: number;
+  roomArea: number;
+  roomHeight: number;
+  accessCategory: 'a' | 'b' | 'c';
+  locationClass: 'I' | 'II' | 'III' | 'IV';
+  isMachineryRoom: boolean;
+  isOccupiedSpace: boolean;
+  humanComfort: boolean;
+  c3Applicable: boolean;
+  belowGround: boolean;
+  mechanicalVentilation: boolean;
+}
+
+function generateRandomScenario(refrigerants: RefrigerantV5[]): RandomScenario {
+  // Weighted refrigerant selection — common ones get 3x weight
+  const common = ['R32', 'R410A', 'R744', 'R290', 'R717', 'R134a', 'R404A', 'R1234yf', 'R454B', 'R600a'];
+  const pool = [...common, ...common, ...common, ...refrigerants.map(r => r.id)];
+  const refId = pool[Math.floor(Math.random() * pool.length)];
+  const ref = refrigerants.find(r => r.id === refId) || refrigerants[0];
+
+  // Log-distributed values for realistic spread
+  const charge = Math.round(Math.exp(Math.random() * Math.log(200)) * 10) / 10; // 1-200 kg
+  const roomArea = Math.round(Math.exp(Math.random() * Math.log(50) + Math.log(10))); // 10-500 m²
+  const roomHeight = Math.round((2.5 + Math.random() * 3.5) * 10) / 10; // 2.5-6m
+
+  // Weighted categories
+  const catRoll = Math.random();
+  const accessCategory: 'a' | 'b' | 'c' = catRoll < 0.2 ? 'a' : catRoll < 0.7 ? 'b' : 'c';
+
+  const locRoll = Math.random();
+  const locationClass: 'I' | 'II' | 'III' | 'IV' = locRoll < 0.15 ? 'I' : locRoll < 0.6 ? 'II' : locRoll < 0.9 ? 'III' : 'IV';
+
+  // Consistent flags
+  const isMachineryRoom = accessCategory === 'c' && Math.random() > 0.5;
+  const isOccupiedSpace = !isMachineryRoom && accessCategory !== 'c';
+  const humanComfort = isOccupiedSpace && Math.random() > 0.3;
+  const c3Applicable = isOccupiedSpace && humanComfort;
+  const belowGround = Math.random() > 0.8;
+  const mechanicalVentilation = isMachineryRoom || Math.random() > 0.7;
+
+  return {
+    ref, charge, roomArea, roomHeight, accessCategory, locationClass,
+    isMachineryRoom, isOccupiedSpace, humanComfort, c3Applicable,
+    belowGround, mechanicalVentilation,
+  };
+}
+
+function buildInput(scenario: RandomScenario): RegulationInput {
+  return {
+    refrigerant: scenario.ref,
+    charge: scenario.charge,
+    roomArea: scenario.roomArea,
+    roomHeight: scenario.roomHeight,
+    roomVolume: scenario.roomArea * scenario.roomHeight,
+    accessCategory: scenario.accessCategory,
+    locationClass: scenario.locationClass,
+    belowGround: scenario.belowGround,
+    isMachineryRoom: scenario.isMachineryRoom,
+    isOccupiedSpace: scenario.isOccupiedSpace,
+    humanComfort: scenario.humanComfort,
+    c3Applicable: scenario.c3Applicable,
+    mechanicalVentilation: scenario.mechanicalVentilation,
+  };
+}
+
+// ── Compare result type ──────────────────────────────────────────────────
+interface CompareResult {
+  regulationId: RegulationId;
+  result: RegulationResult;
+}
+
+interface BatchRow {
+  index: number;
+  scenario: RandomScenario;
+  results: Record<RegulationId, RegulationResult>;
+  isDivergent: boolean;
+}
 
 // ── Collapsible section ──────────────────────────────────────────────────
 function Section({
@@ -352,6 +439,242 @@ function JsonViewer({ data }: { data: unknown }) {
   );
 }
 
+// ── Comparison View ──────────────────────────────────────────────────────
+function ComparisonView({
+  compareResults,
+  scenario,
+}: {
+  compareResults: CompareResult[];
+  scenario: { refId: string; charge: number; roomArea: number; accessCategory: string; locationClass: string };
+}) {
+  if (compareResults.length === 0) return null;
+
+  // Extract comparable fields from each result
+  const fields: { label: string; getValue: (r: RegulationResult) => string }[] = [
+    { label: 'Detection Decision', getValue: (r) => r.detectionRequired },
+    { label: 'Detectors (rec.)', getValue: (r) => String(r.recommendedDetectors) },
+    { label: 'Threshold (ppm)', getValue: (r) => r.thresholdPpm.toLocaleString() },
+    { label: 'Placement', getValue: (r) => r.placementHeight.replace('_', ' ') },
+    { label: 'Ventilation (m\u00B3/s)', getValue: (r) => r.ventilation ? r.ventilation.flowRateM3s.toFixed(3) : 'N/A' },
+    { label: 'Extra Reqs', getValue: (r) => String(r.extraRequirements.length) },
+  ];
+
+  // Check for divergences
+  const divergences: string[] = [];
+  for (const field of fields) {
+    const values = compareResults.map((cr) => field.getValue(cr.result));
+    const unique = new Set(values);
+    if (unique.size > 1) {
+      divergences.push(field.label);
+    }
+  }
+
+  // For a given field, determine the majority value to highlight outliers
+  function isCellDivergent(field: { label: string; getValue: (r: RegulationResult) => string }, idx: number): boolean {
+    const values = compareResults.map((cr) => field.getValue(cr.result));
+    const unique = new Set(values);
+    if (unique.size <= 1) return false;
+    // Find majority
+    const counts: Record<string, number> = {};
+    for (const v of values) counts[v] = (counts[v] || 0) + 1;
+    const maxCount = Math.max(...Object.values(counts));
+    const majorityVal = Object.entries(counts).find(([, c]) => c === maxCount)?.[0];
+    return values[idx] !== majorityVal;
+  }
+
+  const decisionColor = (d: string) => {
+    if (d === 'YES') return 'text-red-400 font-bold';
+    if (d === 'NO') return 'text-green-400';
+    if (d === 'RECOMMENDED') return 'text-amber-400';
+    return 'text-amber-400';
+  };
+
+  return (
+    <div className="flex flex-col gap-4 max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="rounded-lg border border-[#2a2e3d] bg-[#1a1d28] p-4">
+        <div className="text-sm text-gray-400 mb-2">Comparing scenario:</div>
+        <div className="text-lg font-bold text-white">
+          {scenario.refId}, {scenario.charge} kg, {scenario.roomArea} m², Cat {scenario.accessCategory}, Location {scenario.locationClass}
+        </div>
+        {divergences.length > 0 && (
+          <div className="mt-3 inline-flex items-center gap-2 bg-amber-600/20 border border-amber-600 rounded-lg px-3 py-1.5">
+            <span className="text-amber-400 font-bold text-sm">DIVERGENCE FOUND</span>
+            <span className="text-amber-300 text-xs">in: {divergences.join(', ')}</span>
+          </div>
+        )}
+        {divergences.length === 0 && (
+          <div className="mt-3 inline-flex items-center gap-2 bg-green-600/20 border border-green-600 rounded-lg px-3 py-1.5">
+            <span className="text-green-400 font-bold text-sm">ALL REGULATIONS AGREE</span>
+          </div>
+        )}
+      </div>
+
+      {/* Comparison table */}
+      <div className="rounded-lg border border-[#2a2e3d] bg-[#1a1d28] overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-[#2a2e3d]">
+              <th className="text-left px-4 py-3 text-xs text-gray-500 uppercase tracking-wider w-[180px]">Field</th>
+              {compareResults.map((cr) => {
+                const reg = ALL_REGULATIONS.find(r => r.id === cr.regulationId);
+                return (
+                  <th key={cr.regulationId} className="text-center px-4 py-3">
+                    <div className="text-sm font-semibold text-white">{reg?.label}</div>
+                    <div className="text-[10px] text-gray-500">{reg?.flag}</div>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {fields.map((field) => (
+              <tr key={field.label} className="border-t border-[#2a2e3d]">
+                <td className="px-4 py-3 text-xs text-gray-400">{field.label}</td>
+                {compareResults.map((cr, idx) => {
+                  const val = field.getValue(cr.result);
+                  const divergent = isCellDivergent(field, idx);
+                  const isDecision = field.label === 'Detection Decision';
+                  return (
+                    <td
+                      key={cr.regulationId}
+                      className={`px-4 py-3 text-center font-mono text-sm ${
+                        divergent ? 'bg-amber-900/30' : ''
+                      } ${isDecision ? decisionColor(val) : 'text-gray-200'}`}
+                    >
+                      {divergent && <span className="text-amber-500 mr-1">*</span>}
+                      {val}
+                      {divergent && <span className="text-amber-500 ml-1">*</span>}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Per-regulation details */}
+      {compareResults.map((cr) => (
+        <Section
+          key={cr.regulationId}
+          title={`${ALL_REGULATIONS.find(r => r.id === cr.regulationId)?.label} — Details`}
+          icon={cr.regulationId === 'en378' ? 'E' : cr.regulationId === 'ashrae15' ? 'A' : 'I'}
+          defaultOpen={false}
+          accent="text-gray-300"
+        >
+          <JsonViewer data={cr.result} />
+        </Section>
+      ))}
+    </div>
+  );
+}
+
+// ── Batch View ───────────────────────────────────────────────────────────
+function BatchView({
+  batchRows,
+  onSelectRow,
+}: {
+  batchRows: BatchRow[];
+  onSelectRow: (row: BatchRow) => void;
+}) {
+  const divergentCount = batchRows.filter((r) => r.isDivergent).length;
+  const pct = Math.round((divergentCount / batchRows.length) * 100);
+
+  const decisionLabel = (d: string) => {
+    if (d === 'YES') return 'YES';
+    if (d === 'NO') return 'NO';
+    if (d === 'RECOMMENDED') return 'RECOM.';
+    return 'REVIEW';
+  };
+
+  const decisionColor = (d: string) => {
+    if (d === 'YES') return 'text-red-400 font-bold';
+    if (d === 'NO') return 'text-green-400';
+    if (d === 'RECOMMENDED') return 'text-amber-400';
+    return 'text-amber-300';
+  };
+
+  return (
+    <div className="flex flex-col gap-4 max-w-5xl mx-auto">
+      {/* Summary header */}
+      <div className="rounded-lg border border-[#2a2e3d] bg-[#1a1d28] p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-white">Batch Random Test &mdash; {batchRows.length} scenarios</h2>
+            <p className="text-xs text-gray-500 mt-1">Click a row to load the scenario into the sidebar</p>
+          </div>
+          <div className={`text-2xl font-bold ${divergentCount > 0 ? 'text-amber-400' : 'text-green-400'}`}>
+            {divergentCount}/{batchRows.length} divergent ({pct}%)
+          </div>
+        </div>
+        <div className="flex gap-3 mt-3">
+          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <span className="w-3 h-3 rounded bg-green-900/60 border border-green-800/50 inline-block" /> All agree
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <span className="w-3 h-3 rounded bg-amber-900/60 border border-amber-800/50 inline-block" /> Divergent
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="rounded-lg border border-[#2a2e3d] bg-[#1a1d28] overflow-hidden overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-gray-500 uppercase tracking-wider border-b border-[#2a2e3d]">
+              <th className="text-left py-3 px-3">#</th>
+              <th className="text-left py-3 px-3">Refrigerant</th>
+              <th className="text-right py-3 px-3">Charge</th>
+              <th className="text-right py-3 px-3">Area</th>
+              <th className="text-center py-3 px-3">Cat</th>
+              <th className="text-center py-3 px-3">Loc</th>
+              <th className="text-center py-3 px-3">EN 378</th>
+              <th className="text-center py-3 px-3">ASHRAE 15</th>
+              <th className="text-center py-3 px-3">ISO 5149</th>
+              <th className="text-center py-3 px-3">Divergent?</th>
+            </tr>
+          </thead>
+          <tbody>
+            {batchRows.map((row) => (
+              <tr
+                key={row.index}
+                onClick={() => onSelectRow(row)}
+                className={`border-t border-[#2a2e3d] cursor-pointer transition-colors hover:bg-[#22263a] ${
+                  row.isDivergent ? 'bg-amber-900/10' : 'bg-green-900/5'
+                }`}
+              >
+                <td className="py-2.5 px-3 font-mono text-gray-500">{row.index + 1}</td>
+                <td className="py-2.5 px-3 text-white font-semibold">{row.scenario.ref.id}</td>
+                <td className="py-2.5 px-3 text-right text-gray-300 font-mono">{row.scenario.charge} kg</td>
+                <td className="py-2.5 px-3 text-right text-gray-300 font-mono">{row.scenario.roomArea} m²</td>
+                <td className="py-2.5 px-3 text-center text-gray-400">{row.scenario.accessCategory}</td>
+                <td className="py-2.5 px-3 text-center text-gray-400">{row.scenario.locationClass}</td>
+                <td className={`py-2.5 px-3 text-center ${decisionColor(row.results.en378.detectionRequired)}`}>
+                  {decisionLabel(row.results.en378.detectionRequired)}
+                </td>
+                <td className={`py-2.5 px-3 text-center ${decisionColor(row.results.ashrae15.detectionRequired)}`}>
+                  {decisionLabel(row.results.ashrae15.detectionRequired)}
+                </td>
+                <td className={`py-2.5 px-3 text-center ${decisionColor(row.results.iso5149.detectionRequired)}`}>
+                  {decisionLabel(row.results.iso5149.detectionRequired)}
+                </td>
+                <td className="py-2.5 px-3 text-center">
+                  {row.isDivergent ? (
+                    <span className="text-amber-400 font-bold">YES</span>
+                  ) : (
+                    <span className="text-green-600">--</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 // ═════════════════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ═════════════════════════════════════════════════════════════════════════
@@ -396,14 +719,26 @@ export default function TestLabPage() {
     [refrigerants, refId],
   );
 
-  // ── Result ─────────────────────────────────────────────────────────
+  // ── View mode ──────────────────────────────────────────────────────
+  type ViewMode = 'single' | 'compare' | 'batch';
+  const [viewMode, setViewMode] = useState<ViewMode>('single');
+
+  // ── Result (single) ────────────────────────────────────────────────
   const [result, setResult] = useState<RegulationResult | null>(null);
   const [pathEvals, setPathEvals] = useState<PathEvaluation[]>([]);
   const [running, setRunning] = useState(false);
 
+  // ── Compare results ────────────────────────────────────────────────
+  const [compareResults, setCompareResults] = useState<CompareResult[]>([]);
+  const [compareScenario, setCompareScenario] = useState<{ refId: string; charge: number; roomArea: number; accessCategory: string; locationClass: string } | null>(null);
+
+  // ── Batch results ──────────────────────────────────────────────────
+  const [batchRows, setBatchRows] = useState<BatchRow[]>([]);
+
   const runCalculation = useCallback(() => {
     if (!selectedRef) return;
     setRunning(true);
+    setViewMode('single');
     // Tiny delay so UI can show spinner
     setTimeout(() => {
       const input: RegulationInput = {
@@ -459,6 +794,127 @@ export default function TestLabPage() {
     [],
   );
 
+  // ── Load random scenario into form ─────────────────────────────────
+  const loadScenarioIntoForm = useCallback((s: RandomScenario) => {
+    setRefId(s.ref.id);
+    setCharge(s.charge);
+    setRoomArea(s.roomArea);
+    setRoomHeight(s.roomHeight);
+    setVolumeOverride(null);
+    setAccessCategory(s.accessCategory);
+    setLocationClass(s.locationClass);
+    setBelowGround(s.belowGround);
+    setIsMachineryRoom(s.isMachineryRoom);
+    setIsOccupiedSpace(s.isOccupiedSpace);
+    setHumanComfort(s.humanComfort);
+    setC3Applicable(s.c3Applicable);
+    setMechanicalVentilation(s.mechanicalVentilation);
+  }, []);
+
+  // ── Random scenario (generates + fills + runs) ─────────────────────
+  const handleRandom = useCallback(() => {
+    if (refrigerants.length === 0) return;
+    const scenario = generateRandomScenario(refrigerants);
+    loadScenarioIntoForm(scenario);
+    // Run calculation after state settles
+    setRunning(true);
+    setViewMode('single');
+    setTimeout(() => {
+      const input = buildInput(scenario);
+      const ruleSet = RULE_SETS[regulation];
+      const res = evaluateRegulation(ruleSet, input);
+      const detection = ruleSet.evaluateDetection(input);
+      setPathEvals(detection.pathEvaluations);
+      setResult(res);
+      setRunning(false);
+    }, 80);
+  }, [refrigerants, regulation, loadScenarioIntoForm]);
+
+  // ── Compare All 3 ─────────────────────────────────────────────────
+  const handleCompareAll = useCallback(() => {
+    if (!selectedRef) return;
+    setRunning(true);
+    setViewMode('compare');
+    setTimeout(() => {
+      const input: RegulationInput = {
+        refrigerant: selectedRef,
+        charge,
+        roomArea,
+        roomHeight,
+        roomVolume: effectiveVolume,
+        accessCategory,
+        locationClass,
+        belowGround,
+        isMachineryRoom,
+        isOccupiedSpace,
+        humanComfort,
+        c3Applicable,
+        mechanicalVentilation,
+      };
+      const results: CompareResult[] = ALL_REGULATIONS.map((reg) => ({
+        regulationId: reg.id,
+        result: evaluateRegulation(RULE_SETS[reg.id], input),
+      }));
+      setCompareResults(results);
+      setCompareScenario({ refId, charge, roomArea, accessCategory, locationClass });
+      setResult(null);
+      setPathEvals([]);
+      setRunning(false);
+    }, 50);
+  }, [
+    selectedRef, charge, roomArea, roomHeight, effectiveVolume,
+    accessCategory, locationClass, belowGround, isMachineryRoom,
+    isOccupiedSpace, humanComfort, c3Applicable, mechanicalVentilation,
+    refId,
+  ]);
+
+  // ── Batch 20 ──────────────────────────────────────────────────────
+  const handleBatch = useCallback(() => {
+    if (refrigerants.length === 0) return;
+    setRunning(true);
+    setViewMode('batch');
+    setTimeout(() => {
+      const rows: BatchRow[] = [];
+      for (let i = 0; i < 20; i++) {
+        const scenario = generateRandomScenario(refrigerants);
+        const input = buildInput(scenario);
+        const results = {} as Record<RegulationId, RegulationResult>;
+        for (const reg of ALL_REGULATIONS) {
+          results[reg.id] = evaluateRegulation(RULE_SETS[reg.id], input);
+        }
+        const decisions = new Set(ALL_REGULATIONS.map(r => results[r.id].detectionRequired));
+        rows.push({
+          index: i,
+          scenario,
+          results,
+          isDivergent: decisions.size > 1,
+        });
+      }
+      setBatchRows(rows);
+      setResult(null);
+      setPathEvals([]);
+      setRunning(false);
+    }, 50);
+  }, [refrigerants]);
+
+  // ── Handle batch row click ─────────────────────────────────────────
+  const handleBatchRowSelect = useCallback((row: BatchRow) => {
+    loadScenarioIntoForm(row.scenario);
+    // Show the comparison for this row
+    setViewMode('compare');
+    setCompareResults(ALL_REGULATIONS.map((reg) => ({
+      regulationId: reg.id,
+      result: row.results[reg.id],
+    })));
+    setCompareScenario({
+      refId: row.scenario.ref.id,
+      charge: row.scenario.charge,
+      roomArea: row.scenario.roomArea,
+      accessCategory: row.scenario.accessCategory,
+      locationClass: row.scenario.locationClass,
+    });
+  }, [loadScenarioIntoForm]);
+
   // ── Room concentration in ppm (for the bar) ────────────────────────
   const roomConcPpm = useMemo(() => {
     if (!selectedRef || effectiveVolume <= 0) return null;
@@ -501,6 +957,13 @@ export default function TestLabPage() {
                   {p.label}
                 </button>
               ))}
+              <button
+                onClick={handleRandom}
+                disabled={refrigerants.length === 0}
+                className="px-2.5 py-1.5 rounded text-xs border border-teal-700 bg-teal-900/30 text-teal-400 hover:border-teal-500 hover:bg-teal-800/40 hover:text-teal-300 transition-colors disabled:opacity-40"
+              >
+                RANDOM
+              </button>
             </div>
           </div>
 
@@ -508,11 +971,7 @@ export default function TestLabPage() {
           <div>
             <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Regulation</div>
             <div className="flex gap-1">
-              {([
-                { id: 'en378' as const, label: 'EN 378', flag: 'EU' },
-                { id: 'ashrae15' as const, label: 'ASHRAE 15', flag: 'US' },
-                { id: 'iso5149' as const, label: 'ISO 5149', flag: 'INT' },
-              ]).map((r) => (
+              {ALL_REGULATIONS.map((r) => (
                 <button
                   key={r.id}
                   onClick={() => setRegulation(r.id)}
@@ -584,7 +1043,7 @@ export default function TestLabPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <NumInput label="Charge" value={charge} onChange={setCharge} unit="kg" min={0.01} step={0.5} />
-              <NumInput label="Room Area" value={roomArea} onChange={setRoomArea} unit="m\u00B2" min={1} step={1} />
+              <NumInput label="Room Area" value={roomArea} onChange={setRoomArea} unit="m²" min={1} step={1} />
               <NumInput label="Ceiling Height" value={roomHeight} onChange={setRoomHeight} unit="m" min={0.5} step={0.1} />
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-gray-500 uppercase tracking-wider">Volume</label>
@@ -659,20 +1118,42 @@ export default function TestLabPage() {
             </div>
           </div>
 
-          {/* RUN button */}
-          <button
-            onClick={runCalculation}
-            disabled={!selectedRef || running}
-            className="w-full py-3 rounded-lg text-white font-bold text-sm tracking-wider bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-900/30"
-          >
-            {running ? 'CALCULATING...' : 'RUN CALCULATION'}
-          </button>
+          {/* Action buttons */}
+          <div className="flex flex-col gap-2">
+            {/* RUN button */}
+            <button
+              onClick={runCalculation}
+              disabled={!selectedRef || running}
+              className="w-full py-3 rounded-lg text-white font-bold text-sm tracking-wider bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-900/30"
+            >
+              {running ? 'CALCULATING...' : 'RUN CALCULATION'}
+            </button>
+
+            {/* Compare All 3 */}
+            <button
+              onClick={handleCompareAll}
+              disabled={!selectedRef || running}
+              className="w-full py-2.5 rounded-lg text-white font-bold text-xs tracking-wider bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-amber-900/30"
+            >
+              COMPARE ALL 3
+            </button>
+
+            {/* Batch 20 */}
+            <button
+              onClick={handleBatch}
+              disabled={refrigerants.length === 0 || running}
+              className="w-full py-2.5 rounded-lg text-white font-bold text-xs tracking-wider bg-gradient-to-r from-purple-600 to-violet-500 hover:from-purple-500 hover:to-violet-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-900/30"
+            >
+              BATCH 20 RANDOM
+            </button>
+          </div>
         </div>
       </aside>
 
       {/* ── RIGHT MAIN AREA ──────────────────────────────────────────── */}
       <main className="flex-1 bg-[#0f1117] overflow-y-auto p-6">
-        {!result ? (
+        {/* ── Empty state ── */}
+        {viewMode === 'single' && !result && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <div className="text-6xl text-gray-800 mb-4">&gt;_</div>
@@ -684,7 +1165,10 @@ export default function TestLabPage() {
               </p>
             </div>
           </div>
-        ) : (
+        )}
+
+        {/* ── Single result view ── */}
+        {viewMode === 'single' && result && (
           <div className="flex flex-col gap-5 max-w-4xl mx-auto">
             {/* 1 — Decision Banner */}
             <DecisionBanner result={result} />
@@ -982,6 +1466,16 @@ export default function TestLabPage() {
               <JsonViewer data={result} />
             </Section>
           </div>
+        )}
+
+        {/* ── Compare view ── */}
+        {viewMode === 'compare' && compareScenario && (
+          <ComparisonView compareResults={compareResults} scenario={compareScenario} />
+        )}
+
+        {/* ── Batch view ── */}
+        {viewMode === 'batch' && batchRows.length > 0 && (
+          <BatchView batchRows={batchRows} onSelectRow={handleBatchRowSelect} />
         )}
       </main>
     </div>
