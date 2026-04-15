@@ -8,6 +8,7 @@ const links = [
   { href: '/admin/gas', label: 'Refrigerants' },
   { href: '/admin/applications', label: 'Applications' },
   { href: '/admin/space-types', label: 'Space Types' },
+  { href: '/admin/products', label: 'Products' },
   { href: '/admin/calc-sheets', label: 'Calc Sheets' },
   { href: '/admin/engine', label: 'Engine' },
   { href: '/admin/testlab', label: 'TestLab' },
