@@ -43,7 +43,7 @@ export interface RuleSet {
   region: string;
   evaluateDetection(input: RegulationInput): DetectionEvaluation;
   calculateThreshold(ref: RefrigerantV5, charge: number): { threshold: ThresholdResult; stage2Ppm: number | null; actions: string[] };
-  getAlarmThresholds(ref: RefrigerantV5): AlarmThresholds;
+  getAlarmThresholds(ref: RefrigerantV5, charge?: number): AlarmThresholds;
   getEmergencyVentilation(chargeKg: number, roomVolumeM3: number, ref: RefrigerantV5): VentilationResult;
   getExtraRequirements(ref: RefrigerantV5, input: RegulationInput): ExtraRequirement[];
   buildCandidateZones(input: RegulationInput): CandidateZone[];

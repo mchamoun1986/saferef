@@ -282,7 +282,17 @@ export const ashrae15RuleSet: RuleSet = {
    * Non-flammable (A1/B1):
    *   alarm1 = 25% RCL (threshold), alarm2 = 50% RCL, cutoff = 100% RCL
    */
-  getAlarmThresholds(ref: RefrigerantV5): AlarmThresholds {
+  getAlarmThresholds(ref: RefrigerantV5, charge?: number): AlarmThresholds {
+    // NH3 > 50 kg: special two-level alarm
+    if (normalizeRefId(ref.id) === 'R-717' && (charge ?? 0) > 50) {
+      return {
+        alarm1: { ppm: 500, kgM3: ppmToKgM3(500, ref.molecularMass), basis: 'NH3_pre_alarm' },
+        alarm2: { ppm: 30000, kgM3: ppmToKgM3(30000, ref.molecularMass), basis: 'NH3_main_alarm' },
+        cutoff: { ppm: 30000, kgM3: ppmToKgM3(30000, ref.molecularMass), basis: 'NH3_emergency' },
+        stage2Ppm: 30000,
+      };
+    }
+
     const flammable = isFlammable(ref.flammabilityClass);
 
     if (flammable && ref.lfl !== null && ref.lfl !== undefined) {

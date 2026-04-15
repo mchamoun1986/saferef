@@ -92,8 +92,14 @@ export function evaluateRegulation(
   const { threshold, stage2Ppm, actions: thresholdActions } =
     ruleSet.calculateThreshold(ref, input.charge);
 
+  // 3b. Safety guard: if threshold = INSUFFICIENT_DATA, downgrade YES to MANUAL_REVIEW
+  if (threshold.basis === 'INSUFFICIENT_DATA' && detection.detectionRequired === 'YES') {
+    detection.detectionRequired = 'MANUAL_REVIEW';
+    detection.reviewFlags.push('INSUFFICIENT_DATA: No ATEL/ODL or LFL available — cannot determine safe alarm threshold. Manual review required.');
+  }
+
   // 4. Alarm thresholds
-  const alarmThresholds = ruleSet.getAlarmThresholds(ref);
+  const alarmThresholds = ruleSet.getAlarmThresholds(ref, input.charge);
   alarmThresholds.stage2Ppm = stage2Ppm;
 
   // 5. Placement

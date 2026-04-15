@@ -249,7 +249,17 @@ export const iso5149RuleSet: RuleSet = {
   /**
    * Alarm thresholds: same as EN 378 (25%/50%/100% RCL for all groups)
    */
-  getAlarmThresholds(ref: RefrigerantV5): AlarmThresholds {
+  getAlarmThresholds(ref: RefrigerantV5, charge?: number): AlarmThresholds {
+    // NH3 > 50 kg: special two-level alarm
+    if (normalizeRefId(ref.id) === 'R-717' && (charge ?? 0) > 50) {
+      return {
+        alarm1: { ppm: 500, kgM3: ppmToKgM3(500, ref.molecularMass), basis: 'NH3_pre_alarm' },
+        alarm2: { ppm: 30000, kgM3: ppmToKgM3(30000, ref.molecularMass), basis: 'NH3_main_alarm' },
+        cutoff: { ppm: 30000, kgM3: ppmToKgM3(30000, ref.molecularMass), basis: 'NH3_emergency' },
+        stage2Ppm: 30000,
+      };
+    }
+
     const { threshold } = iso5149RuleSet.calculateThreshold(ref, 0);
 
     const alarm1Ppm = threshold.ppm;

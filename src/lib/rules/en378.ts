@@ -563,13 +563,25 @@ export const en378RuleSet: RuleSet = {
   },
 
   /**
-   * EN 378 alarm thresholds: RCL-based for ALL safety groups.
-   * alarm1 = threshold (min of 50% ATEL, 25% LFL)
-   * alarm2 = 2 x alarm1
-   * cutoff = RCL (practicalLimit)
+   * EN 378 alarm thresholds:
+   * alarm1 = threshold (min of 50% ATEL/ODL, 25% LFL)
+   * alarm2 = 2 × alarm1 (100% ATEL or 50% LFL)
+   * cutoff = max(RCL, alarm2) — ensures alarm1 < alarm2 ≤ cutoff always
+   *
+   * For non-flammable A1: RCL ≈ ATEL, so cutoff ≈ alarm2 naturally
+   * For flammable A2L/A3: RCL (PL) can be << LFL, so we enforce cutoff ≥ alarm2
    */
-  getAlarmThresholds(ref: RefrigerantV5): AlarmThresholds {
-    // Calculate alarm1 using the same threshold logic
+  getAlarmThresholds(ref: RefrigerantV5, charge?: number): AlarmThresholds {
+    // NH3 > 50 kg: special two-level alarm scheme (EN 378-3 Clause 9.3.3)
+    if (normalizeRefId(ref.id) === 'R-717' && (charge ?? 0) > 50) {
+      return {
+        alarm1: { ppm: 500, kgM3: ppmToKgM3(500, ref.molecularMass), basis: 'NH3_pre_alarm' },
+        alarm2: { ppm: 30000, kgM3: ppmToKgM3(30000, ref.molecularMass), basis: 'NH3_main_alarm' },
+        cutoff: { ppm: 30000, kgM3: ppmToKgM3(30000, ref.molecularMass), basis: 'NH3_emergency' },
+        stage2Ppm: 30000,
+      };
+    }
+
     const { threshold } = en378RuleSet.calculateThreshold(ref, 0);
 
     const alarm1Ppm = threshold.ppm;
@@ -577,25 +589,27 @@ export const en378RuleSet: RuleSet = {
     const alarm2Ppm = alarm1Ppm * 2;
     const alarm2KgM3 = alarm1KgM3 * 2;
 
-    // Cutoff = RCL (practicalLimit)
-    const cutoffKgM3 = ref.practicalLimit;
-    const cutoffPpm = kgM3ToPpm(cutoffKgM3, ref.molecularMass);
+    // Cutoff = max(RCL, alarm2) to guarantee escalation sequence
+    const rclKgM3 = ref.practicalLimit;
+    const rclPpm = kgM3ToPpm(rclKgM3, ref.molecularMass);
+    const cutoffPpm = Math.max(Math.floor(rclPpm), alarm2Ppm);
+    const cutoffKgM3 = Math.max(rclKgM3, alarm2KgM3);
+    const cutoffBasis = cutoffPpm > Math.floor(rclPpm) ? '2x_threshold' : 'RCL';
 
-    // Determine alarm2 basis based on what governed alarm1
     let alarm2Basis: string;
     if (threshold.basis === '50%_ATEL_ODL') {
-      alarm2Basis = 'RCL_ATEL_ODL';
+      alarm2Basis = '100%_ATEL_ODL';
     } else if (threshold.basis === '25%_LFL') {
-      alarm2Basis = 'RCL_50%_LFL';
+      alarm2Basis = '50%_LFL';
     } else {
-      alarm2Basis = 'RCL_2x_threshold';
+      alarm2Basis = '2x_threshold';
     }
 
     return {
       alarm1: {
         ppm: alarm1Ppm,
         kgM3: alarm1KgM3,
-        basis: `RCL_${threshold.basis}`,
+        basis: threshold.basis,
       },
       alarm2: {
         ppm: alarm2Ppm,
@@ -603,9 +617,9 @@ export const en378RuleSet: RuleSet = {
         basis: alarm2Basis,
       },
       cutoff: {
-        ppm: Math.floor(cutoffPpm),
+        ppm: cutoffPpm,
         kgM3: cutoffKgM3,
-        basis: 'RCL',
+        basis: cutoffBasis,
       },
       stage2Ppm: null,
     };

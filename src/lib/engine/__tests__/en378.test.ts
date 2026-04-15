@@ -50,13 +50,23 @@ describe('EN 378 — evaluateDetection', () => {
 });
 
 describe('EN 378 — getAlarmThresholds', () => {
-  it('R744 uses RCL-based', () => {
+  it('R744 alarm1 basis = 50%_ATEL_ODL', () => {
     const t = en378RuleSet.getAlarmThresholds(R744);
-    expect(t.alarm1.basis).toContain('RCL');
+    expect(t.alarm1.basis).toBe('50%_ATEL_ODL');
   });
-  it('R32 A2L also uses RCL (not LFL) in EN 378', () => {
+  it('R32 alarm1 basis = 25%_LFL', () => {
     const t = en378RuleSet.getAlarmThresholds(R32);
-    expect(t.alarm1.basis).toContain('RCL');
+    expect(t.alarm1.basis).toBe('25%_LFL');
+  });
+  it('alarm1 < alarm2 <= cutoff (escalation guaranteed)', () => {
+    const t = en378RuleSet.getAlarmThresholds(R32);
+    expect(t.alarm1.ppm).toBeLessThan(t.alarm2.ppm);
+    expect(t.alarm2.ppm).toBeLessThanOrEqual(t.cutoff.ppm);
+  });
+  it('NH3 > 50 kg uses two-level 500/30000', () => {
+    const t = en378RuleSet.getAlarmThresholds(R717, 100);
+    expect(t.alarm1.ppm).toBe(500);
+    expect(t.alarm2.ppm).toBe(30000);
   });
 });
 
