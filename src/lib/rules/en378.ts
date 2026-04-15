@@ -21,10 +21,15 @@ import {
 } from '../engine/core';
 
 // ── Table C.3 — QLMV / QLAV / RCL (EN 378-1:2016) ───────────────────
-interface C3Entry {
+export interface C3Entry {
   rcl: number;   // kg/m³
   qlmv: number;  // kg/m³
   qlav: number;  // kg/m³
+}
+
+/** Exported for trace/audit — lookup C.3 data for a given refrigerant */
+export function getC3Entry(refId: string): C3Entry | null {
+  return TABLE_C3[normalizeRefId(refId)] ?? null;
 }
 
 const TABLE_C3: Record<string, C3Entry> = {

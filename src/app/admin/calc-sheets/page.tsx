@@ -68,6 +68,19 @@ interface ZoneRegResult {
     pathEvaluations: { path: string; decision: string; ruleId: string; basis: string; extraDetector: boolean }[];
     volumeCalculated: number;
     concentrationKgM3: number | null;
+    chargeComparison?: {
+      chargeKg: number;
+      volumeM3: number;
+      concentrationKgM3: number;
+      practicalLimitKgM3: number;
+      practicalLimitChargeKg: number;
+      c3?: {
+        rclKgM3: number; qlmvKgM3: number; qlavKgM3: number;
+        rclChargeKg: number; qlmvChargeKg: number; qlavChargeKg: number;
+        concVsRcl: string; concVsQlmv: string; concVsQlav: string;
+      };
+      m1Kg?: number; m2Kg?: number; m3Kg?: number;
+    };
     thresholdCalc: { halfAtelPpm: number | null; lfl25PctPpm: number | null; chosen: string; finalPpm: number };
     placementCalc: { vapourDensity: number; airDensity: number; ratio: string; result: string };
     quantityCalc: { areaBased: number; leakSourceBased: number; extraDetector: boolean; min: number; recommended: number; mode: string; clusters: number };
@@ -623,16 +636,72 @@ export default function CalcSheetsPage() {
                                     </div>
                                   )}
 
+                                  {/* Charge Comparisons — the key decision values */}
+                                  {zr.trace?.chargeComparison && (() => {
+                                    const cc = zr.trace!.chargeComparison!;
+                                    const badge = (cond: string) => cond === 'below'
+                                      ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+                                    return (
+                                      <div className="text-[11px] bg-[#f8fafc] border border-gray-200 rounded-lg p-3">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Charge vs Limits</p>
+                                        <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                                          <p>Charge: <span className="font-bold text-[#16354B]">{cc.chargeKg} kg</span></p>
+                                          <p>Volume: <span className="font-bold">{cc.volumeM3.toFixed(1)} m³</span></p>
+                                          <p>Concentration: <span className="font-bold">{cc.concentrationKgM3.toPrecision(4)} kg/m³</span></p>
+                                          <p>Practical Limit (RCL): <span className="font-bold">{cc.practicalLimitKgM3} kg/m³</span> = <span className="font-bold">{cc.practicalLimitChargeKg.toFixed(1)} kg</span></p>
+                                        </div>
+                                        {cc.c3 && (
+                                          <div className="mt-2 pt-2 border-t border-gray-200">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">EN 378 Table C.3 Comparisons</p>
+                                            <table className="w-full text-[10px]">
+                                              <thead>
+                                                <tr className="text-gray-400">
+                                                  <th className="text-left font-semibold pb-1">Limit</th>
+                                                  <th className="text-right font-semibold pb-1">kg/m³</th>
+                                                  <th className="text-right font-semibold pb-1">Max charge (kg)</th>
+                                                  <th className="text-center font-semibold pb-1">Conc. vs Limit</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                <tr>
+                                                  <td className="font-semibold">RCL</td>
+                                                  <td className="text-right font-mono">{cc.c3.rclKgM3}</td>
+                                                  <td className="text-right font-mono">{cc.c3.rclChargeKg.toFixed(1)}</td>
+                                                  <td className="text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${badge(cc.c3.concVsRcl)}`}>{cc.c3.concVsRcl === 'below' ? '≤ OK' : '> EXCEEDED'}</span></td>
+                                                </tr>
+                                                <tr>
+                                                  <td className="font-semibold">QLMV</td>
+                                                  <td className="text-right font-mono">{cc.c3.qlmvKgM3}</td>
+                                                  <td className="text-right font-mono">{cc.c3.qlmvChargeKg.toFixed(1)}</td>
+                                                  <td className="text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${badge(cc.c3.concVsQlmv)}`}>{cc.c3.concVsQlmv === 'below' ? '≤ OK' : '> EXCEEDED'}</span></td>
+                                                </tr>
+                                                <tr>
+                                                  <td className="font-semibold">QLAV</td>
+                                                  <td className="text-right font-mono">{cc.c3.qlavKgM3}</td>
+                                                  <td className="text-right font-mono">{cc.c3.qlavChargeKg.toFixed(1)}</td>
+                                                  <td className="text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${badge(cc.c3.concVsQlav)}`}>{cc.c3.concVsQlav === 'below' ? '≤ OK' : '> EXCEEDED'}</span></td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                          </div>
+                                        )}
+                                        {(cc.m1Kg != null || cc.m2Kg != null) && (
+                                          <div className="mt-2 pt-2 border-t border-gray-200">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Flammable Charge Caps (LFL-based)</p>
+                                            <div className="flex gap-4">
+                                              {cc.m1Kg != null && <p>m1 = <span className={`font-bold ${cc.chargeKg > cc.m1Kg ? 'text-red-600' : 'text-green-600'}`}>{cc.m1Kg.toFixed(1)} kg</span> {cc.chargeKg > cc.m1Kg ? '(exceeded)' : '(OK)'}</p>}
+                                              {cc.m2Kg != null && <p>m2 = <span className={`font-bold ${cc.chargeKg > cc.m2Kg ? 'text-red-600' : 'text-green-600'}`}>{cc.m2Kg.toFixed(1)} kg</span> {cc.chargeKg > cc.m2Kg ? '(exceeded)' : '(OK)'}</p>}
+                                              {cc.m3Kg != null && <p>m3 = <span className={`font-bold ${cc.chargeKg > cc.m3Kg ? 'text-red-600' : 'text-green-600'}`}>{cc.m3Kg.toFixed(1)} kg</span> {cc.chargeKg > cc.m3Kg ? '(exceeded)' : '(OK)'}</p>}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
+
                                   {/* Intermediate calculations */}
                                   {zr.trace && (
                                     <div className="grid grid-cols-3 gap-2 text-[10px]">
-                                      <div className="bg-gray-50 rounded p-2">
-                                        <p className="text-gray-400 font-semibold mb-1">Volume & Concentration</p>
-                                        <p>V = <span className="font-bold">{zr.trace.volumeCalculated.toFixed(1)} m³</span></p>
-                                        {zr.trace.concentrationKgM3 != null && (
-                                          <p>C = <span className="font-bold">{zr.trace.concentrationKgM3.toPrecision(4)} kg/m³</span></p>
-                                        )}
-                                      </div>
                                       <div className="bg-gray-50 rounded p-2">
                                         <p className="text-gray-400 font-semibold mb-1">Threshold Calc</p>
                                         {zr.trace.thresholdCalc.halfAtelPpm != null && <p>50% ATEL = <span className="font-bold">{Math.round(zr.trace.thresholdCalc.halfAtelPpm).toLocaleString()} ppm</span></p>}
@@ -640,8 +709,11 @@ export default function CalcSheetsPage() {
                                         <p>Chosen: <span className="font-bold text-[#16354B]">{zr.trace.thresholdCalc.chosen} = {zr.trace.thresholdCalc.finalPpm.toLocaleString()} ppm</span></p>
                                       </div>
                                       <div className="bg-gray-50 rounded p-2">
-                                        <p className="text-gray-400 font-semibold mb-1">Placement & Quantity</p>
+                                        <p className="text-gray-400 font-semibold mb-1">Placement</p>
                                         <p>VD = {zr.trace.placementCalc.vapourDensity} ({zr.trace.placementCalc.ratio}) → <span className="font-bold">{zr.trace.placementCalc.result}</span></p>
+                                      </div>
+                                      <div className="bg-gray-50 rounded p-2">
+                                        <p className="text-gray-400 font-semibold mb-1">Quantity</p>
                                         <p>Area: {zr.trace.quantityCalc.areaBased} det | Clusters: {zr.trace.quantityCalc.clusters}</p>
                                         <p>Mode: <span className="font-bold">{zr.trace.quantityCalc.mode}</span> → min {zr.trace.quantityCalc.min}, rec {zr.trace.quantityCalc.recommended}</p>
                                       </div>

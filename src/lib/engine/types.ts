@@ -109,6 +109,28 @@ export interface RegulationTrace {
   pathEvaluations: PathEvaluation[];
   volumeCalculated: number;        // m³
   concentrationKgM3: number | null; // if C.3 path was evaluated
+  /** Key charge/concentration comparisons that drive the decision */
+  chargeComparison: {
+    chargeKg: number;
+    volumeM3: number;
+    concentrationKgM3: number;     // charge / volume
+    practicalLimitKgM3: number;    // RCL from DB
+    practicalLimitChargeKg: number; // RCL × volume = max charge without measures
+    c3?: {                         // only if C.3 data available
+      rclKgM3: number;
+      qlmvKgM3: number;
+      qlavKgM3: number;
+      rclChargeKg: number;         // RCL × volume
+      qlmvChargeKg: number;        // QLMV × volume
+      qlavChargeKg: number;        // QLAV × volume
+      concVsRcl: string;           // "below" | "above"
+      concVsQlmv: string;
+      concVsQlav: string;
+    };
+    m1Kg?: number;                 // 4 × LFL × volume (if flammable)
+    m2Kg?: number;                 // 26 × LFL × volume
+    m3Kg?: number;                 // 130 × LFL × volume
+  };
   thresholdCalc: {
     halfAtelPpm: number | null;
     lfl25PctPpm: number | null;

@@ -16,8 +16,12 @@ import {
   concentrationKgM3,
   kgM3ToPpm,
   AIR_DENSITY_25C,
+  calcM1M2M3,
+  isFlammable,
+  normalizeRefId,
 } from './core';
 import type { RegulationTrace } from './types';
+import { getC3Entry } from '../rules/en378';
 
 // ── Validation Error Helper ──────────────────────────────────────────────
 
@@ -127,10 +131,45 @@ export function evaluateRegulation(
   const concKgM3 = concentrationKgM3(input.charge, volume);
   const halfAtelPpm = (ref.atelOdl != null) ? kgM3ToPpm(ref.atelOdl, ref.molecularMass) * 0.5 : null;
   const lfl25PctPpm = (ref.lfl != null) ? kgM3ToPpm(ref.lfl, ref.molecularMass) * 0.25 : null;
+
+  // Charge comparison — the key decision values
+  const plKgM3 = ref.practicalLimit;
+  const plChargeKg = plKgM3 * volume;
+  const c3Data = getC3Entry(ref.id);
+  const flam = isFlammable(ref.flammabilityClass);
+  const mFactors = (flam && ref.lfl != null) ? calcM1M2M3(ref.lfl, volume) : null;
+
+  const chargeComparison: RegulationTrace['chargeComparison'] = {
+    chargeKg: input.charge,
+    volumeM3: volume,
+    concentrationKgM3: concKgM3,
+    practicalLimitKgM3: plKgM3,
+    practicalLimitChargeKg: plChargeKg,
+    ...(c3Data ? {
+      c3: {
+        rclKgM3: c3Data.rcl,
+        qlmvKgM3: c3Data.qlmv,
+        qlavKgM3: c3Data.qlav,
+        rclChargeKg: c3Data.rcl * volume,
+        qlmvChargeKg: c3Data.qlmv * volume,
+        qlavChargeKg: c3Data.qlav * volume,
+        concVsRcl: concKgM3 <= c3Data.rcl ? 'below' : 'above',
+        concVsQlmv: concKgM3 <= c3Data.qlmv ? 'below' : 'above',
+        concVsQlav: concKgM3 <= c3Data.qlav ? 'below' : 'above',
+      },
+    } : {}),
+    ...(mFactors ? {
+      m1Kg: mFactors.m1,
+      m2Kg: mFactors.m2,
+      m3Kg: mFactors.m3,
+    } : {}),
+  };
+
   const trace: RegulationTrace = {
     pathEvaluations: detection.pathEvaluations,
     volumeCalculated: volume,
     concentrationKgM3: concKgM3,
+    chargeComparison,
     thresholdCalc: {
       halfAtelPpm,
       lfl25PctPpm,
