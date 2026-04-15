@@ -1003,22 +1003,80 @@ export default function SimulatorPage() {
                     <button
                       disabled={history.length === 0}
                       onClick={() => {
-                        const header = '#,Time,Refrigerant,Charge (kg),Volume (m3),EN 378,ASHRAE 15,ISO 5149,Min Det,Rec Det';
+                        const q = (v: string | number | boolean | null | undefined) => {
+                          if (v == null) return '';
+                          const s = String(v);
+                          return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
+                        };
+                        const header = [
+                          // Inputs — Refrigerant
+                          '#','Time','Ref ID','Ref Name','Safety Class','Toxicity','Flammability',
+                          'ATEL/ODL (kg/m3)','LFL (kg/m3)','Practical Limit (kg/m3)',
+                          'Vapour Density','Molecular Mass','GWP',
+                          // Inputs — Zone
+                          'Surface (m2)','Height (m)','Volume (m3)','Charge (kg)',
+                          'Space Type','Access Cat','Location Class',
+                          'Machinery Room','Occupied Space','Below Ground',
+                          'C3 Applicable','Human Comfort','Mech Ventilation',
+                          // Derived
+                          'Concentration (kg/m3)','PL x V (kg)',
+                          // EN 378 outputs
+                          'EN378 Decision','EN378 Basis','EN378 Rule ID',
+                          'EN378 Min Det','EN378 Rec Det','EN378 Mode',
+                          'EN378 Threshold (ppm)','EN378 Threshold Basis',
+                          'EN378 Alarm1 (ppm)','EN378 Alarm2 (ppm)','EN378 Cutoff (ppm)',
+                          'EN378 Placement','EN378 Placement Height',
+                          'EN378 Ventilation (m3/s)','EN378 Hazard',
+                          // ASHRAE 15 outputs
+                          'ASHRAE Decision','ASHRAE Basis','ASHRAE Rule ID',
+                          'ASHRAE Min Det','ASHRAE Rec Det',
+                          'ASHRAE Threshold (ppm)','ASHRAE Threshold Basis',
+                          'ASHRAE Alarm1 (ppm)','ASHRAE Alarm2 (ppm)','ASHRAE Cutoff (ppm)',
+                          'ASHRAE Ventilation (m3/s)',
+                          // ISO 5149 outputs
+                          'ISO Decision','ISO Basis','ISO Rule ID',
+                          'ISO Min Det','ISO Rec Det',
+                          'ISO Threshold (ppm)','ISO Ventilation (m3/s)',
+                        ].join(',');
                         const rows = history.map((h, i) => {
                           const vol = h.inputs.volumeOverride
                             ? parseFloat(h.inputs.volumeOverride)
                             : parseFloat(h.inputs.surface) * parseFloat(h.inputs.height);
+                          const conc = parseFloat(h.inputs.charge) / vol;
+                          const plv = h.refrigerant.practicalLimit * vol;
+                          const r = (res: RegulationResult) => res;
+                          const e = r(h.en378), a = r(h.ashrae15), iso = r(h.iso5149);
                           return [
-                            i + 1,
-                            new Date(h.timestamp).toLocaleString(),
-                            h.refrigerant.id,
-                            h.inputs.charge,
-                            vol.toFixed(1),
-                            h.en378.detectionRequired,
-                            h.ashrae15.detectionRequired,
-                            h.iso5149.detectionRequired,
-                            h.en378.minDetectors,
-                            h.en378.recommendedDetectors,
+                            // Inputs — Refrigerant
+                            i + 1, new Date(h.timestamp).toLocaleString(),
+                            h.refrigerant.id, q(h.refrigerant.name), h.refrigerant.safetyClass,
+                            h.refrigerant.toxicityClass, h.refrigerant.flammabilityClass,
+                            h.refrigerant.atelOdl ?? '', h.refrigerant.lfl ?? '', h.refrigerant.practicalLimit,
+                            h.refrigerant.vapourDensity, h.refrigerant.molecularMass, h.refrigerant.gwp,
+                            // Inputs — Zone
+                            h.inputs.surface, h.inputs.height, vol.toFixed(1), h.inputs.charge,
+                            q(h.inputs.spaceTypeId), h.inputs.accessCategory, h.inputs.locationClass,
+                            h.inputs.isMachineryRoom, h.inputs.isOccupiedSpace, h.inputs.belowGround,
+                            h.inputs.c3Applicable, h.inputs.humanComfort, h.inputs.mechanicalVentilation,
+                            // Derived
+                            conc.toPrecision(4), plv.toFixed(1),
+                            // EN 378
+                            e.detectionRequired, q(e.detectionBasis), e.governingRuleId,
+                            e.minDetectors, e.recommendedDetectors, e.quantityMode,
+                            e.thresholdPpm, e.thresholdBasis,
+                            Math.round(e.alarmThresholds.alarm1.ppm), Math.round(e.alarmThresholds.alarm2.ppm), Math.round(e.alarmThresholds.cutoff.ppm),
+                            e.placementHeight, e.placementHeightM,
+                            e.ventilation?.flowRateM3s.toFixed(3) ?? '', e.governingHazard,
+                            // ASHRAE 15
+                            a.detectionRequired, q(a.detectionBasis), a.governingRuleId,
+                            a.minDetectors, a.recommendedDetectors,
+                            a.thresholdPpm, a.thresholdBasis,
+                            Math.round(a.alarmThresholds.alarm1.ppm), Math.round(a.alarmThresholds.alarm2.ppm), Math.round(a.alarmThresholds.cutoff.ppm),
+                            a.ventilation?.flowRateM3s.toFixed(3) ?? '',
+                            // ISO 5149
+                            iso.detectionRequired, q(iso.detectionBasis), iso.governingRuleId,
+                            iso.minDetectors, iso.recommendedDetectors,
+                            iso.thresholdPpm, iso.ventilation?.flowRateM3s.toFixed(3) ?? '',
                           ].join(',');
                         });
                         const csv = [header, ...rows].join('\n');
