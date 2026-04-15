@@ -146,3 +146,33 @@ model DiscountMatrix {
   productGroup  String
   discountPct   Float
 }
+
+model Quote {
+  id            String   @id @default(cuid())
+  ref           String   @unique
+  status        String   @default("draft")    // "draft","sent","accepted","rejected"
+  // Client
+  clientName    String   @default("")
+  clientEmail   String   @default("")
+  clientCompany String   @default("")
+  clientPhone   String   @default("")
+  // Project
+  projectName   String   @default("")
+  projectRef    String   @default("")
+  // Content
+  bomJson       String   @default("[]")       // JSON: BOMLine[] — all lines with qty, prices
+  zonesJson     String   @default("[]")       // JSON: zone summaries
+  configJson    String   @default("{}")       // JSON: SelectorInput or gas/app context
+  // Pricing
+  totalGross    Float    @default(0)
+  totalNet      Float    @default(0)
+  customerGroup String   @default("")
+  currency      String   @default("EUR")
+  // Regulation (if from Designer)
+  regulation    String?
+  calcSheetRef  String?                        // link to CalcSheet.ref if generated from Designer
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  expiresAt     DateTime?
+}
