@@ -37,8 +37,8 @@ export default function AdminNav() {
         ))}
       </div>
       <div className="ml-auto">
-        <Link href="/calculator" className="text-gray-400 text-sm hover:text-white transition-colors">
-          Calculator &rarr;
+        <Link href="/configurator" className="text-gray-400 text-sm hover:text-white transition-colors">
+          Configurator &rarr;
         </Link>
       </div>
     </nav>

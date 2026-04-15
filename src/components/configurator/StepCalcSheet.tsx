@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Printer, Download, Save, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { jsPDF } from "jspdf";
+// jsPDF imported dynamically in handleDownloadPdf to avoid SSR issues
 import type { ClientData, GasAppData, ZoneData, RegulatoryContext } from "./types";
 import type { RefrigerantV5, RegulationResult, ZoneRegulationResult } from "@/lib/engine-types";
 import { type Lang, CALC_SHEET, ZONES } from "./i18n";
@@ -141,8 +141,9 @@ export default function StepCalcSheet({
     window.print();
   }
 
-  function handleDownloadPdf() {
+  async function handleDownloadPdf() {
     try {
+      const { jsPDF } = await import("jspdf");
       const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pw = 210;
       const margin = 15;
