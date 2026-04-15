@@ -56,7 +56,7 @@ function evaluateDetectionISO5149(input: RegulationInput): DetectionEvaluation {
       path: 'A_MachineryRoom',
       decision: 'SKIP',
       ruleId: 'ISO5149-MR-001',
-      basis: '',
+      basis: 'Not a machinery room',
       extraDetector: false,
     });
   }
@@ -118,7 +118,7 @@ function evaluateDetectionISO5149(input: RegulationInput): DetectionEvaluation {
       path: 'B_OccupiedSpace',
       decision: 'SKIP',
       ruleId: 'ISO5149-OCC-001',
-      basis: '',
+      basis: 'Not an occupied space',
       extraDetector: false,
     });
   }

@@ -74,7 +74,7 @@ function evaluateDetectionAshrae15(input: RegulationInput): DetectionEvaluation 
       path: 'A_MachineryRoom',
       decision: 'SKIP',
       ruleId: 'ASHRAE15-MR-001',
-      basis: '',
+      basis: 'Not a machinery room',
       extraDetector: false,
     });
   }
@@ -114,7 +114,7 @@ function evaluateDetectionAshrae15(input: RegulationInput): DetectionEvaluation 
       path: 'B_OccupiedSpace',
       decision: 'SKIP',
       ruleId: 'ASHRAE15-OCC-001',
-      basis: '',
+      basis: 'Not an occupied space',
       extraDetector: false,
     });
   }
@@ -139,11 +139,12 @@ function evaluateDetectionAshrae15(input: RegulationInput): DetectionEvaluation 
       'Main alarm 30,000 ppm: emergency shutdown + evacuation',
     );
   } else {
+    const isNh3 = normalizeRefId(ref.id) === 'R-717';
     pathEvaluations.push({
       path: 'C_Ammonia',
       decision: 'SKIP',
       ruleId: 'ASHRAE15-NH3-001',
-      basis: '',
+      basis: isNh3 ? `R-717 charge ${input.charge} kg <= 50 kg` : `Not NH3 (${ref.id})`,
       extraDetector: false,
     });
   }

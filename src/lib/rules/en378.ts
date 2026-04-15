@@ -67,10 +67,10 @@ const TABLE_C3: Record<string, C3Entry> = {
 
 // ── Path helpers ────────────────────────────────────────────────────────
 
-function skipPath(ruleId: string): PathResult {
+function skipPath(ruleId: string, reason: string = ''): PathResult {
   return {
     decision: 'SKIP',
-    basis: '',
+    basis: reason,
     ruleId,
     ruleClass: 'NORMATIVE',
     sourceClauses: [],
@@ -90,7 +90,7 @@ function skipPath(ruleId: string): PathResult {
  */
 function pathA_MachineryRoom(input: RegulationInput): PathResult {
   if (!input.isMachineryRoom) {
-    return skipPath('DET-MR-001');
+    return skipPath('DET-MR-001', 'Not a machinery room');
   }
 
   const result: PathResult = {
@@ -132,7 +132,7 @@ function pathA_MachineryRoom(input: RegulationInput): PathResult {
  */
 function pathB_C3OccupiedSpace(input: RegulationInput): PathResult {
   if (!input.c3Applicable) {
-    return skipPath('DET-C3-001');
+    return skipPath('DET-C3-001', 'C.3 not applicable (flag not set)');
   }
 
   const refId = normalizeRefId(input.refrigerant.id);
@@ -269,9 +269,13 @@ function pathC_BelowGroundFlammable(input: RegulationInput): PathResult {
         actions: ['Activate audible/visual alarm'],
       };
     }
+    // Below ground + flammable but charge <= m2
+    return skipPath('DET-BG-001', `Below ground + flammable but charge ${input.charge} kg <= m2 ${m2.toFixed(1)} kg`);
   }
 
-  return skipPath('DET-BG-001');
+  if (!input.belowGround) return skipPath('DET-BG-001', 'Not below ground');
+  if (!isFlammable(ref.flammabilityClass)) return skipPath('DET-BG-001', `Not flammable (class ${ref.flammabilityClass})`);
+  return skipPath('DET-BG-001', 'LFL not available');
 }
 
 /**
@@ -281,13 +285,13 @@ function pathC_BelowGroundFlammable(input: RegulationInput): PathResult {
  */
 function pathD_Ammonia(input: RegulationInput): PathResult {
   if (normalizeRefId(input.refrigerant.id) !== 'R-717') {
-    return skipPath('DET-NH3-001');
+    return skipPath('DET-NH3-001', `Not NH3 (refrigerant is ${input.refrigerant.id})`);
   }
 
   if (input.charge > 50) {
     return {
       decision: 'YES',
-      basis: 'EN 378-3:2016, Clause 9.3.3 — R-717 > 50 kg → two-level alarm',
+      basis: `EN 378-3:2016, Clause 9.3.3 — R-717 charge ${input.charge} kg > 50 kg → two-level alarm`,
       ruleId: 'DET-NH3-001',
       ruleClass: 'NORMATIVE',
       sourceClauses: ['EN 378-3:2016 Clause 9.3.3'],
@@ -301,7 +305,7 @@ function pathD_Ammonia(input: RegulationInput): PathResult {
     };
   }
 
-  return skipPath('DET-NH3-002');
+  return skipPath('DET-NH3-002', `R-717 charge ${input.charge} kg <= 50 kg — general paths apply`);
 }
 
 /**
@@ -310,7 +314,7 @@ function pathD_Ammonia(input: RegulationInput): PathResult {
  */
 function pathE_VentilatedEnclosure(input: RegulationInput): PathResult {
   if (input.locationClass !== 'IV') {
-    return skipPath('DET-ENC-001');
+    return skipPath('DET-ENC-001', `Location class ${input.locationClass} (not IV)`);
   }
 
   return {
