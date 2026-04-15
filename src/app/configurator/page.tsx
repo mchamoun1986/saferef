@@ -204,7 +204,8 @@ export default function ConfiguratorPage() {
       if (draft.clientData) setClientData(draft.clientData);
       if (draft.gasAppData) setGasAppData(draft.gasAppData);
       if (draft.zones) setZones(draft.zones);
-      if (draft.step) setStep(draft.step);
+      // Never restore to step 4 — calcResult is not saved in draft
+      if (draft.step) setStep(draft.step >= 4 ? 3 : draft.step);
       setHasDraft(false);
       toast.success(NAV[lang].draftRestored);
     } catch { /* ignore */ }
