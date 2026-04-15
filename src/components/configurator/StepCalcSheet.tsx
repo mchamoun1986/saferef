@@ -884,6 +884,8 @@ export default function StepCalcSheet({
             requiredActions: zr.result.requiredActions,
             reviewFlags: zr.result.reviewFlags,
             candidateZones: zr.result.candidateZones,
+            // Full calculation trace (path evaluations + intermediate calculations)
+            trace: zr.result.trace,
           })),
           totalDetectors,
           totalZones: zones.length,

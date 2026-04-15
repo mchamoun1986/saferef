@@ -13,7 +13,11 @@ import {
   areaBasedQuantity,
   computeSourceClusters,
   determineGoverningHazard,
+  concentrationKgM3,
+  kgM3ToPpm,
+  AIR_DENSITY_25C,
 } from './core';
+import type { RegulationTrace } from './types';
 
 // ── Validation Error Helper ──────────────────────────────────────────────
 
@@ -119,6 +123,37 @@ export function evaluateRegulation(
     ref.flammabilityClass,
   );
 
+  // Build full calculation trace for audit
+  const concKgM3 = concentrationKgM3(input.charge, volume);
+  const halfAtelPpm = (ref.atelOdl != null) ? kgM3ToPpm(ref.atelOdl, ref.molecularMass) * 0.5 : null;
+  const lfl25PctPpm = (ref.lfl != null) ? kgM3ToPpm(ref.lfl, ref.molecularMass) * 0.25 : null;
+  const trace: RegulationTrace = {
+    pathEvaluations: detection.pathEvaluations,
+    volumeCalculated: volume,
+    concentrationKgM3: concKgM3,
+    thresholdCalc: {
+      halfAtelPpm,
+      lfl25PctPpm,
+      chosen: threshold.basis,
+      finalPpm: threshold.ppm,
+    },
+    placementCalc: {
+      vapourDensity: ref.vapourDensity,
+      airDensity: AIR_DENSITY_25C,
+      ratio: ref.vapourDensity >= 1.0 ? 'heavier' : 'lighter',
+      result: placement.heightM,
+    },
+    quantityCalc: {
+      areaBased,
+      leakSourceBased: clusters,
+      extraDetector: detection.extraDetector,
+      min: detection.detectionRequired === 'YES' ? Math.max(1, (useCluster ? clusters : areaBased) + extraDetector) : 0,
+      recommended: detection.detectionRequired === 'YES' ? Math.max(1, areaBased + extraDetector) : Math.max(1, Math.ceil(input.roomArea / 50)),
+      mode: useCluster ? 'cluster' : 'area',
+      clusters,
+    },
+  };
+
   // Assemble result based on detection decision
   if (detection.detectionRequired === 'RECOMMENDED') {
     // SAMON policy recommendation — no normative requirement
@@ -150,6 +185,7 @@ export function evaluateRegulation(
       reviewFlags: detection.reviewFlags,
       sourceClauses: detection.sourceClauses,
       ruleClasses: detection.ruleClasses,
+      trace,
     };
   }
 
@@ -190,6 +226,7 @@ export function evaluateRegulation(
     reviewFlags: detection.reviewFlags,
     sourceClauses: detection.sourceClauses,
     ruleClasses: detection.ruleClasses,
+    trace,
   };
 }
 

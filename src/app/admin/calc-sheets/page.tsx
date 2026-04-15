@@ -63,6 +63,15 @@ interface ZoneRegResult {
   requiredActions?: string[];
   reviewFlags: string[];
   candidateZones?: { zoneId: string; description: string; detectorPosition: string; rationale: string }[];
+  // Full calculation trace
+  trace?: {
+    pathEvaluations: { path: string; decision: string; ruleId: string; basis: string; extraDetector: boolean }[];
+    volumeCalculated: number;
+    concentrationKgM3: number | null;
+    thresholdCalc: { halfAtelPpm: number | null; lfl25PctPpm: number | null; chosen: string; finalPpm: number };
+    placementCalc: { vapourDensity: number; airDensity: number; ratio: string; result: string };
+    quantityCalc: { areaBased: number; leakSourceBased: number; extraDetector: boolean; min: number; recommended: number; mode: string; clusters: number };
+  };
 }
 
 interface ZoneDetail {
@@ -586,14 +595,63 @@ export default function CalcSheetsPage() {
                               )}
 
                               {/* ── CALCULATION TRACE ── */}
-                              {(zr.detectionBasis || zr.sourceClauses?.length) && (
+                              {(zr.detectionBasis || zr.sourceClauses?.length || zr.trace) && (
                                 <div className="border-t border-gray-200 pt-2 mt-2 space-y-2">
                                   <p className="text-[10px] font-bold text-[#16354B] uppercase tracking-widest">Calculation Trace</p>
+
+                                  {/* Path Evaluations — the core decision chain */}
+                                  {zr.trace?.pathEvaluations && zr.trace.pathEvaluations.length > 0 && (
+                                    <div className="text-[11px]">
+                                      <span className="text-gray-400 font-semibold">Decision paths: </span>
+                                      <div className="mt-1 space-y-1">
+                                        {zr.trace.pathEvaluations.map((pe, i) => {
+                                          const decColor = pe.decision === 'YES' ? 'bg-red-100 text-red-700'
+                                            : pe.decision === 'SKIP' ? 'bg-gray-100 text-gray-400'
+                                            : pe.decision === 'NO' ? 'bg-green-100 text-green-700'
+                                            : pe.decision === 'RECOMMENDED' ? 'bg-blue-100 text-blue-700'
+                                            : 'bg-orange-100 text-orange-700';
+                                          return (
+                                            <div key={i} className={`flex items-start gap-2 rounded px-2 py-1 ${pe.decision === 'SKIP' ? 'opacity-50' : ''}`}>
+                                              <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold flex-shrink-0 ${decColor}`}>{pe.decision}</span>
+                                              <span className="font-mono text-[10px] text-gray-500 flex-shrink-0 w-[140px]">{pe.path}</span>
+                                              <span className="text-gray-600">{pe.basis || '—'}</span>
+                                              {pe.extraDetector && <span className="text-[10px] bg-amber-200 px-1 rounded flex-shrink-0">+1 det</span>}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Intermediate calculations */}
+                                  {zr.trace && (
+                                    <div className="grid grid-cols-3 gap-2 text-[10px]">
+                                      <div className="bg-gray-50 rounded p-2">
+                                        <p className="text-gray-400 font-semibold mb-1">Volume & Concentration</p>
+                                        <p>V = <span className="font-bold">{zr.trace.volumeCalculated.toFixed(1)} m³</span></p>
+                                        {zr.trace.concentrationKgM3 != null && (
+                                          <p>C = <span className="font-bold">{zr.trace.concentrationKgM3.toPrecision(4)} kg/m³</span></p>
+                                        )}
+                                      </div>
+                                      <div className="bg-gray-50 rounded p-2">
+                                        <p className="text-gray-400 font-semibold mb-1">Threshold Calc</p>
+                                        {zr.trace.thresholdCalc.halfAtelPpm != null && <p>50% ATEL = <span className="font-bold">{Math.round(zr.trace.thresholdCalc.halfAtelPpm).toLocaleString()} ppm</span></p>}
+                                        {zr.trace.thresholdCalc.lfl25PctPpm != null && <p>25% LFL = <span className="font-bold">{Math.round(zr.trace.thresholdCalc.lfl25PctPpm).toLocaleString()} ppm</span></p>}
+                                        <p>Chosen: <span className="font-bold text-[#16354B]">{zr.trace.thresholdCalc.chosen} = {zr.trace.thresholdCalc.finalPpm.toLocaleString()} ppm</span></p>
+                                      </div>
+                                      <div className="bg-gray-50 rounded p-2">
+                                        <p className="text-gray-400 font-semibold mb-1">Placement & Quantity</p>
+                                        <p>VD = {zr.trace.placementCalc.vapourDensity} ({zr.trace.placementCalc.ratio}) → <span className="font-bold">{zr.trace.placementCalc.result}</span></p>
+                                        <p>Area: {zr.trace.quantityCalc.areaBased} det | Clusters: {zr.trace.quantityCalc.clusters}</p>
+                                        <p>Mode: <span className="font-bold">{zr.trace.quantityCalc.mode}</span> → min {zr.trace.quantityCalc.min}, rec {zr.trace.quantityCalc.recommended}</p>
+                                      </div>
+                                    </div>
+                                  )}
 
                                   {/* Detection basis & governing rule */}
                                   {zr.detectionBasis && (
                                     <div className="text-[11px] bg-blue-50 border border-blue-100 rounded px-2.5 py-1.5">
-                                      <span className="text-blue-400 font-semibold">Basis: </span>
+                                      <span className="text-blue-400 font-semibold">Final basis: </span>
                                       <span className="text-blue-700">{zr.detectionBasis}</span>
                                       {zr.governingRuleId && (
                                         <span className="ml-2 font-mono text-[10px] bg-blue-200 px-1.5 py-0.5 rounded">{zr.governingRuleId}</span>
