@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import type { BOMResult, ProductRecord, SelectorInput, DiscountRow, BOMLine } from '@/lib/m2-engine/types';
 import { applyPricing, type PricedLine } from '@/lib/m2-engine/pricing';
 import { selectAccessories } from '@/lib/m2-engine/select-accessories';
@@ -26,6 +27,7 @@ export default function StepBOM({
   bom, products, selectorInput, customerGroup,
   onCustomerGroupChange, discountMatrix = [],
 }: Props) {
+  const router = useRouter();
   const detectorFamily = bom.zones[0]?.detector?.family ?? '';
   const optionalAccessories = useMemo(() => {
     if (!detectorFamily) return [];
@@ -73,6 +75,41 @@ export default function StepBOM({
   const totalNet = pricedLines.reduce((s, l) => s + l.lineNetTotal, 0);
   const showNet = customerGroup !== '' && discountMatrix.length > 0;
 
+  const [showQuoteForm, setShowQuoteForm] = useState(false);
+  const [quoteForm, setQuoteForm] = useState({
+    clientName: '', clientEmail: '', clientCompany: '', clientPhone: '', projectName: '', projectRef: '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSaveQuote = useCallback(async () => {
+    setSaving(true);
+    try {
+      const zonesJson = JSON.stringify(bom.zones.map(z => z.zoneName));
+      const bomJson = JSON.stringify(pricedLines);
+      const configJson = JSON.stringify(selectorInput);
+      const res = await fetch('/api/quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...quoteForm,
+          bomJson,
+          zonesJson,
+          configJson,
+          totalGross,
+          totalNet: showNet ? totalNet : totalGross,
+          customerGroup,
+          currency: 'EUR',
+        }),
+      });
+      const data = await res.json();
+      if (data.id) {
+        router.push(`/sales/quotes/${data.id}`);
+      }
+    } finally {
+      setSaving(false);
+    }
+  }, [quoteForm, pricedLines, bom.zones, selectorInput, totalGross, totalNet, showNet, customerGroup, router]);
+
   const handleDownloadPdf = useCallback(async () => {
     const { jsPDF } = await import('jspdf');
     const doc = new jsPDF();
@@ -115,12 +152,20 @@ export default function StepBOM({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-[#16354B]">Product Quote</h2>
-        <button
-          onClick={handleDownloadPdf}
-          className="bg-[#16354B] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#1e4a6a] transition-colors"
-        >
-          Download PDF
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowQuoteForm(true)}
+            className="bg-[#A7C031] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#8fa827] transition-colors"
+          >
+            Save as Quote
+          </button>
+          <button
+            onClick={handleDownloadPdf}
+            className="bg-[#16354B] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#1e4a6a] transition-colors"
+          >
+            Download PDF
+          </button>
+        </div>
       </div>
 
       <div>
@@ -223,6 +268,51 @@ export default function StepBOM({
           </div>
         )}
       </div>
+
+      {showQuoteForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-bold text-[#16354B] mb-4">Save as Quote</h3>
+            <div className="space-y-3">
+              {(
+                [
+                  { key: 'clientName', label: 'Client Name' },
+                  { key: 'clientEmail', label: 'Client Email' },
+                  { key: 'clientCompany', label: 'Client Company' },
+                  { key: 'clientPhone', label: 'Client Phone' },
+                  { key: 'projectName', label: 'Project Name' },
+                  { key: 'projectRef', label: 'Project Reference' },
+                ] as { key: keyof typeof quoteForm; label: string }[]
+              ).map(({ key, label }) => (
+                <div key={key}>
+                  <label className={labelClass}>{label}</label>
+                  <input
+                    type="text"
+                    value={quoteForm[key]}
+                    onChange={e => setQuoteForm(prev => ({ ...prev, [key]: e.target.value }))}
+                    className="w-full bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#A7C031]"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                onClick={() => setShowQuoteForm(false)}
+                className="px-4 py-2 text-sm font-semibold text-[#16354B] border-2 border-[#e2e8f0] rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveQuote}
+                disabled={saving}
+                className="px-4 py-2 text-sm font-semibold text-white bg-[#A7C031] rounded-lg hover:bg-[#8fa827] transition-colors disabled:opacity-60"
+              >
+                {saving ? 'Saving...' : 'Save Quote'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
