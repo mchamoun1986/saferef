@@ -34,12 +34,18 @@ export function ppmToKgM3(cPpm: number, molecularMass: number): number {
 
 // ── Charge Cap Factors ─────────────────────────────────────────────────
 
-/** CALC-005/006/007: charge cap factors from LFL */
-export function calcM1M2M3(lfl: number): { m1: number; m2: number; m3: number } {
+/**
+ * CALC-005/006/007: charge limits from LFL and room volume.
+ * EN 378-1:2016 Annex C — qm_max = f × Vroom
+ * m1 = 4 × LFL × volume (kg) — no additional measures
+ * m2 = 26 × LFL × volume (kg) — one protective measure
+ * m3 = 130 × LFL × volume (kg) — two protective measures
+ */
+export function calcM1M2M3(lfl: number, volume: number = 1): { m1: number; m2: number; m3: number } {
   return {
-    m1: 4 * lfl,
-    m2: 26 * lfl,
-    m3: 130 * lfl,
+    m1: 4 * lfl * volume,
+    m2: 26 * lfl * volume,
+    m3: 130 * lfl * volume,
   };
 }
 
@@ -81,13 +87,13 @@ export function placementByDensity(
   vapourDensity: number,
   roomHeight: number,
 ): PlacementResult {
-  // PLC-HGT-002: clearly heavier than air (absolute threshold per EN 378-3)
-  if (vapourDensity > 1.5) {
-    return { height: 'floor', heightM: '0-0.5 m' };
+  // PLC-HGT-002: heavier than air → floor (EN 378-3:2016 §6.3: <= 300 mm from floor)
+  if (vapourDensity >= 1.0) {
+    return { height: 'floor', heightM: '0-0.3 m' };
   }
 
-  // PLC-HGT-003: clearly lighter than air (absolute threshold per EN 378-3)
-  if (vapourDensity < 0.8) {
+  // PLC-HGT-003: lighter than air → ceiling (EN 378-3:2016 §6.3: <= 300 mm from ceiling)
+  if (vapourDensity < 1.0) {
     const ceilingHeight = roomHeight >= 0.5 ? Math.max(roomHeight - 0.3, 0.5) : roomHeight;
     return {
       height: 'ceiling',

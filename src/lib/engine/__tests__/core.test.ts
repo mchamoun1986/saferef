@@ -18,9 +18,12 @@ describe('ppmToKgM3', () => {
 });
 
 describe('placementByDensity', () => {
-  it('floor for heavy (VD>1.5)', () => { expect(placementByDensity(1.52, 3).height).toBe('floor'); });
-  it('ceiling for light (VD<0.8)', () => { expect(placementByDensity(0.59, 4).height).toBe('ceiling'); });
-  it('breathing_zone for neutral', () => { expect(placementByDensity(1.03, 3).height).toBe('breathing_zone'); });
+  it('floor for heavier than air (VD>=1.0)', () => { expect(placementByDensity(1.52, 3).height).toBe('floor'); });
+  it('floor for R-32 (VD=1.06, heavier than air)', () => { expect(placementByDensity(1.06, 3).height).toBe('floor'); });
+  it('floor for VD exactly 1.0', () => { expect(placementByDensity(1.0, 3).height).toBe('floor'); });
+  it('ceiling for light (VD<1.0)', () => { expect(placementByDensity(0.59, 4).height).toBe('ceiling'); });
+  it('ceiling for VD=0.99', () => { expect(placementByDensity(0.99, 3).height).toBe('ceiling'); });
+  it('floor height is 0-0.3 m per EN 378-3 §6.3', () => { expect(placementByDensity(1.52, 3).heightM).toBe('0-0.3 m'); });
 });
 
 describe('areaBasedQuantity', () => {

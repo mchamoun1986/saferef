@@ -246,9 +246,11 @@ export const ashrae15RuleSet: RuleSet = {
   },
 
   /**
-   * ASHRAE 15 alarm thresholds — DIFFERENT from EN 378 for flammable groups:
+   * ASHRAE 15-2022 §7.4 alarm thresholds:
    * Flammable (A2L/A2/A3/B2L/B2/B3 with LFL):
-   *   alarm1 = 12.5% LFL, alarm2 = 25% LFL, cutoff = 25% LFL
+   *   alarm1 = 25% LFL (normative single trigger point)
+   *   alarm2 = 50% LFL (SAMON recommended second level)
+   *   cutoff = 100% LFL
    * Non-flammable (A1/B1):
    *   alarm1 = 25% RCL (threshold), alarm2 = 50% RCL, cutoff = 100% RCL
    */
@@ -256,16 +258,18 @@ export const ashrae15RuleSet: RuleSet = {
     const flammable = isFlammable(ref.flammabilityClass);
 
     if (flammable && ref.lfl !== null && ref.lfl !== undefined) {
-      // Flammable: LFL-based
-      const alarm1KgM3 = ref.lfl * 0.125;
+      // Flammable: ASHRAE 15 §7.4 — alarm at 25% LFL
+      const alarm1KgM3 = ref.lfl * 0.25;
       const alarm1Ppm = kgM3ToPpm(alarm1KgM3, ref.molecularMass);
-      const alarm2KgM3 = ref.lfl * 0.25;
+      const alarm2KgM3 = ref.lfl * 0.50;
       const alarm2Ppm = kgM3ToPpm(alarm2KgM3, ref.molecularMass);
+      const cutoffKgM3 = ref.lfl;
+      const cutoffPpm = kgM3ToPpm(cutoffKgM3, ref.molecularMass);
 
       return {
-        alarm1: { ppm: Math.floor(alarm1Ppm), kgM3: alarm1KgM3, basis: '12.5%_LFL' },
-        alarm2: { ppm: Math.floor(alarm2Ppm), kgM3: alarm2KgM3, basis: '25%_LFL' },
-        cutoff: { ppm: Math.floor(alarm2Ppm), kgM3: alarm2KgM3, basis: '25%_LFL' },
+        alarm1: { ppm: Math.floor(alarm1Ppm), kgM3: alarm1KgM3, basis: '25%_LFL' },
+        alarm2: { ppm: Math.floor(alarm2Ppm), kgM3: alarm2KgM3, basis: '50%_LFL' },
+        cutoff: { ppm: Math.floor(cutoffPpm), kgM3: cutoffKgM3, basis: '100%_LFL' },
         stage2Ppm: null,
       };
     }
@@ -288,24 +292,31 @@ export const ashrae15RuleSet: RuleSet = {
   },
 
   /**
-   * Emergency ventilation: max(G × √chargeKg, 20 × roomVolumeM3 / 3600)
-   * G = 0.14 for NH3, 0.07 for all others
+   * Emergency ventilation: ASHRAE 15-2022 Section 8.11.5
+   * Q(cfm) = 100 × G^0.5 where G = charge in lbs
+   * Converted to SI: Q(m³/s) = 100 × (chargeKg × 2.2046)^0.5 × 0.000472
+   * Note: A2L refrigerants require EDVC method (Tables 8-3) — flagged for manual review
    */
   getEmergencyVentilation(
     chargeKg: number,
-    roomVolumeM3: number,
+    _roomVolumeM3: number,
     ref: RefrigerantV5,
   ): VentilationResult {
-    const isNH3 = normalizeRefId(ref.id) === 'R-717';
-    const G = isNH3 ? 0.14 : 0.07;
-    const formula1 = G * Math.sqrt(chargeKg);
-    const formula2 = (20 * roomVolumeM3) / 3600;
-    const flowRate = Math.max(formula1, formula2);
+    const chargeLbs = chargeKg * 2.2046;
+    const cfm = 100 * Math.sqrt(chargeLbs);
+    const flowRateM3s = cfm * 0.000472; // cfm to m³/s
+
+    const isA2L = ref.flammabilityClass === '2L';
+    const formula = isA2L
+      ? `100 × √(${chargeLbs.toFixed(1)} lbs) = ${cfm.toFixed(0)} cfm → ${flowRateM3s.toFixed(3)} m³/s (A2L: EDVC method may require higher flow)`
+      : `100 × √(${chargeLbs.toFixed(1)} lbs) = ${cfm.toFixed(0)} cfm → ${flowRateM3s.toFixed(3)} m³/s`;
 
     return {
-      flowRateM3s: flowRate,
-      formula: `max(${G} × √m, 20 × V / 3600)`,
-      clause: 'ASHRAE 15-2022 Section 8.11.5',
+      flowRateM3s,
+      formula,
+      clause: isA2L
+        ? 'ASHRAE 15-2022 §8.11.5 (A1 formula — A2L requires EDVC per Tables 8-3)'
+        : 'ASHRAE 15-2022 §8.11.5',
     };
   },
 

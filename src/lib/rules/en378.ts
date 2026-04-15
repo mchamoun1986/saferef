@@ -112,7 +112,8 @@ function pathA_MachineryRoom(input: RegulationInput): PathResult {
     isFlammable(ref.flammabilityClass) &&
     ref.lfl !== null
   ) {
-    const { m2 } = calcM1M2M3(ref.lfl);
+    const volume = input.roomVolume ?? input.roomArea * input.roomHeight;
+    const { m2 } = calcM1M2M3(ref.lfl, volume);
     if (input.charge > m2) {
       result.extraDetector = true;
       result.ruleId = 'DET-MR-002';
@@ -253,7 +254,8 @@ function pathC_BelowGroundFlammable(input: RegulationInput): PathResult {
     isFlammable(ref.flammabilityClass) &&
     ref.lfl !== null
   ) {
-    const { m2 } = calcM1M2M3(ref.lfl);
+    const volume = input.roomVolume ?? input.roomArea * input.roomHeight;
+    const { m2 } = calcM1M2M3(ref.lfl, volume);
     if (input.charge > m2) {
       return {
         decision: 'YES',

@@ -80,26 +80,30 @@ describe('ASHRAE 15-2022 — Key Divergences from EN 378', () => {
     expect(result.detectionRequired).toBe('YES');
   });
 
-  it('R-32 alarm thresholds use 25% LFL (not 50% RCL)', () => {
+  it('R-32 alarm thresholds: alarm1=25% LFL, alarm2=50% LFL per ASHRAE 15 §7.4', () => {
     const alarms = ashrae15RuleSet.getAlarmThresholds(R32);
-    // alarm2 should be 25% LFL = 0.25 × 0.306 = 0.0765 kg/m³
-    expect(alarms.alarm2.kgM3).toBeCloseTo(0.0765, 3);
-    expect(alarms.alarm2.basis).toBe('25%_LFL');
-    // alarm1 = 12.5% LFL = 0.125 × 0.306 = 0.03825 kg/m³
-    expect(alarms.alarm1.kgM3).toBeCloseTo(0.03825, 4);
-    expect(alarms.alarm1.basis).toBe('12.5%_LFL');
+    // alarm1 = 25% LFL = 0.25 × 0.306 = 0.0765 kg/m³
+    expect(alarms.alarm1.kgM3).toBeCloseTo(0.0765, 3);
+    expect(alarms.alarm1.basis).toBe('25%_LFL');
+    // alarm2 = 50% LFL = 0.50 × 0.306 = 0.153 kg/m³
+    expect(alarms.alarm2.kgM3).toBeCloseTo(0.153, 3);
+    expect(alarms.alarm2.basis).toBe('50%_LFL');
+    // cutoff = 100% LFL
+    expect(alarms.cutoff.kgM3).toBeCloseTo(0.306, 3);
+    expect(alarms.cutoff.basis).toBe('100%_LFL');
   });
 
-  it('Ventilation for halocarbons uses G=0.07', () => {
-    // max(0.07 × √100, 20 × 200 / 3600) = max(0.7, 1.111) = 1.111
+  it('Ventilation uses ASHRAE 15 §8.11.5: Q=100×√G (cfm, G in lbs)', () => {
+    // 100 kg = 220.46 lbs → Q = 100 × √220.46 = 1484.9 cfm → 0.7009 m³/s
     const vent = ashrae15RuleSet.getEmergencyVentilation(100, 200, R32);
-    expect(vent.flowRateM3s).toBeCloseTo(1.111, 2);
+    expect(vent.flowRateM3s).toBeCloseTo(0.701, 2);
+    expect(vent.clause).toContain('ASHRAE 15-2022');
   });
 
-  it('Ventilation for NH3 uses G=0.14', () => {
-    // max(0.14 × √100, 20 × 200 / 3600) = max(1.4, 1.111) = 1.4
+  it('Ventilation same formula for NH3 (ASHRAE 15 uses same Q=100×√G for all)', () => {
+    // 100 kg = 220.46 lbs → Q = 100 × √220.46 = 1484.9 cfm → 0.7009 m³/s
     const vent = ashrae15RuleSet.getEmergencyVentilation(100, 200, R717);
-    expect(vent.flowRateM3s).toBeCloseTo(1.4, 2);
+    expect(vent.flowRateM3s).toBeCloseTo(0.701, 2);
   });
 
   it('Metadata is correct', () => {
