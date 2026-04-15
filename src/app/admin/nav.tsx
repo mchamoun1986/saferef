@@ -10,6 +10,7 @@ const links = [
   { href: '/admin/space-types', label: 'Space Types' },
   { href: '/admin/calc-sheets', label: 'Calc Sheets' },
   { href: '/admin/engine', label: 'Engine' },
+  { href: '/admin/testlab', label: 'TestLab' },
 ];
 
 export default function AdminNav() {
