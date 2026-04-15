@@ -788,8 +788,16 @@ export default function StepCalcSheet({
       doc.setFontSize(6);
       doc.text(t.disclaimerText, margin + 3, y + 8, { maxWidth: cw - 6 });
 
-      // ── Save ──
-      doc.save(`RefCalc_${sheetRef}.pdf`);
+      // ── Save — use manual blob download for reliable filename ──
+      const pdfBlob = doc.output("blob");
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `RefCalc_${sheetRef}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       toast.success(lang === "fr" ? "PDF téléchargé" : "PDF downloaded");
     } catch (err) {
       console.error("PDF generation error:", err);
