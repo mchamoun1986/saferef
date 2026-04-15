@@ -38,6 +38,41 @@ export async function GET(request: Request) {
       });
     }
 
+    const atex = searchParams.get('atex');
+    const refs = searchParams.get('refs');
+    const subCategory = searchParams.get('subCategory');
+    const compatibleFamily = searchParams.get('compatibleFamily');
+
+    if (atex === 'true') {
+      products = products.filter((p) => p.atex === true);
+    }
+
+    if (refs) {
+      products = products.filter((p) => {
+        try {
+          const r: string[] = JSON.parse(p.refs);
+          return r.includes(refs);
+        } catch {
+          return false;
+        }
+      });
+    }
+
+    if (subCategory) {
+      products = products.filter((p) => p.subCategory === subCategory);
+    }
+
+    if (compatibleFamily) {
+      products = products.filter((p) => {
+        try {
+          const families: string[] = JSON.parse(p.compatibleFamilies);
+          return families.includes('ALL') || families.includes(compatibleFamily);
+        } catch {
+          return false;
+        }
+      });
+    }
+
     if (search) {
       const q = search.toLowerCase();
       products = products.filter(
