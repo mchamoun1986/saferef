@@ -7,6 +7,7 @@ import StepClient from '@/components/configurator/StepClient';
 import StepGasApp from '@/components/configurator/StepGasApp';
 import StepZones from '@/components/configurator/StepZones';
 import StepCalcSheet from '@/components/configurator/StepCalcSheet';
+import StepProducts from '@/components/configurator/StepProducts';
 import StepProgress from '@/components/configurator/StepProgress';
 import { calculateAllZones } from '@/lib/m1-engine';
 import { en378RuleSet } from '@/lib/rules/en378';
@@ -480,6 +481,18 @@ export default function ConfiguratorPage() {
           />
         )}
 
+        {/* Step 5 — Products */}
+        {step === 5 && calcResult && selectedRefrigerant && (
+          <StepProducts
+            clientData={clientData}
+            gasAppData={gasAppData}
+            zones={zones}
+            refrigerant={selectedRefrigerant}
+            zoneRegulations={calcResult.zoneResults}
+            lang={lang}
+          />
+        )}
+
         {/* Validation errors */}
         {Object.keys(validationErrors).length > 0 && (
           <div className="mt-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3 space-y-1">
@@ -511,11 +524,29 @@ export default function ConfiguratorPage() {
           </div>
         )}
 
-        {/* Back button on Step 4 */}
+        {/* Back + Quote buttons on Step 4 */}
         {step === 4 && (
-          <div className="mt-6 print:hidden">
+          <div className="mt-6 print:hidden flex gap-3">
             <button
               onClick={prevStep}
+              className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold px-8 py-3 rounded-lg transition-colors"
+            >
+              {NAV[lang].back}
+            </button>
+            <button
+              onClick={() => setStep(5)}
+              className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold px-8 py-3 rounded-lg transition-all shadow-lg shadow-[#A7C031]/30"
+            >
+              {(NAV[lang] as Record<string, string>).quote || 'Generate Quote'}
+            </button>
+          </div>
+        )}
+
+        {/* Back button on Step 5 */}
+        {step === 5 && (
+          <div className="mt-6 print:hidden">
+            <button
+              onClick={() => setStep(4)}
               className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold px-8 py-3 rounded-lg transition-colors"
             >
               {NAV[lang].back}
