@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { Printer, Download, Save, AlertTriangle } from "lucide-react";
+import { useMemo, useState, useCallback } from "react";
+import { Printer, Download, Save, AlertTriangle, ChevronDown, ChevronRight, Map } from "lucide-react";
 import { toast } from "sonner";
 // jsPDF imported dynamically in handleDownloadPdf to avoid SSR issues
 import type { ClientData, GasAppData, ZoneData, RegulatoryContext } from "./types";
@@ -87,6 +87,252 @@ function flagsList(ctx: RegulatoryContext, t: CalcSheetTranslation): string[] {
   return flags;
 }
 
+// ─── Zone Plan Preview ───────────────────────────────────────────────────────
+
+type SourceType = "evaporator" | "valve" | "joint" | "compressor" | "other";
+
+const SOURCE_COLOR: Record<SourceType, string> = {
+  evaporator: "#2563eb",
+  valve: "#f59e0b",
+  compressor: "#475569",
+  joint: "#7c3aed",
+  other: "#E63946",
+};
+
+const SOURCE_LABEL: Record<SourceType, string> = {
+  evaporator: "Evap.",
+  valve: "Valve",
+  compressor: "Comp.",
+  joint: "Joint",
+  other: "Other",
+};
+
+const WALL_OFFSET = 4;
+const MAX_DISTANCE_M = 7;
+
+function getSourceType(id: string): SourceType {
+  const prefix = id.split("-")[0];
+  if (prefix in SOURCE_COLOR) return prefix as SourceType;
+  return "other";
+}
+
+function snapToWallPreview(px: number, py: number): { x: number; y: number } {
+  const dLeft = px, dRight = 100 - px, dTop = py, dBottom = 100 - py;
+  const min = Math.min(dLeft, dRight, dTop, dBottom);
+  if (min === dLeft) return { x: WALL_OFFSET, y: py };
+  if (min === dRight) return { x: 100 - WALL_OFFSET, y: py };
+  if (min === dTop) return { x: px, y: WALL_OFFSET };
+  return { x: px, y: 100 - WALL_OFFSET };
+}
+
+function distributeOnWallsPreview(count: number): { x: number; y: number }[] {
+  if (count <= 0) return [];
+  const positions: { x: number; y: number }[] = [];
+  const seg = 100 - 2 * WALL_OFFSET;
+  const perimeter = 4 * seg;
+  const spacing = perimeter / count;
+  for (let i = 0; i < count; i++) {
+    const d = (spacing * i + spacing / 2) % perimeter;
+    if (d < seg) positions.push({ x: WALL_OFFSET + d, y: WALL_OFFSET });
+    else if (d < 2 * seg) positions.push({ x: 100 - WALL_OFFSET, y: WALL_OFFSET + (d - seg) });
+    else if (d < 3 * seg) positions.push({ x: 100 - WALL_OFFSET - (d - 2 * seg), y: 100 - WALL_OFFSET });
+    else positions.push({ x: WALL_OFFSET, y: 100 - WALL_OFFSET - (d - 3 * seg) });
+  }
+  return positions;
+}
+
+function computeDetectorPositionsPreview(
+  count: number,
+  sources: { x: number; y: number; type: SourceType }[],
+  roomLm: number,
+  roomWm: number,
+): { x: number; y: number }[] {
+  if (count <= 0) return [];
+  if (sources.length === 0) return distributeOnWallsPreview(count);
+
+  const sorted = [...sources].sort((a, b) => {
+    const pri: Record<SourceType, number> = { compressor: 1, evaporator: 2, valve: 3, joint: 4, other: 5 };
+    return (pri[a.type] ?? 5) - (pri[b.type] ?? 5);
+  });
+
+  const positions: { x: number; y: number }[] = [];
+  const covered = new Set<number>();
+  const used = new Set<string>();
+
+  for (let round = 0; round < sorted.length && positions.length < Math.max(count, sorted.length); round++) {
+    const srcIdx = sorted.findIndex((_, i) => !covered.has(i));
+    if (srcIdx === -1) break;
+
+    const src = sorted[srcIdx];
+    const snapped = snapToWallPreview(src.x, src.y);
+    let key = `${Math.round(snapped.x)}-${Math.round(snapped.y)}`;
+    if (used.has(key)) {
+      const re = snapToWallPreview(src.x + 8, src.y + 6);
+      snapped.x = re.x;
+      snapped.y = re.y;
+    }
+    key = `${Math.round(snapped.x)}-${Math.round(snapped.y)}`;
+    used.add(key);
+    positions.push(snapped);
+
+    for (let i = 0; i < sorted.length; i++) {
+      const dx = ((snapped.x - sorted[i].x) / 100) * roomLm;
+      const dy = ((snapped.y - sorted[i].y) / 100) * roomWm;
+      if (Math.sqrt(dx * dx + dy * dy) <= MAX_DISTANCE_M) covered.add(i);
+    }
+  }
+
+  return positions;
+}
+
+function ZonePlanPreview({
+  zone,
+  detectorCount,
+  placementHeight,
+}: {
+  zone: ZoneData;
+  detectorCount: number;
+  placementHeight: string;
+}) {
+  const roomL = zone.length ?? Math.sqrt(zone.surface);
+  const roomW = zone.width ?? Math.sqrt(zone.surface);
+
+  // Compute aspect ratio for SVG viewBox
+  const maxW = 300;
+  const maxH = 200;
+  const aspectRoom = roomL / roomW;
+  const aspectSvg = maxW / maxH;
+  let svgW: number, svgH: number;
+  if (aspectRoom > aspectSvg) {
+    svgW = maxW;
+    svgH = maxW / aspectRoom;
+  } else {
+    svgH = maxH;
+    svgW = maxH * aspectRoom;
+  }
+
+  // viewBox: 0-100 coordinate system
+  const vb = "0 0 100 100";
+
+  // Collect sources
+  const allSources = [
+    ...zone.leakSources.map(s => ({ x: s.x, y: s.y, type: getSourceType(s.id), label: s.description })),
+    ...zone.evaporatorPositions.map(e => ({ x: e.x, y: e.y, type: "evaporator" as SourceType, label: "Evap." })),
+  ];
+
+  // Compute detector positions
+  const detPositions = computeDetectorPositionsPreview(
+    detectorCount,
+    allSources.map(s => ({ x: s.x, y: s.y, type: s.type })),
+    roomL,
+    roomW,
+  );
+
+  // 7m coverage circle radius in %
+  const roomDiagM = Math.sqrt(roomL * roomL + roomW * roomW);
+  const coverageRadiusPct = roomDiagM > 0 ? (MAX_DISTANCE_M / roomDiagM) * 100 * Math.SQRT2 : 20;
+  // Simpler: coverage radius as % of room side
+  const covRadX = (MAX_DISTANCE_M / roomL) * 100;
+  const covRadY = (MAX_DISTANCE_M / roomW) * 100;
+  const covRad = Math.min(covRadX, covRadY);
+
+  // Unique source types for legend
+  const usedTypes = [...new Set(allSources.map(s => s.type))];
+
+  return (
+    <div className="space-y-2">
+      <svg
+        width={svgW}
+        height={svgH}
+        viewBox={vb}
+        className="border border-[#d1d5db] rounded bg-white"
+        style={{ maxWidth: "100%" }}
+      >
+        {/* Room outline */}
+        <rect x={1} y={1} width={98} height={98} rx={1} fill="none" stroke="#94a3b8" strokeWidth={0.8} />
+
+        {/* Dimension labels */}
+        <text x={50} y={99} textAnchor="middle" fontSize={3.5} fill="#64748b" fontFamily="sans-serif">
+          {roomL.toFixed(1)}m
+        </text>
+        <text x={0.5} y={50} textAnchor="middle" fontSize={3.5} fill="#64748b" fontFamily="sans-serif"
+          transform="rotate(-90, 0.5, 50)">
+          {roomW.toFixed(1)}m
+        </text>
+
+        {/* 7m coverage circles around detectors */}
+        {detPositions.map((d, i) => (
+          <circle
+            key={`cov-${i}`}
+            cx={d.x}
+            cy={d.y}
+            r={covRad}
+            fill="#22c55e"
+            fillOpacity={0.06}
+            stroke="#22c55e"
+            strokeWidth={0.4}
+            strokeDasharray="1.5 1"
+            strokeOpacity={0.5}
+          />
+        ))}
+
+        {/* Leak sources */}
+        {allSources.map((s, i) => {
+          const color = SOURCE_COLOR[s.type];
+          return (
+            <g key={`src-${i}`}>
+              <circle cx={s.x} cy={s.y} r={2.5} fill={color} fillOpacity={0.3} stroke={color} strokeWidth={0.6} />
+              <circle cx={s.x} cy={s.y} r={0.8} fill={color} />
+              {allSources.length <= 8 && (
+                <text x={s.x} y={s.y - 3.5} textAnchor="middle" fontSize={2.2} fill={color} fontFamily="sans-serif" fontWeight="bold">
+                  {s.label.slice(0, 8)}
+                </text>
+              )}
+            </g>
+          );
+        })}
+
+        {/* Detector positions — green diamonds */}
+        {detPositions.map((d, i) => (
+          <g key={`det-${i}`}>
+            <polygon
+              points={`${d.x},${d.y - 2.5} ${d.x + 2.5},${d.y} ${d.x},${d.y + 2.5} ${d.x - 2.5},${d.y}`}
+              fill="#22c55e"
+              fillOpacity={0.3}
+              stroke="#22c55e"
+              strokeWidth={0.7}
+            />
+            <text x={d.x} y={d.y + 0.8} textAnchor="middle" fontSize={2} fill="#166534" fontFamily="sans-serif" fontWeight="bold">
+              D{i + 1}
+            </text>
+          </g>
+        ))}
+      </svg>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-[#475569]">
+        {usedTypes.map(type => (
+          <span key={type} className="flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: SOURCE_COLOR[type] }} />
+            {SOURCE_LABEL[type]}
+          </span>
+        ))}
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-2 h-2 rotate-45 bg-[#22c55e]" style={{ borderRadius: 1 }} />
+          Detector
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-3 h-3 rounded-full border border-dashed border-[#22c55e] opacity-50" />
+          7m coverage
+        </span>
+        <span className="text-[#94a3b8] ml-2">
+          Placement: {placementHeight}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function StepCalcSheet({
@@ -134,6 +380,37 @@ export default function StepCalcSheet({
     if (!id) return null;
     return spaceTypes.find(st => st.id === id) ?? null;
   };
+
+  // ─── Zone Plan Preview State ──────────────────────────────────────────────
+
+  // Which zones have positioned sources (only these get a plan section)
+  const zonesWithSources = useMemo(() => {
+    const set = new Set<string>();
+    for (const z of zones) {
+      if ((z.leakSources && z.leakSources.length > 0) || (z.evaporatorPositions && z.evaporatorPositions.length > 0)) {
+        set.add(String(z.id));
+      }
+    }
+    return set;
+  }, [zones]);
+
+  const [planVisibility, setPlanVisibility] = useState<Record<string, boolean>>({});
+  const [includePlanInPdf, setIncludePlanInPdf] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    for (const z of zones) {
+      const hasSources = (z.leakSources?.length ?? 0) > 0 || (z.evaporatorPositions?.length ?? 0) > 0;
+      init[String(z.id)] = hasSources;
+    }
+    return init;
+  });
+
+  const togglePlanVisibility = useCallback((zoneId: string) => {
+    setPlanVisibility(prev => ({ ...prev, [zoneId]: !prev[zoneId] }));
+  }, []);
+
+  const toggleIncludePlanInPdf = useCallback((zoneId: string) => {
+    setIncludePlanInPdf(prev => ({ ...prev, [zoneId]: !prev[zoneId] }));
+  }, []);
 
   // ─── Handlers ────────────────────────────────────────────────────────────
 
@@ -306,6 +583,159 @@ export default function StepCalcSheet({
         }
 
         y += 4;
+
+        // ── Zone Plan in PDF ──
+        const hasSources = (zone.leakSources?.length ?? 0) > 0 || (zone.evaporatorPositions?.length ?? 0) > 0;
+        if (hasSources && includePlanInPdf[zr.zoneId] !== false) {
+          checkPage(115); // need ~110mm for the plan
+
+          const planW = 160;
+          const planH = 100;
+          const roomL = zone.length ?? Math.sqrt(zone.surface);
+          const roomW = zone.width ?? Math.sqrt(zone.surface);
+
+          // Compute aspect-correct drawing area
+          const aspectRoom = roomL / roomW;
+          const aspectPlan = planW / planH;
+          let drawW: number, drawH: number;
+          if (aspectRoom > aspectPlan) {
+            drawW = planW;
+            drawH = planW / aspectRoom;
+          } else {
+            drawH = planH;
+            drawW = planH * aspectRoom;
+          }
+
+          const planX = margin + (planW - drawW) / 2;
+          const planY = y;
+
+          // Title
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(...navy);
+          const srcCount = (zone.leakSources?.length ?? 0) + (zone.evaporatorPositions?.length ?? 0);
+          doc.text(`Zone Plan — ${srcCount} source${srcCount > 1 ? "s" : ""}, ${detCount} detector${detCount > 1 ? "s" : ""}`, margin + 4, y);
+          y += 4;
+          const roomTopY = y;
+
+          // Room outline
+          doc.setDrawColor(148, 163, 184); // slate-400
+          doc.setLineWidth(0.4);
+          doc.setLineDashPattern([], 0);
+          doc.rect(planX, roomTopY, drawW, drawH);
+
+          // Dimension labels
+          doc.setFontSize(5.5);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(100, 116, 139); // slate-500
+          doc.text(`${roomL.toFixed(1)}m`, planX + drawW / 2, roomTopY + drawH + 3.5, { align: "center" });
+          doc.text(`${roomW.toFixed(1)}m`, planX - 2, roomTopY + drawH / 2, { align: "right" });
+
+          // Collect all sources
+          const pdfSources = [
+            ...zone.leakSources.map(s => ({ x: s.x, y: s.y, type: getSourceType(s.id), label: s.description })),
+            ...zone.evaporatorPositions.map(e => ({ x: e.x, y: e.y, type: "evaporator" as SourceType, label: "Evap." })),
+          ];
+
+          // Compute detector positions
+          const pdfDetPositions = computeDetectorPositionsPreview(
+            detCount,
+            pdfSources.map(s => ({ x: s.x, y: s.y, type: s.type })),
+            roomL,
+            roomW,
+          );
+
+          // 7m coverage radius in drawing units
+          const covRadMmX = (MAX_DISTANCE_M / roomL) * drawW;
+          const covRadMmY = (MAX_DISTANCE_M / roomW) * drawH;
+          const covRadMm = Math.min(covRadMmX, covRadMmY);
+
+          // Draw coverage circles (dashed green)
+          doc.setDrawColor(34, 197, 94); // green-500
+          doc.setLineWidth(0.2);
+          doc.setLineDashPattern([1, 0.8], 0);
+          for (const d of pdfDetPositions) {
+            const dx = planX + (d.x / 100) * drawW;
+            const dy = roomTopY + (d.y / 100) * drawH;
+            doc.setFillColor(34, 197, 94);
+            doc.circle(dx, dy, covRadMm, "S");
+          }
+          doc.setLineDashPattern([], 0);
+
+          // Draw sources
+          const srcColorMap: Record<SourceType, readonly [number, number, number]> = {
+            evaporator: [37, 99, 235],
+            valve: [245, 158, 11],
+            compressor: [71, 85, 105],
+            joint: [124, 58, 237],
+            other: [230, 57, 70],
+          };
+          for (const s of pdfSources) {
+            const sx = planX + (s.x / 100) * drawW;
+            const sy = roomTopY + (s.y / 100) * drawH;
+            const col = srcColorMap[s.type] ?? srcColorMap.other;
+            doc.setFillColor(col[0], col[1], col[2]);
+            doc.setDrawColor(col[0], col[1], col[2]);
+            doc.setLineWidth(0.3);
+            doc.circle(sx, sy, 1.5, "FD");
+            // Label
+            if (pdfSources.length <= 8) {
+              doc.setFontSize(4);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(col[0], col[1], col[2]);
+              doc.text(s.label.slice(0, 10), sx, sy - 2.5, { align: "center" });
+            }
+          }
+
+          // Draw detectors (diamond shapes)
+          for (let di = 0; di < pdfDetPositions.length; di++) {
+            const d = pdfDetPositions[di];
+            const dx = planX + (d.x / 100) * drawW;
+            const dy = roomTopY + (d.y / 100) * drawH;
+            const ds = 1.8;
+            doc.setFillColor(34, 197, 94);
+            doc.setDrawColor(34, 197, 94);
+            doc.setLineWidth(0.3);
+            // Draw diamond as a polygon path — use triangle pairs
+            const points = [
+              { x: dx, y: dy - ds },
+              { x: dx + ds, y: dy },
+              { x: dx, y: dy + ds },
+              { x: dx - ds, y: dy },
+            ];
+            doc.setFillColor(34, 197, 94);
+            // jsPDF doesn't have polygon — draw as lines + fill with triangle workaround
+            doc.triangle(points[0].x, points[0].y, points[1].x, points[1].y, points[3].x, points[3].y, "F");
+            doc.triangle(points[1].x, points[1].y, points[2].x, points[2].y, points[3].x, points[3].y, "F");
+            // Label
+            doc.setFontSize(3.5);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(22, 101, 52);
+            doc.text(`D${di + 1}`, dx, dy + 0.5, { align: "center" });
+          }
+
+          // Legend row
+          y = roomTopY + drawH + 6;
+          doc.setFontSize(5);
+          doc.setFont("helvetica", "normal");
+          let legendX = margin + 4;
+          const usedTypesSet = new Set(pdfSources.map(s => s.type));
+          for (const sType of usedTypesSet) {
+            const col = srcColorMap[sType] ?? srcColorMap.other;
+            doc.setFillColor(col[0], col[1], col[2]);
+            doc.circle(legendX + 1, y, 0.8, "F");
+            doc.setTextColor(60, 60, 60);
+            doc.text(SOURCE_LABEL[sType], legendX + 3, y + 0.5);
+            legendX += doc.getTextWidth(SOURCE_LABEL[sType]) + 6;
+          }
+          // Detector legend
+          doc.setFillColor(34, 197, 94);
+          doc.circle(legendX + 1, y, 0.8, "F");
+          doc.setTextColor(60, 60, 60);
+          doc.text("Detector", legendX + 3, y + 0.5);
+
+          y += 6;
+        }
       });
 
       // ── SUMMARY ──
@@ -610,6 +1040,55 @@ export default function StepCalcSheet({
                     <span className="text-[10px] text-amber-600">{zr.result.reviewFlags.join(" \u2014 ")}</span>
                   </div>
                 )}
+
+                {/* ── Zone Plan Preview (collapsible) ── */}
+                {zonesWithSources.has(zr.zoneId) && (() => {
+                  const sourceCount = (zone.leakSources?.length ?? 0) + (zone.evaporatorPositions?.length ?? 0);
+                  const isOpen = planVisibility[zr.zoneId] ?? false;
+                  const includeInPdf = includePlanInPdf[zr.zoneId] ?? true;
+
+                  return (
+                    <div className="mt-3 border border-[#e2e8f0] rounded-lg overflow-hidden">
+                      {/* Collapsible header */}
+                      <button
+                        type="button"
+                        onClick={() => togglePlanVisibility(zr.zoneId)}
+                        className="w-full flex items-center justify-between px-3 py-2 bg-[#f8fafc] hover:bg-[#f0f4f8] transition-colors text-left"
+                      >
+                        <span className="flex items-center gap-2 text-xs font-semibold text-[#16354B]">
+                          <Map className="w-3.5 h-3.5 text-[#6b8da5]" />
+                          Zone Plan — {sourceCount} source{sourceCount > 1 ? "s" : ""}, {detCount} detector{detCount > 1 ? "s" : ""}
+                        </span>
+                        {isOpen
+                          ? <ChevronDown className="w-4 h-4 text-[#6b8da5]" />
+                          : <ChevronRight className="w-4 h-4 text-[#6b8da5]" />
+                        }
+                      </button>
+
+                      {/* Collapsible body */}
+                      {isOpen && (
+                        <div className="px-3 py-3 border-t border-[#e2e8f0] bg-white">
+                          <ZonePlanPreview
+                            zone={zone}
+                            detectorCount={detCount}
+                            placementHeight={`${placementLabel(zr.result.placementHeight, t)} (${zr.result.placementHeightM})`}
+                          />
+
+                          {/* Include in PDF toggle */}
+                          <label className="flex items-center gap-2 mt-2 text-[10px] text-[#6b8da5] cursor-pointer no-print">
+                            <input
+                              type="checkbox"
+                              checked={includeInPdf}
+                              onChange={() => toggleIncludePlanInPdf(zr.zoneId)}
+                              className="w-3 h-3 rounded border-[#d1d5db] text-[#A7C031] focus:ring-[#A7C031]"
+                            />
+                            Include plan in PDF
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           );
