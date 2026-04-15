@@ -315,22 +315,24 @@ threshold = min(halfAtelPpm, lfl25PctPpm)
             <FormulaCard
               number="4"
               title="Detector Placement (Height)"
-              description="Determine detector mounting height based on vapour density relative to air. Uses absolute thresholds per EN 378-3 to classify gases as heavier, lighter, or neutral buoyancy."
+              description="Determine detector mounting height based on vapour density relative to air. Binary classification per EN 378-3:2016 section 6.3: sensors must be within 300 mm of floor or ceiling."
               inputs={['vapourDensity (kg/m³)', 'roomHeight (m)']}
-              output="placement: floor | ceiling | breathing_zone"
-              code={`// PLC-HGT-001 through PLC-HGT-004
-if (vapourDensity > 1.5) {
-  // Heavier than air
-  return { height: 'floor', heightM: '0-0.5 m' }
+              output="placement: floor | ceiling"
+              code={`// PLC-HGT-002 / PLC-HGT-003
+// EN 378-3:2016 §6.3: <= 300 mm from surface
+
+if (vapourDensity >= 1.0) {
+  // Heavier than air → floor
+  return { height: 'floor',
+           heightM: '0-0.3 m' }
 }
-if (vapourDensity < 0.8) {
-  // Lighter than air
+if (vapourDensity < 1.0) {
+  // Lighter than air → ceiling
   ceilingH = max(roomHeight - 0.3, 0.5)
-  return { height: 'ceiling', heightM: ceilingH }
-}
-// Near-neutral buoyancy
-return { height: 'breathing_zone',
-         heightM: '1.2-1.8 m' }`}
+  return { height: 'ceiling',
+           heightM: ceilingH + ' m' }
+}`}
+              note="Binary threshold at VD = 1.0 (air density). No breathing_zone middle band — EN 378-3:2016 §6.3 only defines floor/ceiling placement."
             />
 
             <FormulaCard
@@ -376,30 +378,34 @@ return count(unique roots)
             <FormulaCard
               number="7"
               title="Emergency Ventilation"
-              description="Calculate emergency ventilation flow rate. EN 378 and ISO 5149 use 0.14 x sqrtm. ASHRAE 15 uses max(Gxsqrtm, 20xV/3600) where G depends on refrigerant."
-              inputs={['chargeKg (kg)', 'roomVolumeM3 (m³) [ASHRAE only]', 'refrigerant [ASHRAE: G factor]']}
+              description="Calculate emergency ventilation flow rate. EN 378 and ISO 5149 use 0.14 x sqrt(m). ASHRAE 15 uses Q(cfm) = 100 x sqrt(G lbs) converted to SI. A2L refrigerants flagged for EDVC method (Tables 8-3)."
+              inputs={['chargeKg (kg)', 'refrigerant [ASHRAE: A2L flag]']}
               output="flowRate (m³/s)"
               code={`// EN 378 / ISO 5149 (Clause 6.4.4):
 q = 0.14 * sqrt(chargeKg)  // m³/s
 
 // ASHRAE 15 (Section 8.11.5):
-G = isNH3 ? 0.14 : 0.07
-formula1 = G * sqrt(chargeKg)
-formula2 = 20 * roomVolumeM3 / 3600
-q = max(formula1, formula2)  // m³/s`}
+chargeLbs = chargeKg * 2.2046
+Q_cfm = 100 * sqrt(chargeLbs)
+q = Q_cfm * 0.000472  // cfm -> m³/s
+
+// A2L: EDVC method may require higher
+// flow (Tables 8-3) — flagged for review`}
             />
 
             <FormulaCard
               number="8"
               title="Charge Cap Factors (m1, m2, m3)"
-              description="EN 378 charge threshold factors derived from the Lower Flammability Limit. Used to determine below-ground extra detector requirements and charge classification."
-              inputs={['lfl (kg/m³)']}
+              description="EN 378-1:2016 Annex C charge limits: qm_max = f x LFL x V. Returns absolute charge in kg (not concentration). Used to determine below-ground extra detector requirements and charge classification."
+              inputs={['lfl (kg/m³)', 'volume (m³)']}
               output="m1, m2, m3 (kg)"
               code={`// CALC-005/006/007: calcM1M2M3
-m1 =   4 * LFL   // Small charge limit
-m2 =  26 * LFL   // Medium charge limit
-m3 = 130 * LFL   // Large charge limit
+// EN 378-1:2016 Annex C: qm_max = f × LFL × V
+m1 =   4 * LFL * V   // Small charge limit
+m2 =  26 * LFL * V   // Medium charge limit
+m3 = 130 * LFL * V   // Large charge limit
 
+// V = room volume in m³, result in kg
 // Used in Path C (BelowGroundFlammable):
 // charge > m2 -> extra detector required`}
             />
@@ -471,27 +477,32 @@ m3 = 130 * LFL   // Large charge limit
                         </td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-3 font-medium text-gray-700">Alarm levels (A2L)</td>
+                        <td className="px-5 py-3 font-medium text-gray-700">Alarm levels (flammable)</td>
                         <td className="px-5 py-3 text-gray-600">
-                          <span className="font-mono text-xs">25% / 50% / 100%</span> RCL
+                          <span className="font-mono text-xs">alarm1 / 2&times;alarm1 / max(RCL, alarm2)</span>
+                          <br /><span className="text-xs text-gray-400">alarm1 = min(50% ATEL, 25% LFL)</span>
                         </td>
                         <td className="px-5 py-3 text-gray-600">
-                          <span className="font-mono text-xs">12.5% / 25% / 25%</span> LFL
+                          <span className="font-mono text-xs">25% / 50% / 100%</span> LFL
+                          <br /><span className="text-xs text-gray-400">ASHRAE 15 &sect;7.4</span>
                         </td>
                         <td className="px-5 py-3 text-gray-600">
-                          <span className="font-mono text-xs">25% / 50% / 100%</span> RCL
+                          <span className="font-mono text-xs">alarm1 / 2&times;alarm1 / max(RCL, alarm2)</span>
+                          <br /><span className="text-xs text-gray-400">Same as EN 378</span>
                         </td>
                       </tr>
                       <tr className="bg-gray-50">
-                        <td className="px-5 py-3 font-medium text-gray-700">Alarm levels (A1/B1)</td>
+                        <td className="px-5 py-3 font-medium text-gray-700">Alarm levels (non-flam.)</td>
                         <td className="px-5 py-3 text-gray-600">
-                          <span className="font-mono text-xs">25% / 50% / 100%</span> RCL
+                          <span className="font-mono text-xs">alarm1 / 2&times;alarm1 / max(RCL, alarm2)</span>
+                          <br /><span className="text-xs text-gray-400">cutoff &ge; alarm2 always</span>
                         </td>
                         <td className="px-5 py-3 text-gray-600">
                           <span className="font-mono text-xs">25% / 50% / 100%</span> RCL
                         </td>
                         <td className="px-5 py-3 text-gray-600">
-                          <span className="font-mono text-xs">25% / 50% / 100%</span> RCL
+                          <span className="font-mono text-xs">alarm1 / 2&times;alarm1 / max(RCL, alarm2)</span>
+                          <br /><span className="text-xs text-gray-400">Same as EN 378</span>
                         </td>
                       </tr>
                       <tr>
@@ -500,8 +511,8 @@ m3 = 130 * LFL   // Large charge limit
                           <span className="font-mono text-xs">0.14 &times; &radic;m</span>
                         </td>
                         <td className="px-5 py-3 text-gray-600">
-                          <span className="font-mono text-xs">max(G&times;&radic;m, 20&times;V/3600)</span><br />
-                          <span className="text-xs text-gray-400">G = 0.14 (NH3), 0.07 (others)</span>
+                          <span className="font-mono text-xs">100 &times; &radic;(G<sub>lbs</sub>) &times; 0.000472</span><br />
+                          <span className="text-xs text-gray-400">G<sub>lbs</sub> = charge &times; 2.2046 | A2L: EDVC method</span>
                         </td>
                         <td className="px-5 py-3 text-gray-600">
                           <span className="font-mono text-xs">0.14 &times; &radic;m</span>
@@ -546,7 +557,7 @@ m3 = 130 * LFL   // Large charge limit
                 <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">EU</div>
                 <div>
                   <h2 className="text-lg font-bold text-gray-900">EN 378-3:2016 Detection Paths</h2>
-                  <p className="text-gray-500 text-xs">Paths A through F evaluated in order. First YES wins, else MANUAL_REVIEW, else RECOMMENDED.</p>
+                  <p className="text-gray-500 text-xs">Paths A through G evaluated in order. First YES wins, else MANUAL_REVIEW, else RECOMMENDED. Path G is the safety net.</p>
                 </div>
               </div>
 
@@ -627,15 +638,30 @@ m3 = 130 * LFL   // Large charge limit
                 <RulePathCard
                   pathId="F"
                   title="Not Required / Recommended"
-                  description="If all paths A-E are negative (SKIP or NO), detection is not normatively required. SAMON policy: recommend detection as good engineering practice regardless."
+                  description="If all paths A-E and G are negative (SKIP or NO), detection is not normatively required. SAMON policy: recommend detection as good engineering practice regardless."
                   conditions={[
-                    'All paths A-E returned SKIP or NO',
+                    'All paths A-E and G returned SKIP or NO',
                     'National/local regulations may still mandate detection',
                   ]}
                   result="RECOMMENDED"
                   ruleIds={['DET-NONE-001']}
                   clauses={[]}
                   color="emerald"
+                />
+
+                <RulePathCard
+                  pathId="G"
+                  title="Safety Net: Practical Limit Check"
+                  description="Automatic safety net that catches misconfigured flags. If charge > RCL x volume, detection is mandatory regardless of other path flags. Applied in EN 378 (Path G), ASHRAE 15 (Path D), and ISO 5149 (Path C)."
+                  conditions={[
+                    'charge > practicalLimit (RCL) x roomVolume',
+                    'No flags required — purely physics-based',
+                    'Also cross-references C.3 table for detail (QLMV/QLAV measures)',
+                  ]}
+                  result="YES"
+                  ruleIds={['DET-PL-001']}
+                  clauses={['EN 378-1:2016 Annex C', 'ASHRAE 15-2022 Table 1', 'ISO 5149-3:2014']}
+                  color="red"
                 />
               </div>
             </div>
@@ -693,6 +719,20 @@ m3 = 130 * LFL   // Large charge limit
                   ruleIds={['ASHRAE15-NH3-001']}
                   clauses={['ASHRAE 15-2022 Section 7.4.3']}
                   color="purple"
+                />
+
+                <RulePathCard
+                  pathId="D"
+                  title="Safety Net: Practical Limit Check"
+                  description="Same safety net as EN 378 Path G: if charge > RCL x volume, detection is mandatory regardless of other path results."
+                  conditions={[
+                    'charge > practicalLimit (RCL) x roomVolume',
+                    'Automatic — no flags required',
+                  ]}
+                  result="YES"
+                  ruleIds={['ASHRAE15-PL-001']}
+                  clauses={['ASHRAE 15-2022 Table 1']}
+                  color="red"
                 />
               </div>
 
@@ -1017,7 +1057,7 @@ m3 = 130 * LFL   // Large charge limit
                 <FlowArrow />
 
                 {/* Step 5: Placement */}
-                <FlowNode type="process" label="Calculate Detector Placement" sub="VD > 1.5 -> floor | VD < 0.8 -> ceiling | else -> breathing zone" />
+                <FlowNode type="process" label="Calculate Detector Placement" sub="VD >= 1.0 -> floor (0-0.3 m) | VD < 1.0 -> ceiling (H - 0.3 m)" />
                 <FlowArrow />
 
                 {/* Step 6: Quantity */}
@@ -1025,7 +1065,7 @@ m3 = 130 * LFL   // Large charge limit
                 <FlowArrow />
 
                 {/* Step 7: Ventilation */}
-                <FlowNode type="process" label="Calculate Emergency Ventilation" sub="EN378/ISO: 0.14xsqrtm | ASHRAE: max(Gxsqrtm, 20V/3600)" />
+                <FlowNode type="process" label="Calculate Emergency Ventilation" sub="EN378/ISO: 0.14xsqrt(m) | ASHRAE: 100xsqrt(G_lbs)x0.000472" />
                 <FlowArrow />
 
                 {/* Step 8: Extra requirements */}
@@ -1113,15 +1153,77 @@ Governing Hazard:
               </div>
             </div>
 
+            {/* Safety Guards */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Safety Guards</h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="border-2 border-red-200 bg-red-50 rounded-lg p-4">
+                  <div className="text-xs font-bold text-red-600 uppercase tracking-wider mb-2">INSUFFICIENT_DATA Guard</div>
+                  <p className="text-sm text-gray-700">
+                    If threshold basis = INSUFFICIENT_DATA (no ATEL/ODL or LFL available) and detection decision = YES,
+                    the engine downgrades to MANUAL_REVIEW. Prevents alarm1 = 0 ppm situations.
+                  </p>
+                  <div className="bg-[#0a1628] rounded-lg p-3 mt-3">
+                    <pre className="text-emerald-400 font-mono text-[11px] leading-relaxed">{`// evaluate.ts — step 3b
+if (threshold.basis === 'INSUFFICIENT_DATA'
+    && detection === 'YES') {
+  detection = 'MANUAL_REVIEW'
+  reviewFlags.push('INSUFFICIENT_DATA')
+}`}</pre>
+                  </div>
+                </div>
+                <div className="border-2 border-purple-200 bg-purple-50 rounded-lg p-4">
+                  <div className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-2">NH3 Two-Level Alarm (&gt; 50 kg)</div>
+                  <p className="text-sm text-gray-700">
+                    When R-717 (NH3) charge exceeds 50 kg, ALL alarm thresholds switch to a special two-level scheme.
+                    Applied across all 3 regulations (EN 378, ASHRAE 15, ISO 5149).
+                  </p>
+                  <div className="bg-[#0a1628] rounded-lg p-3 mt-3">
+                    <pre className="text-emerald-400 font-mono text-[11px] leading-relaxed">{`// NH3 > 50 kg → two-level alarm
+alarm1 = 500 ppm    // pre-alarm
+  → warning + start ventilation
+alarm2 = 30,000 ppm // main alarm
+  → emergency shutdown + evacuation
+cutoff = 30,000 ppm`}</pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* EN 378 Cutoff Logic */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">EN 378 Alarm Threshold Cutoff Logic</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                The cutoff (third alarm level) uses max(RCL, alarm2) to guarantee the escalation sequence alarm1 &lt; alarm2 &le; cutoff always holds.
+                For non-flammable A1 refrigerants, RCL is typically near ATEL so cutoff naturally equals alarm2.
+                For flammable A2L/A3, RCL (practical limit) can be much lower than LFL, so we enforce cutoff &ge; alarm2.
+              </p>
+              <div className="bg-[#0a1628] rounded-lg p-4">
+                <pre className="text-emerald-400 font-mono text-xs leading-relaxed">{`// EN 378 getAlarmThresholds
+alarm1 = threshold         // min(50% ATEL, 25% LFL)
+alarm2 = alarm1 * 2        // 100% ATEL or 50% LFL
+cutoff = max(RCL, alarm2)  // guarantees escalation
+
+// ASHRAE 15 getAlarmThresholds (flammable)
+alarm1 = 25% LFL
+alarm2 = 50% LFL
+cutoff = 100% LFL
+
+// ASHRAE 15 getAlarmThresholds (non-flammable)
+alarm1 = 25% RCL, alarm2 = 50% RCL, cutoff = 100% RCL`}</pre>
+              </div>
+            </div>
+
             {/* Source File Reference */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Source Files</h3>
               <div className="grid md:grid-cols-2 gap-3">
                 {[
+                  { file: 'engine/evaluate.ts', desc: 'Orchestrator — runs RuleSet, INSUFFICIENT_DATA guard, assembles result' },
                   { file: 'engine/core.ts', desc: 'Shared physics, placement, clustering, unit conversions' },
                   { file: 'engine/rule-set.ts', desc: 'RuleSet interface — contract for all regulation profiles' },
-                  { file: 'rules/en378.ts', desc: 'EN 378-3:2016 — Paths A-F, thresholds, ventilation, zones' },
-                  { file: 'rules/ashrae15.ts', desc: 'ASHRAE 15-2022 — Exemption-based detection, LFL alarms, extras' },
+                  { file: 'rules/en378.ts', desc: 'EN 378-3:2016 — Paths A-G, thresholds, cutoff logic, ventilation, zones' },
+                  { file: 'rules/ashrae15.ts', desc: 'ASHRAE 15-2022 — Exemption-based detection, LFL alarms, EDVC, extras' },
                   { file: 'rules/iso5149.ts', desc: 'ISO 5149-3:2014 — Simplified EN 378, always-on for flammable/toxic' },
                   { file: 'rules/ashrae15-exemptions.ts', desc: 'ASHRAE Table 1 exemption quantities (35 refrigerants)' },
                 ].map((f) => (
