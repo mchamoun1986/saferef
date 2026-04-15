@@ -344,7 +344,7 @@ export default function ConfiguratorPage() {
       {/* Navbar */}
       <nav className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] text-white px-6 py-4 flex items-center justify-between print:hidden border-b-2 border-[#E63946]">
         <div className="flex items-center gap-1">
-          <span className="text-[#E63946] font-extrabold text-xl tracking-wide">Detect</span>
+          <span className="text-[#E63946] font-extrabold text-xl tracking-wide">Ref</span>
           <span className="text-white font-extrabold text-xl">Calc</span>
           <span className="ml-3 text-sm text-[#6b8da5]">Gas Detection Calculation Sheet</span>
         </div>
