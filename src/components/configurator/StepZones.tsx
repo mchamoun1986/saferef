@@ -153,12 +153,24 @@ export default function StepZones({
     [spaceTypes, updateZone],
   );
 
-  // -- Per-zone regulatory context helper -----------------------------------
+  // -- Per-zone regulatory context helper (with normative coherence) ---------
   const updateZoneCtx = useCallback(
     <K extends keyof RegulatoryContext>(zoneId: number, field: K, value: RegulatoryContext[K]) => {
       const zone = zones.find(z => z.id === zoneId);
       if (!zone) return;
-      updateZone(zoneId, { regulatory: { ...zone.regulatory, [field]: value } });
+      const updated = { ...zone.regulatory, [field]: value };
+
+      // Normative coherence: machinery room ≠ occupied space
+      if (field === 'isMachineryRoom' && value === true) {
+        updated.isOccupiedSpace = false;
+        updated.accessCategory = 'c';
+        updated.locationClass = 'III';
+      }
+      if (field === 'isOccupiedSpace' && value === true) {
+        updated.isMachineryRoom = false;
+      }
+
+      updateZone(zoneId, { regulatory: updated });
     },
     [zones, updateZone],
   );

@@ -20,18 +20,49 @@ interface CalcSheetSummary {
   applicationId: string;
 }
 
+interface AlarmLevel {
+  ppm: number;
+  kgM3: number;
+  basis: string;
+}
+
 interface ZoneRegResult {
   zoneId: string;
   zoneName: string;
+  // Core decision
   detectionRequired: string;
+  detectionBasis?: string;
+  governingRuleId?: string;
+  governingHazard: string;
+  ruleClasses?: string[];
+  // Quantities
+  minDetectors?: number;
   recommendedDetectors: number;
+  quantityMode: string;
+  clusterCount?: number;
+  // Thresholds
   thresholdPpm: number;
   thresholdKgM3: number;
+  thresholdBasis?: string;
+  stage2ThresholdPpm?: number | null;
+  alarmThresholds?: {
+    alarm1: AlarmLevel;
+    alarm2: AlarmLevel;
+    cutoff: AlarmLevel;
+    stage2Ppm?: number | null;
+  };
+  // Placement
   placementHeight: string;
   placementHeightM: string;
-  quantityMode: string;
+  // Ventilation & extras
+  ventilation?: { flowRateM3s: number; formula: string; clause: string } | null;
+  extraRequirements?: { id: string; description: string; clause: string; mandatory: boolean }[];
+  // Trace & audit
+  sourceClauses?: string[];
+  assumptions?: string[];
+  requiredActions?: string[];
   reviewFlags: string[];
-  governingHazard: string;
+  candidateZones?: { zoneId: string; description: string; detectorPosition: string; rationale: string }[];
 }
 
 interface ZoneDetail {
@@ -551,6 +582,118 @@ export default function CalcSheetsPage() {
                                 <div className="flex items-start gap-1.5 text-[10px] text-amber-600 bg-amber-50 rounded px-2 py-1.5">
                                   <span>⚠️</span>
                                   <span>{zr.reviewFlags.join(' — ')}</span>
+                                </div>
+                              )}
+
+                              {/* ── CALCULATION TRACE ── */}
+                              {(zr.detectionBasis || zr.sourceClauses?.length) && (
+                                <div className="border-t border-gray-200 pt-2 mt-2 space-y-2">
+                                  <p className="text-[10px] font-bold text-[#16354B] uppercase tracking-widest">Calculation Trace</p>
+
+                                  {/* Detection basis & governing rule */}
+                                  {zr.detectionBasis && (
+                                    <div className="text-[11px] bg-blue-50 border border-blue-100 rounded px-2.5 py-1.5">
+                                      <span className="text-blue-400 font-semibold">Basis: </span>
+                                      <span className="text-blue-700">{zr.detectionBasis}</span>
+                                      {zr.governingRuleId && (
+                                        <span className="ml-2 font-mono text-[10px] bg-blue-200 px-1.5 py-0.5 rounded">{zr.governingRuleId}</span>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* Source clauses */}
+                                  {zr.sourceClauses && zr.sourceClauses.length > 0 && (
+                                    <div className="text-[11px]">
+                                      <span className="text-gray-400 font-semibold">Clauses: </span>
+                                      {zr.sourceClauses.map((cl, i) => (
+                                        <span key={i} className="inline-block bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] mr-1 mb-0.5 font-mono">{cl}</span>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* Alarm thresholds */}
+                                  {zr.alarmThresholds && (
+                                    <div className="text-[11px]">
+                                      <span className="text-gray-400 font-semibold">Alarm thresholds: </span>
+                                      <div className="flex flex-wrap gap-2 mt-1">
+                                        <span className="bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-[10px]">
+                                          Alarm 1: {Math.round(zr.alarmThresholds.alarm1.ppm).toLocaleString()} ppm ({zr.alarmThresholds.alarm1.basis})
+                                        </span>
+                                        <span className="bg-orange-50 border border-orange-200 px-2 py-0.5 rounded text-[10px]">
+                                          Alarm 2: {Math.round(zr.alarmThresholds.alarm2.ppm).toLocaleString()} ppm ({zr.alarmThresholds.alarm2.basis})
+                                        </span>
+                                        <span className="bg-red-50 border border-red-200 px-2 py-0.5 rounded text-[10px]">
+                                          Cutoff: {Math.round(zr.alarmThresholds.cutoff.ppm).toLocaleString()} ppm ({zr.alarmThresholds.cutoff.basis})
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Ventilation */}
+                                  {zr.ventilation && (
+                                    <div className="text-[11px] bg-cyan-50 border border-cyan-100 rounded px-2.5 py-1.5">
+                                      <span className="text-cyan-500 font-semibold">Emergency ventilation: </span>
+                                      <span className="text-cyan-700 font-bold">{zr.ventilation.flowRateM3s.toFixed(3)} m³/s</span>
+                                      <span className="text-cyan-600 ml-2">({zr.ventilation.formula})</span>
+                                      <span className="ml-2 font-mono text-[10px] bg-cyan-200 px-1.5 py-0.5 rounded">{zr.ventilation.clause}</span>
+                                    </div>
+                                  )}
+
+                                  {/* Extra requirements */}
+                                  {zr.extraRequirements && zr.extraRequirements.length > 0 && (
+                                    <div className="text-[11px]">
+                                      <span className="text-gray-400 font-semibold">Extra requirements: </span>
+                                      {zr.extraRequirements.map((req, i) => (
+                                        <div key={i} className="flex items-start gap-1.5 mt-1">
+                                          <span className={`w-1.5 h-1.5 rounded-full mt-1 flex-shrink-0 ${req.mandatory ? 'bg-red-500' : 'bg-gray-400'}`} />
+                                          <span className="text-gray-700">{req.description}</span>
+                                          <span className="font-mono text-[10px] bg-gray-100 px-1 py-0.5 rounded">{req.clause}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* Required actions */}
+                                  {zr.requiredActions && zr.requiredActions.length > 0 && (
+                                    <div className="text-[11px]">
+                                      <span className="text-gray-400 font-semibold">Required actions: </span>
+                                      <span className="text-gray-600">{zr.requiredActions.join(' | ')}</span>
+                                    </div>
+                                  )}
+
+                                  {/* Assumptions */}
+                                  {zr.assumptions && zr.assumptions.length > 0 && (
+                                    <div className="text-[11px] text-gray-500 italic">
+                                      <span className="text-gray-400 font-semibold not-italic">Assumptions: </span>
+                                      {zr.assumptions.join(' | ')}
+                                    </div>
+                                  )}
+
+                                  {/* Candidate zones */}
+                                  {zr.candidateZones && zr.candidateZones.length > 0 && (
+                                    <div className="text-[11px]">
+                                      <span className="text-gray-400 font-semibold">Candidate zones: </span>
+                                      <div className="mt-1 space-y-0.5">
+                                        {zr.candidateZones.map((cz, i) => (
+                                          <div key={i} className="text-[10px] text-gray-600">
+                                            <span className="font-mono bg-gray-100 px-1 rounded">{cz.zoneId}</span> {cz.description} — <span className="text-gray-400">{cz.rationale}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Rule classes */}
+                                  {zr.ruleClasses && zr.ruleClasses.length > 0 && (
+                                    <div className="text-[11px]">
+                                      <span className="text-gray-400 font-semibold">Rule class: </span>
+                                      {zr.ruleClasses.map((rc, i) => (
+                                        <span key={i} className={`inline-block px-1.5 py-0.5 rounded text-[10px] mr-1 font-semibold ${
+                                          rc === 'NORMATIVE' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                                        }`}>{rc}</span>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>

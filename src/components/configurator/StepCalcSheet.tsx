@@ -855,15 +855,35 @@ export default function StepCalcSheet({
           zoneRegulations: zoneRegulations.map(zr => ({
             zoneId: zr.zoneId,
             zoneName: zr.zoneName,
+            // Core decision
             detectionRequired: zr.result.detectionRequired,
+            detectionBasis: zr.result.detectionBasis,
+            governingRuleId: zr.result.governingRuleId,
+            governingHazard: zr.result.governingHazard,
+            ruleClasses: zr.result.ruleClasses,
+            // Quantities
+            minDetectors: zr.result.minDetectors,
             recommendedDetectors: zr.result.recommendedDetectors,
+            quantityMode: zr.result.quantityMode,
+            clusterCount: zr.result.clusterCount,
+            // Thresholds
             thresholdPpm: zr.result.thresholdPpm,
             thresholdKgM3: zr.result.thresholdKgM3,
+            thresholdBasis: zr.result.thresholdBasis,
+            stage2ThresholdPpm: zr.result.stage2ThresholdPpm,
+            alarmThresholds: zr.result.alarmThresholds,
+            // Placement
             placementHeight: zr.result.placementHeight,
             placementHeightM: zr.result.placementHeightM,
-            quantityMode: zr.result.quantityMode,
+            // Ventilation & extras
+            ventilation: zr.result.ventilation,
+            extraRequirements: zr.result.extraRequirements,
+            // Trace & audit
+            sourceClauses: zr.result.sourceClauses,
+            assumptions: zr.result.assumptions,
+            requiredActions: zr.result.requiredActions,
             reviewFlags: zr.result.reviewFlags,
-            governingHazard: zr.result.governingHazard,
+            candidateZones: zr.result.candidateZones,
           })),
           totalDetectors,
           totalZones: zones.length,
