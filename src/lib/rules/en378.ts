@@ -353,6 +353,45 @@ function pathF_NotRequired(): PathResult {
   };
 }
 
+/**
+ * Path G — Safety Net: charge vs practical limit (automatic, no flags required)
+ * DET-PL-001: if charge > RCL × volume, detection is mandatory regardless of flags.
+ * This catches cases where flags are misconfigured but the charge clearly
+ * exceeds the safe concentration limit.
+ */
+function pathG_PracticalLimitCheck(input: RegulationInput): PathResult {
+  const ref = input.refrigerant;
+  const volume = input.roomVolume ?? input.roomArea * input.roomHeight;
+  const maxChargeKg = ref.practicalLimit * volume;
+
+  if (input.charge > maxChargeKg) {
+    // Also check C.3 table for more detail
+    const refId = normalizeRefId(ref.id);
+    const c3 = TABLE_C3[refId];
+    const conc = concentrationKgM3(input.charge, volume);
+
+    let detail = `charge ${input.charge} kg > PL × V = ${maxChargeKg.toFixed(1)} kg (concentration ${conc.toPrecision(4)} kg/m³ > RCL ${ref.practicalLimit} kg/m³)`;
+    if (c3) {
+      const measures = conc > c3.qlav ? '2+ measures' : conc > c3.qlmv ? '1+ measure' : '';
+      if (measures) detail += ` | C.3: ${measures} required`;
+    }
+
+    return {
+      decision: 'YES',
+      basis: `EN 378-1 Annex C — ${detail}`,
+      ruleId: 'DET-PL-001',
+      ruleClass: 'NORMATIVE',
+      sourceClauses: ['EN 378-1:2016 Annex C'],
+      extraDetector: false,
+      reviewFlags: [],
+      assumptions: [],
+      actions: ['Activate alarm at threshold'],
+    };
+  }
+
+  return skipPath('DET-PL-001', `charge ${input.charge} kg <= PL × V = ${maxChargeKg.toFixed(1)} kg — within safe limit`);
+}
+
 // ── EN 378 RuleSet Implementation ───────────────────────────────────────
 
 export const en378RuleSet: RuleSet = {
@@ -374,8 +413,9 @@ export const en378RuleSet: RuleSet = {
     const pC = pathC_BelowGroundFlammable(effectiveInput);
     const pD = pathD_Ammonia(effectiveInput);
     const pE = pathE_VentilatedEnclosure(effectiveInput);
+    const pG = pathG_PracticalLimitCheck(effectiveInput);
 
-    const allPaths = [pA, pB, pC, pD, pE];
+    const allPaths = [pA, pB, pC, pD, pE, pG];
 
     // Build path evaluations for trace
     const pathEvaluations: PathEvaluation[] = [
@@ -384,6 +424,7 @@ export const en378RuleSet: RuleSet = {
       { path: 'C_BelowGroundFlammable', decision: pC.decision, ruleId: pC.ruleId, basis: pC.basis, extraDetector: pC.extraDetector },
       { path: 'D_Ammonia', decision: pD.decision, ruleId: pD.ruleId, basis: pD.basis, extraDetector: pD.extraDetector },
       { path: 'E_VentilatedEnclosure', decision: pE.decision, ruleId: pE.ruleId, basis: pE.basis, extraDetector: pE.extraDetector },
+      { path: 'G_PracticalLimit', decision: pG.decision, ruleId: pG.ruleId, basis: pG.basis, extraDetector: pG.extraDetector },
     ];
 
     // Aggregate: first YES wins, else MANUAL_REVIEW, else RECOMMENDED

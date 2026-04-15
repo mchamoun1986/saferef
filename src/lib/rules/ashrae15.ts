@@ -149,6 +149,33 @@ function evaluateDetectionAshrae15(input: RegulationInput): DetectionEvaluation 
     });
   }
 
+  // Path D — Safety Net: charge vs practical limit (automatic)
+  const volume = input.roomVolume ?? input.roomArea * input.roomHeight;
+  const maxChargeKg = ref.practicalLimit * volume;
+  if (input.charge > maxChargeKg && detectionRequired !== 'YES') {
+    detectionRequired = 'YES';
+    detectionBasis = `ASHRAE 15 — charge ${input.charge} kg > RCL × V = ${maxChargeKg.toFixed(1)} kg`;
+    governingRuleId = 'ASHRAE15-PL-001';
+    ruleClasses = ['NORMATIVE'];
+    sourceClauses.push('ASHRAE 15-2022 Table 1');
+    requiredActions.push('Activate alarm at threshold');
+    pathEvaluations.push({
+      path: 'D_PracticalLimit',
+      decision: 'YES',
+      ruleId: 'ASHRAE15-PL-001',
+      basis: `charge ${input.charge} kg > RCL × V = ${maxChargeKg.toFixed(1)} kg (concentration ${(input.charge / volume).toPrecision(4)} kg/m³ > RCL ${ref.practicalLimit} kg/m³)`,
+      extraDetector: false,
+    });
+  } else {
+    pathEvaluations.push({
+      path: 'D_PracticalLimit',
+      decision: 'SKIP',
+      ruleId: 'ASHRAE15-PL-001',
+      basis: `charge ${input.charge} kg <= RCL × V = ${maxChargeKg.toFixed(1)} kg — within safe limit`,
+      extraDetector: false,
+    });
+  }
+
   return {
     detectionRequired,
     detectionBasis,

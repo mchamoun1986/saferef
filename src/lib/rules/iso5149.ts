@@ -123,6 +123,32 @@ function evaluateDetectionISO5149(input: RegulationInput): DetectionEvaluation {
     });
   }
 
+  // Path C — Safety Net: charge vs practical limit (automatic)
+  const volCheck = input.roomVolume ?? input.roomArea * input.roomHeight;
+  const maxChargeKg = ref.practicalLimit * volCheck;
+  if (input.charge > maxChargeKg && detectionRequired !== 'YES') {
+    detectionRequired = 'YES';
+    detectionBasis = `ISO 5149-3 — charge ${input.charge} kg > RCL × V = ${maxChargeKg.toFixed(1)} kg`;
+    governingRuleId = 'ISO5149-PL-001';
+    ruleClasses = ['NORMATIVE'];
+    requiredActions.push('Activate alarm at threshold');
+    pathEvaluations.push({
+      path: 'C_PracticalLimit',
+      decision: 'YES',
+      ruleId: 'ISO5149-PL-001',
+      basis: `charge ${input.charge} kg > RCL × V = ${maxChargeKg.toFixed(1)} kg`,
+      extraDetector: false,
+    });
+  } else {
+    pathEvaluations.push({
+      path: 'C_PracticalLimit',
+      decision: 'SKIP',
+      ruleId: 'ISO5149-PL-001',
+      basis: `charge ${input.charge} kg <= RCL × V = ${maxChargeKg.toFixed(1)} kg — within safe limit`,
+      extraDetector: false,
+    });
+  }
+
   return {
     detectionRequired,
     detectionBasis,
