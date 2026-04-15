@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useCallback } from "react";
-import { Printer, Download, Save, AlertTriangle, ChevronDown, ChevronRight, Map } from "lucide-react";
+import { Printer, Download, Save, AlertTriangle, ChevronDown, ChevronRight, Map, Info } from "lucide-react";
 import { toast } from "sonner";
 // jsPDF imported dynamically in handleDownloadPdf to avoid SSR issues
 import type { ClientData, GasAppData, ZoneData, RegulatoryContext } from "./types";
@@ -733,8 +733,23 @@ export default function StepCalcSheet({
           doc.circle(legendX + 1, y, 0.8, "F");
           doc.setTextColor(60, 60, 60);
           doc.text("Detector", legendX + 3, y + 0.5);
+          y += 5;
 
-          y += 6;
+          // Placement limitation notice
+          doc.setFillColor(219, 234, 254); // blue-100
+          doc.rect(margin, y, planW, 10, "F");
+          doc.setFontSize(5);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(29, 78, 216); // blue-700
+          doc.text("INDICATIVE PLACEMENT ONLY", margin + 2, y + 3);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(4.5);
+          doc.setTextColor(37, 99, 235); // blue-600
+          doc.text(
+            "This plan does not account for: ventilation (forced/natural), doors, air currents, physical obstructions. Final positioning must be validated on site.",
+            margin + 2, y + 6.5, { maxWidth: planW - 4 }
+          );
+          y += 13;
         }
       });
 
@@ -1073,6 +1088,23 @@ export default function StepCalcSheet({
                             detectorCount={detCount}
                             placementHeight={`${placementLabel(zr.result.placementHeight, t)} (${zr.result.placementHeightM})`}
                           />
+
+                          {/* Placement limitations notice */}
+                          <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5">
+                            <div className="flex items-start gap-2">
+                              <Info className="w-3.5 h-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-1">
+                                  {lang === "fr" ? "Placement indicatif" : "Indicative Placement Only"}
+                                </p>
+                                <p className="text-[10px] text-blue-600 leading-relaxed">
+                                  {lang === "fr"
+                                    ? "Ce plan est une recommandation basée sur les sources de fuite identifiées et la densité du gaz. Il ne prend PAS en compte : ventilation (forcée ou naturelle), portes et ouvertures, courants d'air, obstacles physiques (cloisons, racks). Le positionnement final des détecteurs doit être validé par un ingénieur qualifié sur site."
+                                    : "This plan is a recommendation based on identified leak sources and gas density. It does NOT account for: ventilation (forced or natural), doors and openings, air currents, physical obstructions (partitions, racks). Final detector positioning must be validated by a qualified engineer on site."}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
 
                           {/* Include in PDF toggle */}
                           <label className="flex items-center gap-2 mt-2 text-[10px] text-[#6b8da5] cursor-pointer no-print">
