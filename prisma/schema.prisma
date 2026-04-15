@@ -93,3 +93,56 @@ model CalcSheet {
   createdAt   DateTime @default(now())
   status      String   @default("draft") // "draft", "complete", "archived"
 }
+
+// ── Product Catalog (migrated from DetectBuilder) ─────────────────────
+
+model Product {
+  id           String   @id @default(cuid())
+  type         String                        // "detector", "controller", "accessory"
+  family       String                        // "MIDI", "X5", "RM", "Aquis", "Controller", "Accessory"
+  name         String
+  code         String   @unique
+  price        Float    @default(0)
+  image        String?
+  specs        String   @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tier         String   @default("standard")
+  productGroup String   @default("A")
+  gas          String   @default("[]")       // JSON: ["CO2","HFC1","HFC2","NH3","R290"]
+  refs         String   @default("[]")       // JSON: ["R744","R32","R717"]
+  apps         String   @default("[]")       // JSON: ["supermarket","cold_room"]
+  range        String?
+  sensorTech   String?
+  sensorLife   String?
+  power        Float?
+  voltage      String?
+  ip           String?
+  tempMin      Float?
+  tempMax      Float?
+  relay        Int      @default(0)
+  analog       String?
+  modbus       Boolean  @default(false)
+  standalone   Boolean  @default(true)
+  atex         Boolean  @default(false)
+  mount        String   @default("[]")       // JSON: ["wall","ceiling","floor"]
+  remote       Boolean  @default(false)
+  features     String?
+  connectTo    String?
+  discontinued Boolean  @default(false)
+  channels     Int?
+  maxPower     Float?
+  powerDesc    String?
+  relaySpec    String?
+  analogType   String?
+  modbusType   String?
+  subCategory        String?                 // "alert", "service", "mounting", "power", "spare"
+  compatibleFamilies String  @default("[]")  // JSON: ["MIDI","X5"] or ["ALL"]
+}
+
+model DiscountMatrix {
+  id            String @id @default(cuid())
+  customerGroup String
+  productGroup  String
+  discountPct   Float
+}
