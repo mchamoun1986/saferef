@@ -1,0 +1,571 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
+// ── Types ───────────────────────────────────────────────────────────────────
+
+interface CalcSheetSummary {
+  id: string;
+  ref: string;
+  client: string;
+  projectName: string;
+  email: string;
+  phone: string;
+  status: string;
+  regulation: string;
+  createdAt: string;
+  totalDetectors: number;
+  totalZones: number;
+  refrigerant: string;
+  applicationId: string;
+}
+
+interface ZoneRegResult {
+  zoneId: string;
+  zoneName: string;
+  detectionRequired: string;
+  recommendedDetectors: number;
+  thresholdPpm: number;
+  thresholdKgM3: number;
+  placementHeight: string;
+  placementHeightM: string;
+  quantityMode: string;
+  reviewFlags: string[];
+  governingHazard: string;
+}
+
+interface ZoneDetail {
+  id: number;
+  name: string;
+  surface: number;
+  height: number;
+  charge: number;
+  volumeOverride: number | null;
+  spaceTypeId?: string;
+  regulatory: {
+    accessCategory: string;
+    locationClass: string;
+    belowGround: boolean;
+    isMachineryRoom: boolean;
+    isOccupiedSpace: boolean;
+    humanComfort: boolean;
+    c3Applicable: boolean;
+    mechanicalVentilation: boolean;
+  };
+}
+
+interface SheetDetail {
+  id: string;
+  ref: string;
+  status: string;
+  regulation: string;
+  createdAt: string;
+  client: {
+    firstName: string;
+    lastName: string;
+    company: string;
+    email: string;
+    phone: string;
+    projectName: string;
+    country: string;
+    clientType: string;
+  };
+  gasApp: {
+    applicationId: string;
+    refrigerantId: string;
+    refrigerantName: string;
+    safetyClass: string;
+    gwp: string;
+    sitePowerVoltage: string;
+    zoneAtex: boolean;
+  };
+  zones: ZoneDetail[];
+  result: {
+    zoneRegulations: ZoneRegResult[];
+    totalDetectors: number;
+    totalZones: number;
+  };
+}
+
+// ── Constants ───────────────────────────────────────────────────────────────
+
+const STATUS_CONFIG: Record<string, { dot: string; badge: string; label: string }> = {
+  draft:     { dot: 'bg-gray-400',     badge: 'bg-gray-100 text-gray-600',       label: 'Draft' },
+  pending:   { dot: 'bg-amber-400',    badge: 'bg-amber-100 text-amber-700',     label: 'Pending' },
+  validated: { dot: 'bg-blue-400',     badge: 'bg-blue-100 text-blue-700',       label: 'Validated' },
+  sent:      { dot: 'bg-emerald-400',  badge: 'bg-emerald-100 text-emerald-700', label: 'Sent' },
+  archived:  { dot: 'bg-gray-500',     badge: 'bg-gray-200 text-gray-500',       label: 'Archived' },
+};
+
+const ALL_STATUSES = Object.keys(STATUS_CONFIG);
+
+const REGULATION_LABELS: Record<string, { short: string; full: string }> = {
+  en378:    { short: 'EN 378',    full: 'EN 378-3:2016' },
+  ashrae15: { short: 'ASHRAE 15', full: 'ASHRAE 15-2022' },
+  iso5149:  { short: 'ISO 5149',  full: 'ISO 5149-3:2014' },
+};
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function fmtDate(d: string) {
+  try {
+    return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch { return d; }
+}
+
+function fmtDateTime(d: string) {
+  try {
+    return new Date(d).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch { return d; }
+}
+
+function detBadge(status: string) {
+  switch (status) {
+    case 'YES': return 'bg-[#E63946] text-white';
+    case 'RECOMMENDED': return 'bg-amber-500 text-white';
+    case 'MANUAL_REVIEW': return 'bg-orange-500 text-white';
+    default: return 'bg-emerald-500 text-white';
+  }
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
+
+export default function CalcSheetsPage() {
+  const [sheets, setSheets] = useState<CalcSheetSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [search, setSearch] = useState('');
+  const [selectedSheet, setSelectedSheet] = useState<SheetDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  // ── Fetch ─────────────────────────────────────────────────────────────────
+
+  async function fetchSheets() {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/calc-sheets');
+      const data = await res.json();
+      setSheets(Array.isArray(data) ? data : []);
+    } catch { /* ignore */ }
+    setLoading(false);
+  }
+
+  async function fetchDetail(id: string) {
+    setDetailLoading(true);
+    try {
+      const res = await fetch(`/api/calc-sheets?id=${id}`);
+      const data = await res.json();
+      setSelectedSheet(data);
+    } catch { /* ignore */ }
+    setDetailLoading(false);
+  }
+
+  useEffect(() => { fetchSheets(); }, []);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
+  async function handleStatusChange(id: string, newStatus: string) {
+    await fetch('/api/calc-sheets', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status: newStatus }),
+    });
+    await fetchSheets();
+    if (selectedSheet?.id === id) {
+      setSelectedSheet(prev => prev ? { ...prev, status: newStatus } : null);
+    }
+  }
+
+  async function handleDelete(id: string, ref: string) {
+    if (!confirm(`Delete calc sheet "${ref}"?`)) return;
+    const res = await fetch(`/api/calc-sheets?id=${id}`, { method: 'DELETE' });
+    if (!res.ok) { alert('Delete failed'); return; }
+    if (selectedSheet?.id === id) setSelectedSheet(null);
+    await fetchSheets();
+  }
+
+  // ── Filtered list ─────────────────────────────────────────────────────────
+
+  const filtered = sheets.filter(s => {
+    const matchStatus = filterStatus === 'all' || s.status === filterStatus;
+    const q = search.toLowerCase();
+    const matchSearch = !q || s.ref?.toLowerCase().includes(q) || s.client?.toLowerCase().includes(q) || s.projectName?.toLowerCase().includes(q);
+    return matchStatus && matchSearch;
+  });
+
+  // ── Stats ─────────────────────────────────────────────────────────────────
+
+  const statsByStatus = ALL_STATUSES.reduce((acc, st) => {
+    acc[st] = sheets.filter(s => s.status === st).length;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="p-6 max-w-[1400px] mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a2332]">Calc Sheets</h1>
+          <p className="text-sm text-gray-500 mt-1">{sheets.length} calculation sheets saved</p>
+        </div>
+      </div>
+
+      {/* Status pills */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        <button
+          onClick={() => setFilterStatus('all')}
+          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+            filterStatus === 'all' ? 'bg-[#1a2332] text-white border-[#1a2332]' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+          }`}
+        >
+          All ({sheets.length})
+        </button>
+        {ALL_STATUSES.map(st => {
+          const cfg = STATUS_CONFIG[st];
+          return (
+            <button
+              key={st}
+              onClick={() => setFilterStatus(st)}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                filterStatus === st ? `${cfg.badge} border-current` : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+              }`}
+            >
+              {cfg.label} ({statsByStatus[st] ?? 0})
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Search */}
+      <div className="mb-4">
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search by ref, client, project..."
+          className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+        />
+      </div>
+
+      {/* Two-panel layout */}
+      <div className={`flex gap-6 ${selectedSheet ? 'flex-col xl:flex-row' : ''}`}>
+
+        {/* Table */}
+        <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden ${selectedSheet ? 'xl:w-[55%]' : 'w-full'}`}>
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-10 w-10 border-4 border-red-600 border-t-transparent" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="p-12 text-center text-gray-400 text-sm">
+              {search || filterStatus !== 'all' ? 'No results match your filters' : 'No calc sheets yet'}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-[#16354B] text-left text-[10px] font-semibold text-white uppercase tracking-wider">
+                    <th className="px-4 py-3">Ref</th>
+                    <th className="px-4 py-3">Client</th>
+                    <th className="px-4 py-3">Project</th>
+                    <th className="px-4 py-3">Refrigerant</th>
+                    <th className="px-4 py-3">Standard</th>
+                    <th className="px-4 py-3">Date</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3 text-right">Detectors</th>
+                    <th className="px-4 py-3 text-right">Zones</th>
+                    <th className="px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filtered.map(s => {
+                    const cfg = STATUS_CONFIG[s.status] ?? { dot: 'bg-gray-400', badge: 'bg-gray-100 text-gray-600', label: s.status };
+                    const isActive = selectedSheet?.id === s.id;
+                    return (
+                      <tr
+                        key={s.id}
+                        onClick={() => { setSelectedSheet(null); fetchDetail(s.id); }}
+                        className={`hover:bg-blue-50/40 transition-colors cursor-pointer ${isActive ? 'bg-blue-50 border-l-2 border-red-500' : ''}`}
+                      >
+                        <td className="px-4 py-3 font-mono text-xs font-semibold text-gray-800">{s.ref || '—'}</td>
+                        <td className="px-4 py-3 text-gray-700 max-w-[140px] truncate">{s.client || '—'}</td>
+                        <td className="px-4 py-3 text-gray-500 max-w-[120px] truncate">{s.projectName || '—'}</td>
+                        <td className="px-4 py-3 text-gray-500 font-mono text-xs max-w-[120px] truncate">{s.refrigerant || '—'}</td>
+                        <td className="px-4 py-3 text-xs font-medium text-gray-600">{REGULATION_LABELS[s.regulation]?.short || s.regulation || 'EN 378'}</td>
+                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{fmtDate(s.createdAt)}</td>
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                            <span className="text-xs text-gray-600">{cfg.label}</span>
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium text-gray-800">{s.totalDetectors ?? '—'}</td>
+                        <td className="px-4 py-3 text-right text-gray-500">{s.totalZones ?? '—'}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                            <button
+                              onClick={() => { setSelectedSheet(null); fetchDetail(s.id); }}
+                              className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                            >
+                              View
+                            </button>
+                            <button
+                              onClick={() => handleDelete(s.id, s.ref)}
+                              className="text-red-500 hover:text-red-700 text-xs font-medium"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Detail panel */}
+        {(selectedSheet || detailLoading) && (
+          <div className="xl:flex-1 bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-[#1a2332] text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-base font-bold">
+                {detailLoading ? 'Loading...' : selectedSheet?.ref || 'Sheet Detail'}
+              </h2>
+              <button onClick={() => setSelectedSheet(null)} className="text-white/50 hover:text-white text-lg leading-none">&times;</button>
+            </div>
+
+            {detailLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-4 border-red-600 border-t-transparent" />
+              </div>
+            ) : selectedSheet ? (
+              <div className="p-6 space-y-5 overflow-y-auto max-h-[calc(100vh-200px)]">
+
+                {/* ── Client Info ── */}
+                <div>
+                  <p className="text-xs font-bold text-[#E63946] uppercase tracking-widest mb-2">Client Information</p>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Name</p>
+                      <p className="font-medium text-gray-800">{selectedSheet.client?.firstName} {selectedSheet.client?.lastName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Company</p>
+                      <p className="font-medium text-gray-800">{selectedSheet.client?.company || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Email</p>
+                      <p className="font-medium text-gray-800">
+                        {selectedSheet.client?.email ? (
+                          <a href={`mailto:${selectedSheet.client.email}`} className="text-blue-600 hover:underline">{selectedSheet.client.email}</a>
+                        ) : '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Phone</p>
+                      <p className="font-medium text-gray-800">{selectedSheet.client?.phone || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Project</p>
+                      <p className="font-medium text-gray-800">{selectedSheet.client?.projectName || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Country</p>
+                      <p className="font-medium text-gray-800">{selectedSheet.client?.country || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Profile</p>
+                      <p className="font-medium text-gray-800">{selectedSheet.client?.clientType || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Created</p>
+                      <p className="text-gray-600 text-xs">{fmtDateTime(selectedSheet.createdAt)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Gas & Application ── */}
+                <div>
+                  <p className="text-xs font-bold text-[#E63946] uppercase tracking-widest mb-2">Gas & Application</p>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Refrigerant</p>
+                      <p className="font-mono font-medium text-gray-800">
+                        {selectedSheet.gasApp?.refrigerantId} — {selectedSheet.gasApp?.refrigerantName}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Safety Class</p>
+                      <p className="font-bold text-gray-800 bg-[#f0f4f8] inline-block px-2 py-0.5 rounded">
+                        {selectedSheet.gasApp?.safetyClass || '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Application</p>
+                      <p className="font-medium text-gray-800">{selectedSheet.gasApp?.applicationId || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">GWP</p>
+                      <p className="font-medium text-gray-800">{selectedSheet.gasApp?.gwp || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Power</p>
+                      <p className="font-medium text-gray-800">{selectedSheet.gasApp?.sitePowerVoltage || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">ATEX Zone</p>
+                      <p className="font-medium text-gray-800">{selectedSheet.gasApp?.zoneAtex ? 'Yes' : 'No'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Regulation</p>
+                      <p className="font-medium text-gray-800">{REGULATION_LABELS[selectedSheet.regulation]?.full || selectedSheet.regulation || 'EN 378-3:2016'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Summary Stats ── */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-[#0a1628] text-white rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold">{selectedSheet.result?.totalDetectors ?? '—'}</p>
+                    <p className="text-xs text-gray-400 mt-1">Detectors</p>
+                  </div>
+                  <div className="bg-[#0a1628] text-white rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold">{selectedSheet.result?.totalZones ?? selectedSheet.zones?.length ?? '—'}</p>
+                    <p className="text-xs text-gray-400 mt-1">Zones</p>
+                  </div>
+                  <div className="bg-[#0a1628] text-white rounded-lg p-4 text-center">
+                    {(() => {
+                      const cfg = STATUS_CONFIG[selectedSheet.status] ?? { badge: 'bg-gray-100 text-gray-600', label: selectedSheet.status };
+                      return (
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${cfg.badge}`}>
+                          {cfg.label}
+                        </span>
+                      );
+                    })()}
+                    <p className="text-xs text-gray-400 mt-1">Status</p>
+                  </div>
+                </div>
+
+                {/* ── Status change ── */}
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase mb-2">Change Status</p>
+                  <div className="flex flex-wrap gap-2">
+                    {ALL_STATUSES.map(st => {
+                      const cfg = STATUS_CONFIG[st];
+                      const isActive = selectedSheet.status === st;
+                      return (
+                        <button
+                          key={st}
+                          disabled={isActive}
+                          onClick={() => handleStatusChange(selectedSheet.id, st)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all disabled:opacity-50 disabled:cursor-default ${
+                            isActive ? `${cfg.badge} border-current` : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                          }`}
+                        >
+                          {cfg.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ── Zone Results (EN 378 calculation) ── */}
+                {selectedSheet.result?.zoneRegulations && selectedSheet.result.zoneRegulations.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold text-[#E63946] uppercase tracking-widest mb-2">
+                      {REGULATION_LABELS[selectedSheet.regulation]?.full || 'EN 378-3:2016'} Calculation — {selectedSheet.result.zoneRegulations.length} zone{selectedSheet.result.zoneRegulations.length > 1 ? 's' : ''}
+                    </p>
+                    <div className="space-y-3">
+                      {selectedSheet.result.zoneRegulations.map((zr, idx) => {
+                        const zone = selectedSheet.zones?.[idx];
+                        const volume = zone ? (zone.volumeOverride ?? zone.surface * zone.height) : 0;
+                        return (
+                          <div key={zr.zoneId} className="bg-gray-50 rounded-lg border border-gray-100 overflow-hidden">
+                            {/* Zone header */}
+                            <div className="flex items-center justify-between px-4 py-2.5 bg-[#16354B]/5 border-b border-gray-100">
+                              <div className="flex items-center gap-2">
+                                <div className="w-1 h-4 bg-[#A7C031] rounded-full" />
+                                <span className="text-sm font-bold text-[#16354B]">{zr.zoneName}</span>
+                                {zone?.spaceTypeId && (
+                                  <span className="font-mono text-[10px] bg-gray-200 px-1.5 py-0.5 rounded">{zone.spaceTypeId}</span>
+                                )}
+                              </div>
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${detBadge(zr.detectionRequired)}`}>
+                                {zr.detectionRequired}
+                              </span>
+                            </div>
+
+                            <div className="px-4 py-3 space-y-2">
+                              {/* Dimensions */}
+                              {zone && (
+                                <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-600">
+                                  <span><span className="text-gray-400">Area:</span> {zone.surface} m²</span>
+                                  <span><span className="text-gray-400">Height:</span> {zone.height} m</span>
+                                  <span><span className="text-gray-400">Volume:</span> {volume.toFixed(1)} m³</span>
+                                  <span><span className="text-gray-400">Charge:</span> {zone.charge} kg</span>
+                                </div>
+                              )}
+
+                              {/* Regulatory context */}
+                              {zone?.regulatory && (
+                                <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500">
+                                  <span>Cat. {zone.regulatory.accessCategory}</span>
+                                  <span>Class {zone.regulatory.locationClass}</span>
+                                  {zone.regulatory.isMachineryRoom && <span className="text-amber-600">Machinery Room</span>}
+                                  {zone.regulatory.isOccupiedSpace && <span>Occupied</span>}
+                                  {zone.regulatory.belowGround && <span className="text-amber-600">Below Ground</span>}
+                                  {zone.regulatory.mechanicalVentilation && <span>Mech. Vent.</span>}
+                                </div>
+                              )}
+
+                              {/* Results */}
+                              <div className="border-t border-dashed border-gray-200 pt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs">
+                                <span>
+                                  <span className="text-gray-400">Detectors:</span>{' '}
+                                  <span className="font-bold text-[#16354B]">{zr.recommendedDetectors}</span>
+                                </span>
+                                <span>
+                                  <span className="text-gray-400">Threshold:</span>{' '}
+                                  <span className="font-semibold">{Math.round(zr.thresholdPpm).toLocaleString()} ppm</span>
+                                </span>
+                                <span>
+                                  <span className="text-gray-400">Placement:</span>{' '}
+                                  <span className="font-semibold">{zr.placementHeight} ({zr.placementHeightM})</span>
+                                </span>
+                                <span>
+                                  <span className="text-gray-400">Hazard:</span>{' '}
+                                  <span className="font-semibold">{zr.governingHazard}</span>
+                                </span>
+                                <span>
+                                  <span className="text-gray-400">Mode:</span>{' '}
+                                  <span className="font-semibold">{zr.quantityMode}</span>
+                                </span>
+                              </div>
+
+                              {/* Review flags */}
+                              {zr.reviewFlags && zr.reviewFlags.length > 0 && (
+                                <div className="flex items-start gap-1.5 text-[10px] text-amber-600 bg-amber-50 rounded px-2 py-1.5">
+                                  <span>⚠️</span>
+                                  <span>{zr.reviewFlags.join(' — ')}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model RefrigerantV5 {
+  id                String  @id
+  name              String
+  safetyClass       String
+  toxicityClass     String
+  flammabilityClass String
+  atelOdl           Float?
+  lfl               Float?
+  practicalLimit    Float
+  vapourDensity     Float
+  molecularMass     Float
+  boilingPoint      String?
+  gwp               String?
+  gasGroup          String
+}
+
+model GasCategory {
+  id          String @id
+  nameFr      String
+  nameEn      String
+  code        String
+  safetyClass String
+  coverage    Int    @default(50)
+  density     String
+  specs       String @default("{}")
+}
+
+model Application {
+  id                String  @id           // "supermarket", "machinery_room"
+  labelFr           String
+  labelEn           String
+  icon              String  @default("🏢")
+  descFr            String  @default("")
+  descEn            String  @default("")
+  // M1 regulatory defaults
+  accessCategory    String  @default("b")  // "a","b","c"
+  locationClass     String  @default("II") // "I","II","III","IV"
+  belowGround       Boolean @default(false)
+  isMachineryRoom   Boolean @default(false)
+  isOccupiedSpace   Boolean @default(false)
+  humanComfort      Boolean @default(false)
+  c3Applicable      Boolean @default(false)
+  mechVentilation   Boolean @default(false)
+  // M2 selection defaults
+  productFamilies   String  @default("[]")  // JSON: ["MIDI","MP"]
+  defaultRanges     String  @default("{}")  // JSON: {"R744":"0-10000ppm"}
+  suggestedGases    String  @default("[]")  // JSON: ["co2","hfc1"]
+  sortOrder         Int     @default(0)
+}
+
+model SpaceType {
+  id                String  @id           // "sales_area", "cold_room", "machinery_room"
+  labelFr           String
+  labelEn           String
+  icon              String  @default("🏢")
+  // Regulatory defaults
+  accessCategory    String  @default("b")
+  locationClass     String  @default("II")
+  belowGround       Boolean @default(false)
+  isMachineryRoom   Boolean @default(false)
+  isOccupiedSpace   Boolean @default(false)
+  humanComfort      Boolean @default(false)
+  c3Applicable      Boolean @default(false)
+  mechVentilation   Boolean @default(false)
+  sortOrder         Int     @default(0)
+}
+
+model AdminUser {
+  id       String  @id @default(cuid())
+  email    String  @unique
+  password String
+  name     String?
+  role     String  @default("admin")
+}
+
+model CalcSheet {
+  id          String   @id @default(cuid())
+  ref         String   @unique
+  clientJson  String   @default("{}")   // JSON: client info
+  gasAppJson  String   @default("{}")   // JSON: gas + application selection
+  zonesJson   String   @default("[]")   // JSON: array of zones with dimensions
+  resultJson  String   @default("{}")   // JSON: M1 calculation results
+  regulation  String   @default("en378") // "en378", "ashrae15", "iso5149"
+  createdAt   DateTime @default(now())
+  status      String   @default("draft") // "draft", "complete", "archived"
+}

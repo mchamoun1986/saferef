@@ -1,0 +1,226 @@
+// engine/evaluate.ts — Orchestrator: runs any RuleSet and assembles RegulationResult
+// This is the single entry point for all regulation evaluations.
+
+import type { RuleSet } from './rule-set';
+import type {
+  RegulationInput,
+  RegulationResult,
+  AllZonesResult,
+  ZoneRegulationResult,
+} from './types';
+import {
+  placementByDensity,
+  areaBasedQuantity,
+  computeSourceClusters,
+  determineGoverningHazard,
+} from './core';
+
+// ── Validation Error Helper ──────────────────────────────────────────────
+
+function validationError(
+  ruleSet: RuleSet,
+  message: string,
+): RegulationResult {
+  return {
+    regulationId: ruleSet.id,
+    regulationName: ruleSet.name,
+    detectionRequired: 'NO',
+    detectionBasis: `Validation error: ${message}`,
+    governingHazard: 'NONE',
+    governingRuleId: 'VALIDATION',
+    minDetectors: 0,
+    recommendedDetectors: 0,
+    quantityMode: 'area',
+    clusterCount: 0,
+    placementHeight: 'floor',
+    placementHeightM: 'N/A',
+    candidateZones: [],
+    thresholdPpm: 0,
+    thresholdKgM3: 0,
+    thresholdBasis: 'N/A',
+    stage2ThresholdPpm: null,
+    alarmThresholds: {
+      alarm1: { ppm: 0, kgM3: 0, basis: 'N/A' },
+      alarm2: { ppm: 0, kgM3: 0, basis: 'N/A' },
+      cutoff: { ppm: 0, kgM3: 0, basis: 'N/A' },
+      stage2Ppm: null,
+    },
+    ventilation: null,
+    extraRequirements: [],
+    requiredActions: [],
+    assumptions: [],
+    missingInputs: [message],
+    reviewFlags: [],
+    sourceClauses: [],
+    ruleClasses: [],
+  };
+}
+
+// ── Main Orchestrator ────────────────────────────────────────────────────
+
+export function evaluateRegulation(
+  ruleSet: RuleSet,
+  input: RegulationInput,
+): RegulationResult {
+  // 1. Input validation
+  if (input.charge <= 0) {
+    return validationError(ruleSet, 'Charge must be > 0 kg');
+  }
+  if (input.roomArea <= 0) {
+    return validationError(ruleSet, 'Room area must be > 0 m²');
+  }
+  if (input.roomHeight < 0.5) {
+    return validationError(ruleSet, 'Room height must be >= 0.5 m');
+  }
+
+  const ref = input.refrigerant;
+  const volume = input.roomVolume ?? input.roomArea * input.roomHeight;
+  const effectiveInput: RegulationInput = { ...input, roomVolume: volume };
+
+  // 2. Detection decision
+  const detection = ruleSet.evaluateDetection(effectiveInput);
+
+  // 3. Threshold
+  const { threshold, stage2Ppm, actions: thresholdActions } =
+    ruleSet.calculateThreshold(ref, input.charge);
+
+  // 4. Alarm thresholds
+  const alarmThresholds = ruleSet.getAlarmThresholds(ref);
+  alarmThresholds.stage2Ppm = stage2Ppm;
+
+  // 5. Placement
+  const placement = placementByDensity(ref.vapourDensity, input.roomHeight);
+
+  // 6. Detector quantity
+  const areaBased = areaBasedQuantity(input.roomArea);
+  const clusters = computeSourceClusters(
+    input.leakSourceLocations ?? [],
+    input.roomLength ?? 0,
+    input.roomWidth ?? 0,
+  );
+  const useCluster = clusters > 0;
+  const baseCount = useCluster ? clusters : areaBased;
+  const extraDetector = detection.extraDetector ? 1 : 0;
+
+  // 7. Ventilation
+  const ventilation = ruleSet.getEmergencyVentilation(input.charge, volume, ref);
+
+  // 8. Extra requirements
+  const extraRequirements = ruleSet.getExtraRequirements(ref, effectiveInput);
+
+  // 9. Candidate zones
+  const candidateZones = ruleSet.buildCandidateZones(effectiveInput);
+
+  // 10. Governing hazard
+  const governingHazard = determineGoverningHazard(
+    ref.toxicityClass,
+    ref.flammabilityClass,
+  );
+
+  // Assemble result based on detection decision
+  if (detection.detectionRequired === 'RECOMMENDED') {
+    // SAMON policy recommendation — no normative requirement
+    const recommendedDetectors = Math.max(1, Math.ceil(input.roomArea / 50));
+    return {
+      regulationId: ruleSet.id,
+      regulationName: ruleSet.name,
+      detectionRequired: 'RECOMMENDED',
+      detectionBasis: detection.detectionBasis,
+      governingHazard,
+      governingRuleId: detection.governingRuleId,
+      minDetectors: 0,
+      recommendedDetectors,
+      quantityMode: useCluster ? 'cluster' : 'area',
+      clusterCount: clusters,
+      placementHeight: placement.height,
+      placementHeightM: placement.heightM,
+      candidateZones,
+      thresholdPpm: threshold.ppm,
+      thresholdKgM3: threshold.kgM3,
+      thresholdBasis: threshold.basis,
+      stage2ThresholdPpm: stage2Ppm,
+      alarmThresholds,
+      ventilation,
+      extraRequirements,
+      requiredActions: [...detection.requiredActions, ...thresholdActions],
+      assumptions: detection.assumptions,
+      missingInputs: [],
+      reviewFlags: detection.reviewFlags,
+      sourceClauses: detection.sourceClauses,
+      ruleClasses: detection.ruleClasses,
+    };
+  }
+
+  // YES, NO, or MANUAL_REVIEW
+  const minDetectors =
+    detection.detectionRequired === 'YES' ? Math.max(1, baseCount + extraDetector) : 0;
+  const recommendedDetectors =
+    detection.detectionRequired === 'YES'
+      ? Math.max(minDetectors, areaBased + extraDetector)
+      : 0;
+
+  return {
+    regulationId: ruleSet.id,
+    regulationName: ruleSet.name,
+    detectionRequired: detection.detectionRequired,
+    detectionBasis: detection.detectionBasis,
+    governingHazard,
+    governingRuleId: detection.governingRuleId,
+    minDetectors,
+    recommendedDetectors,
+    quantityMode: useCluster ? 'cluster' : 'area',
+    clusterCount: clusters,
+    placementHeight: placement.height,
+    placementHeightM: placement.heightM,
+    candidateZones,
+    thresholdPpm: threshold.ppm,
+    thresholdKgM3: threshold.kgM3,
+    thresholdBasis: threshold.basis,
+    stage2ThresholdPpm: stage2Ppm,
+    alarmThresholds,
+    ventilation,
+    extraRequirements,
+    requiredActions: Array.from(
+      new Set([...detection.requiredActions, ...thresholdActions]),
+    ),
+    assumptions: detection.assumptions,
+    missingInputs: [],
+    reviewFlags: detection.reviewFlags,
+    sourceClauses: detection.sourceClauses,
+    ruleClasses: detection.ruleClasses,
+  };
+}
+
+// ── Multi-Zone Orchestrator ──────────────────────────────────────────────
+
+export function evaluateAllZones(
+  ruleSet: RuleSet,
+  inputs: (RegulationInput & { zoneId: string; zoneName: string })[],
+): AllZonesResult {
+  const zoneResults: ZoneRegulationResult[] = inputs.map((input) => ({
+    zoneId: input.zoneId,
+    zoneName: input.zoneName,
+    result: evaluateRegulation(ruleSet, input),
+  }));
+
+  const totalRecommendedDetectors = zoneResults.reduce(
+    (sum, z) => sum + z.result.recommendedDetectors,
+    0,
+  );
+  const totalMinDetectors = zoneResults.reduce(
+    (sum, z) => sum + z.result.minDetectors,
+    0,
+  );
+  const anyDetectionRequired = zoneResults.some(
+    (z) => z.result.detectionRequired === 'YES',
+  );
+
+  return {
+    regulationId: ruleSet.id,
+    regulationName: ruleSet.name,
+    zoneResults,
+    totalRecommendedDetectors,
+    totalMinDetectors,
+    anyDetectionRequired,
+  };
+}
