@@ -12,6 +12,8 @@ import { REFRIGERANTS_V5 } from "./seed-data/refrigerants-v5";
 import { GAS_CATEGORIES } from "./seed-data/gas-categories";
 import { APPLICATIONS } from "./seed-data/applications";
 import { SPACE_TYPES } from "./seed-data/space-types";
+import { PRODUCTS } from './seed-data/products';
+import { DISCOUNT_MATRIX } from './seed-data/discount-matrix';
 
 function createPrismaClient() {
   // DATABASE_URL from .env: "file:./detectcalc.db" — db push creates it at prisma/detectcalc.db
@@ -34,6 +36,8 @@ const prisma = createPrismaClient();
 async function main() {
   // ── Clear all tables ──
   console.log("Clearing existing data...");
+  await prisma.discountMatrix.deleteMany();
+  await prisma.product.deleteMany();
   await prisma.calcSheet.deleteMany();
   await prisma.application.deleteMany();
   await prisma.spaceType.deleteMany();
@@ -82,11 +86,30 @@ async function main() {
   });
   console.log("  ✓ Admin user created: admin@samon.com");
 
+  // Seed Products
+  for (const p of PRODUCTS) {
+    await prisma.product.upsert({
+      where: { code: p.code },
+      update: { ...p },
+      create: { ...p },
+    });
+  }
+  console.log('  Products:    ', PRODUCTS.length);
+
+  // Seed Discount Matrix
+  await prisma.discountMatrix.deleteMany();
+  for (const d of DISCOUNT_MATRIX) {
+    await prisma.discountMatrix.create({ data: d });
+  }
+  console.log('  Discounts:   ', DISCOUNT_MATRIX.length);
+
   console.log("\nSeed complete!");
   console.log(`  Refrigerants:   ${REFRIGERANTS_V5.length}`);
   console.log(`  Gas Categories: ${GAS_CATEGORIES.length}`);
   console.log(`  Applications:   ${APPLICATIONS.length}`);
   console.log(`  Space Types:    ${SPACE_TYPES.length}`);
+  console.log(`  Products:       ${PRODUCTS.length}`);
+  console.log(`  Discounts:      ${DISCOUNT_MATRIX.length}`);
   console.log(`  Admin user:     admin@samon.com`);
 }
 
