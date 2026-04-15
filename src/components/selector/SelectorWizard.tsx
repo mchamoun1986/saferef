@@ -56,10 +56,12 @@ export default function SelectorWizard() {
       fetch('/api/products?discontinued=false').then(r => r.json()),
       fetch('/api/refrigerants-v5').then(r => r.json()),
       fetch('/api/applications').then(r => r.json()),
-    ]).then(([prods, refs, apps]) => {
+      fetch('/api/discount-matrix').then(r => r.json()).catch(() => []),
+    ]).then(([prods, refs, apps, dm]) => {
       setProducts(prods);
       setRefrigerants(refs);
       setApplications(apps);
+      setDiscountMatrix(Array.isArray(dm) ? dm : []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
