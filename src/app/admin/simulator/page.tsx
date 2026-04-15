@@ -659,34 +659,442 @@ export default function SimulatorPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* TODO: Task 4 — 3-regulation comparison table */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-[#16354B] mb-4">
-                  3-Regulation Comparison
-                </h2>
-                <p className="text-sm text-gray-500">
-                  Detailed comparison table coming in Task 4.
-                </p>
+              {/* Task 4 — 3-regulation comparison table */}
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="bg-[#16354B] text-white px-5 py-3 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-base font-bold">3-Regulation Comparison</h2>
+                    {selectedRef && (
+                      <p className="text-xs text-gray-300 mt-0.5">
+                        {selectedRef.id} ({selectedRef.safetyClass}) &mdash; {inputs.charge} kg in {volume.toFixed(1)} m3
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-200 text-left text-xs text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-2 w-40">Metric</th>
+                        <th className="px-4 py-2">EN 378</th>
+                        <th className="px-4 py-2">ASHRAE 15</th>
+                        <th className="px-4 py-2">ISO 5149</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {/* Detection required */}
+                      <tr>
+                        <td className="px-4 py-2 font-medium text-gray-700">Detection</td>
+                        {(['en378', 'ashrae15', 'iso5149'] as const).map((key) => (
+                          <td key={key} className="px-4 py-2">{decisionBadge(liveResults[key].detectionRequired)}</td>
+                        ))}
+                      </tr>
+                      {/* Governing rule */}
+                      <tr className="bg-gray-50/50">
+                        <td className="px-4 py-2 font-medium text-gray-700">Governing Rule</td>
+                        {(['en378', 'ashrae15', 'iso5149'] as const).map((key) => (
+                          <td key={key} className="px-4 py-2 font-mono text-xs">{liveResults[key].governingRuleId}</td>
+                        ))}
+                      </tr>
+                      {/* Min / Rec detectors */}
+                      <tr>
+                        <td className="px-4 py-2 font-medium text-gray-700">Min / Rec Detectors</td>
+                        {(['en378', 'ashrae15', 'iso5149'] as const).map((key) => (
+                          <td key={key} className="px-4 py-2">
+                            <span className="font-bold">{liveResults[key].minDetectors}</span>
+                            {' / '}
+                            <span className="font-bold">{liveResults[key].recommendedDetectors}</span>
+                          </td>
+                        ))}
+                      </tr>
+                      {/* Threshold */}
+                      <tr className="bg-gray-50/50">
+                        <td className="px-4 py-2 font-medium text-gray-700">Threshold</td>
+                        {(['en378', 'ashrae15', 'iso5149'] as const).map((key) => (
+                          <td key={key} className="px-4 py-2">
+                            <span className="font-semibold">{liveResults[key].thresholdPpm} ppm</span>
+                            <br />
+                            <span className="text-xs text-gray-400">{liveResults[key].thresholdBasis}</span>
+                          </td>
+                        ))}
+                      </tr>
+                      {/* Placement */}
+                      <tr>
+                        <td className="px-4 py-2 font-medium text-gray-700">Placement</td>
+                        {(['en378', 'ashrae15', 'iso5149'] as const).map((key) => (
+                          <td key={key} className="px-4 py-2">
+                            <span className="capitalize">{liveResults[key].placementHeight}</span>
+                            <br />
+                            <span className="text-xs text-gray-400">{liveResults[key].placementHeightM}</span>
+                          </td>
+                        ))}
+                      </tr>
+                      {/* Ventilation */}
+                      <tr className="bg-gray-50/50">
+                        <td className="px-4 py-2 font-medium text-gray-700">Ventilation</td>
+                        {(['en378', 'ashrae15', 'iso5149'] as const).map((key) => (
+                          <td key={key} className="px-4 py-2">
+                            {liveResults[key].ventilation
+                              ? `${liveResults[key].ventilation!.flowRateM3s.toFixed(3)} m3/s`
+                              : <span className="text-gray-300">&mdash;</span>}
+                          </td>
+                        ))}
+                      </tr>
+                      {/* Alarm 1 */}
+                      <tr>
+                        <td className="px-4 py-2 font-medium text-gray-700">Alarm 1</td>
+                        {(['en378', 'ashrae15', 'iso5149'] as const).map((key) => (
+                          <td key={key} className="px-4 py-2">
+                            <span className="font-semibold">{Math.floor(liveResults[key].alarmThresholds.alarm1.ppm)} ppm</span>
+                          </td>
+                        ))}
+                      </tr>
+                      {/* Alarm 2 */}
+                      <tr className="bg-gray-50/50">
+                        <td className="px-4 py-2 font-medium text-gray-700">Alarm 2</td>
+                        {(['en378', 'ashrae15', 'iso5149'] as const).map((key) => (
+                          <td key={key} className="px-4 py-2">
+                            <span className="font-semibold">{Math.floor(liveResults[key].alarmThresholds.alarm2.ppm)} ppm</span>
+                          </td>
+                        ))}
+                      </tr>
+                      {/* Cutoff */}
+                      <tr>
+                        <td className="px-4 py-2 font-medium text-gray-700">Cutoff</td>
+                        {(['en378', 'ashrae15', 'iso5149'] as const).map((key) => (
+                          <td key={key} className="px-4 py-2">
+                            <span className="font-semibold">{Math.floor(liveResults[key].alarmThresholds.cutoff.ppm)} ppm</span>
+                          </td>
+                        ))}
+                      </tr>
+                      {/* Quantity Mode */}
+                      <tr className="bg-gray-50/50">
+                        <td className="px-4 py-2 font-medium text-gray-700">Quantity Mode</td>
+                        {(['en378', 'ashrae15', 'iso5149'] as const).map((key) => (
+                          <td key={key} className="px-4 py-2">
+                            <span className="capitalize">{liveResults[key].quantityMode}</span>
+                            {liveResults[key].quantityMode === 'cluster' && (
+                              <span className="text-xs text-gray-400 ml-1">({liveResults[key].clusterCount} clusters)</span>
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-              {/* TODO: Task 5 — Charge vs limits, decision paths, threshold trace */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-[#16354B] mb-4">
-                  Charge vs Limits / Decision Paths
-                </h2>
-                <p className="text-sm text-gray-500">
-                  Charge analysis and decision trace coming in Task 5.
-                </p>
-              </div>
+              {/* Task 5 — Charge vs limits, decision paths, threshold trace */}
+              {(() => {
+                const charge = parseFloat(inputs.charge) || 0;
+                const conc = volume > 0 ? concentrationKgM3(charge, volume) : 0;
+                const pl = selectedRef ? selectedRef.practicalLimit : 0;
+                const plExceeded = conc > pl;
+                const c3 = selectedRef ? getC3Entry(selectedRef.id) : null;
+                const flam = selectedRef ? isFlammable(selectedRef.flammabilityClass) : false;
+                const masses = (flam && selectedRef?.lfl) ? calcM1M2M3(selectedRef.lfl, volume) : null;
 
-              {/* TODO: Task 6 — History table + CSV export */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-[#16354B] mb-4">
-                  History ({history.length})
-                </h2>
-                <p className="text-sm text-gray-500">
-                  History table and CSV export coming in Task 6.
-                </p>
+                return (
+                  <div className="space-y-4">
+                    {/* Section 1: Charge vs Limits */}
+                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                      <div className="bg-[#16354B] text-white px-5 py-2">
+                        <h2 className="text-base font-bold">Charge vs Limits</h2>
+                      </div>
+                      <div className="p-5">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                          <div className="p-3 bg-gray-50 rounded border">
+                            <div className="text-xs text-gray-500">Charge</div>
+                            <div className="font-bold text-lg">{charge} kg</div>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded border">
+                            <div className="text-xs text-gray-500">Volume</div>
+                            <div className="font-bold text-lg">{volume.toFixed(1)} m3</div>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded border">
+                            <div className="text-xs text-gray-500">Concentration</div>
+                            <div className="font-bold text-lg">{conc.toPrecision(4)} kg/m3</div>
+                          </div>
+                          <div className={`p-3 rounded border ${plExceeded ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
+                            <div className="text-xs text-gray-500">PL (RCL)</div>
+                            <div className="font-bold text-lg">{pl} kg/m3</div>
+                            <span className={`text-xs font-semibold ${plExceeded ? 'text-red-600' : 'text-green-600'}`}>
+                              {plExceeded ? 'EXCEEDED' : 'OK'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* C.3 Table */}
+                        {c3 && (
+                          <div className="mb-4">
+                            <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">EN 378-1 Table C.3</h4>
+                            <div className="grid grid-cols-3 gap-3">
+                              {([
+                                { label: 'RCL', val: c3.rcl, chargeMax: c3.rcl * volume },
+                                { label: 'QLMV', val: c3.qlmv, chargeMax: c3.qlmv * volume },
+                                { label: 'QLAV', val: c3.qlav, chargeMax: c3.qlav * volume },
+                              ] as const).map(({ label, val, chargeMax }) => {
+                                const exceeded = conc > val;
+                                return (
+                                  <div key={label} className={`p-2 rounded border text-xs ${exceeded ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
+                                    <div className="font-semibold">{label}: {val} kg/m3</div>
+                                    <div className="text-gray-500">Max charge: {chargeMax.toFixed(2)} kg</div>
+                                    <span className={`font-semibold ${exceeded ? 'text-red-600' : 'text-green-600'}`}>
+                                      {exceeded ? 'EXCEEDED' : 'OK'}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* m1/m2/m3 for flammable */}
+                        {masses && (
+                          <div>
+                            <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Flammable Charge Limits (m1/m2/m3)</h4>
+                            <div className="grid grid-cols-3 gap-3">
+                              {([
+                                { label: 'm1 (no measures)', val: masses.m1 },
+                                { label: 'm2 (1 measure)', val: masses.m2 },
+                                { label: 'm3 (2 measures)', val: masses.m3 },
+                              ] as const).map(({ label, val }) => {
+                                const exceeded = charge > val;
+                                return (
+                                  <div key={label} className={`p-2 rounded border text-xs ${exceeded ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
+                                    <div className="font-semibold">{label}</div>
+                                    <div className="text-gray-700">{val.toFixed(3)} kg</div>
+                                    <span className={`font-semibold ${exceeded ? 'text-red-600' : 'text-green-600'}`}>
+                                      {exceeded ? 'EXCEEDED' : 'OK'}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Section 2: Decision Paths */}
+                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                      <div className="bg-[#16354B] text-white px-5 py-2">
+                        <h2 className="text-base font-bold">Decision Paths</h2>
+                      </div>
+                      <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {(['en378', 'ashrae15', 'iso5149'] as const).map((key) => {
+                          const r = liveResults[key];
+                          const paths = r.trace?.pathEvaluations ?? [];
+                          return (
+                            <div key={key} className="space-y-2">
+                              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                {r.regulationName}
+                              </h4>
+                              {paths.length === 0 ? (
+                                <p className="text-xs text-gray-400">No trace data</p>
+                              ) : (
+                                paths.map((pe, i) => {
+                                  const isSkip = pe.decision === 'SKIP';
+                                  return (
+                                    <div key={i} className={`flex items-start gap-2 text-xs ${isSkip ? 'opacity-50' : ''}`}>
+                                      {decisionBadge(pe.decision)}
+                                      <div className="min-w-0">
+                                        <div className="font-medium text-gray-700 truncate">{pe.path}</div>
+                                        <div className="text-gray-400 line-clamp-2">{pe.basis}</div>
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Section 3: Threshold & Placement */}
+                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                      <div className="bg-[#16354B] text-white px-5 py-2">
+                        <h2 className="text-base font-bold">Threshold &amp; Placement</h2>
+                      </div>
+                      <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Threshold calc */}
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Threshold Calculation</h4>
+                          {liveResults.en378.trace?.thresholdCalc ? (() => {
+                            const tc = liveResults.en378.trace.thresholdCalc;
+                            return (
+                              <div className="space-y-1 text-xs">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">50% ATEL</span>
+                                  <span className="font-mono">{tc.halfAtelPpm !== null ? `${Math.floor(tc.halfAtelPpm)} ppm` : 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">25% LFL</span>
+                                  <span className="font-mono">{tc.lfl25PctPpm !== null ? `${Math.floor(tc.lfl25PctPpm)} ppm` : 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between pt-1 border-t border-gray-200">
+                                  <span className="text-gray-700 font-semibold">Chosen</span>
+                                  <span className="font-mono font-semibold text-[#E63946]">{tc.finalPpm} ppm ({tc.chosen})</span>
+                                </div>
+                              </div>
+                            );
+                          })() : <p className="text-xs text-gray-400">No trace data</p>}
+                        </div>
+
+                        {/* Placement */}
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Placement</h4>
+                          {liveResults.en378.trace?.placementCalc ? (() => {
+                            const pc = liveResults.en378.trace.placementCalc;
+                            return (
+                              <div className="space-y-1 text-xs">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Vapour density</span>
+                                  <span className="font-mono">{pc.vapourDensity} kg/m3</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Ratio</span>
+                                  <span className="font-mono capitalize">{pc.ratio}</span>
+                                </div>
+                                <div className="flex justify-between pt-1 border-t border-gray-200">
+                                  <span className="text-gray-700 font-semibold">Result</span>
+                                  <span className="font-semibold text-[#16354B]">{pc.result}</span>
+                                </div>
+                              </div>
+                            );
+                          })() : <p className="text-xs text-gray-400">No trace data</p>}
+                        </div>
+
+                        {/* Quantity */}
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Quantity</h4>
+                          {liveResults.en378.trace?.quantityCalc ? (() => {
+                            const qc = liveResults.en378.trace.quantityCalc;
+                            return (
+                              <div className="space-y-1 text-xs">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Area-based</span>
+                                  <span className="font-mono">{qc.areaBased}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Clusters</span>
+                                  <span className="font-mono">{qc.clusters}</span>
+                                </div>
+                                <div className="flex justify-between pt-1 border-t border-gray-200">
+                                  <span className="text-gray-700 font-semibold">Mode</span>
+                                  <span className="font-semibold text-[#16354B] capitalize">{qc.mode}</span>
+                                </div>
+                              </div>
+                            );
+                          })() : <p className="text-xs text-gray-400">No trace data</p>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Task 6 — History table + CSV export */}
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="bg-[#1a2332] text-white px-5 py-3 flex items-center justify-between">
+                  <h2 className="text-base font-bold">Simulation History ({history.length})</h2>
+                  <div className="flex gap-2">
+                    <button
+                      disabled={history.length === 0}
+                      onClick={() => {
+                        const header = '#,Time,Refrigerant,Charge (kg),Volume (m3),EN 378,ASHRAE 15,ISO 5149,Min Det,Rec Det';
+                        const rows = history.map((h, i) => {
+                          const vol = h.inputs.volumeOverride
+                            ? parseFloat(h.inputs.volumeOverride)
+                            : parseFloat(h.inputs.surface) * parseFloat(h.inputs.height);
+                          return [
+                            i + 1,
+                            new Date(h.timestamp).toLocaleString(),
+                            h.refrigerant.id,
+                            h.inputs.charge,
+                            vol.toFixed(1),
+                            h.en378.detectionRequired,
+                            h.ashrae15.detectionRequired,
+                            h.iso5149.detectionRequired,
+                            h.en378.minDetectors,
+                            h.en378.recommendedDetectors,
+                          ].join(',');
+                        });
+                        const csv = [header, ...rows].join('\n');
+                        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `detectcalc-sim-${new Date().toISOString().slice(0, 10)}.csv`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      className="px-3 py-1 text-xs rounded bg-white/10 hover:bg-white/20 transition-colors border border-white/20 disabled:opacity-40"
+                    >
+                      Export CSV
+                    </button>
+                    <button
+                      disabled={history.length === 0}
+                      onClick={() => setHistory([])}
+                      className="px-3 py-1 text-xs rounded bg-white/10 hover:bg-white/20 transition-colors border border-white/20 disabled:opacity-40"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+                {history.length === 0 ? (
+                  <div className="p-8 text-center text-gray-400 text-sm">
+                    No simulations saved yet. Configure inputs and click &quot;Save to History&quot;.
+                  </div>
+                ) : (
+                  <div className="overflow-auto" style={{ maxHeight: 280 }}>
+                    <table className="w-full text-xs">
+                      <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 text-left text-gray-500 uppercase tracking-wider">
+                        <tr>
+                          <th className="px-3 py-2">#</th>
+                          <th className="px-3 py-2">Time</th>
+                          <th className="px-3 py-2">Refrigerant</th>
+                          <th className="px-3 py-2">Charge</th>
+                          <th className="px-3 py-2">Volume</th>
+                          <th className="px-3 py-2">EN 378</th>
+                          <th className="px-3 py-2">ASHRAE</th>
+                          <th className="px-3 py-2">ISO</th>
+                          <th className="px-3 py-2">Detectors</th>
+                          <th className="px-3 py-2">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {history.map((h, i) => {
+                          const vol = h.inputs.volumeOverride
+                            ? parseFloat(h.inputs.volumeOverride)
+                            : parseFloat(h.inputs.surface) * parseFloat(h.inputs.height);
+                          return (
+                            <tr key={h.id} className="hover:bg-gray-50">
+                              <td className="px-3 py-2 text-gray-400">{i + 1}</td>
+                              <td className="px-3 py-2 whitespace-nowrap">{new Date(h.timestamp).toLocaleTimeString()}</td>
+                              <td className="px-3 py-2 font-semibold">{h.refrigerant.id}</td>
+                              <td className="px-3 py-2">{h.inputs.charge} kg</td>
+                              <td className="px-3 py-2">{vol.toFixed(1)} m3</td>
+                              <td className="px-3 py-2">{decisionBadge(h.en378.detectionRequired)}</td>
+                              <td className="px-3 py-2">{decisionBadge(h.ashrae15.detectionRequired)}</td>
+                              <td className="px-3 py-2">{decisionBadge(h.iso5149.detectionRequired)}</td>
+                              <td className="px-3 py-2 font-mono">{h.en378.minDetectors}/{h.en378.recommendedDetectors}</td>
+                              <td className="px-3 py-2">
+                                <button
+                                  onClick={() => { setInputs(h.inputs); setRefSearch(''); }}
+                                  className="text-[#E63946] hover:underline font-medium"
+                                >
+                                  Reload
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           )}
