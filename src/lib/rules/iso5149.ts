@@ -266,8 +266,14 @@ export const iso5149RuleSet: RuleSet = {
     const alarm1KgM3 = threshold.kgM3;
     const alarm2Ppm = alarm1Ppm * 2;
     const alarm2KgM3 = alarm1KgM3 * 2;
-    const cutoffKgM3 = ref.practicalLimit;
-    const cutoffPpm = kgM3ToPpm(cutoffKgM3, ref.molecularMass);
+    // Cutoff = max(RCL, alarm2) — enforce alarm2 <= cutoff always.
+    // For flammable A2L/A3, practicalLimit (RCL) can be << LFL-based alarm2,
+    // so the raw RCL must be clamped upward to keep monitoring logic coherent.
+    const rclKgM3 = ref.practicalLimit;
+    const rclPpm = kgM3ToPpm(rclKgM3, ref.molecularMass);
+    const cutoffPpm = Math.max(Math.floor(rclPpm), alarm2Ppm);
+    const cutoffKgM3 = Math.max(rclKgM3, alarm2KgM3);
+    const cutoffBasis = cutoffPpm > Math.floor(rclPpm) ? 'alarm2_floor' : 'RCL';
 
     let alarm2Basis: string;
     if (threshold.basis === '50%_ATEL_ODL') {
@@ -281,7 +287,7 @@ export const iso5149RuleSet: RuleSet = {
     return {
       alarm1: { ppm: alarm1Ppm, kgM3: alarm1KgM3, basis: `RCL_${threshold.basis}` },
       alarm2: { ppm: alarm2Ppm, kgM3: alarm2KgM3, basis: alarm2Basis },
-      cutoff: { ppm: Math.floor(cutoffPpm), kgM3: cutoffKgM3, basis: 'RCL' },
+      cutoff: { ppm: cutoffPpm, kgM3: cutoffKgM3, basis: cutoffBasis },
       stage2Ppm: null,
     };
   },
