@@ -82,7 +82,9 @@ function getAppSuggestedGases(app: AppItem | null | undefined): string[] {
   try { return JSON.parse(app.suggestedGases); } catch { return []; }
 }
 
-/** Map gas group codes (co2, hfc1, nh3...) to refrigerant IDs */
+/** Map gas group codes to refrigerant IDs. Keys are stored lowercase; look-up
+ *  normalizes the incoming code so either case works (DB historically stores
+ *  applications.suggestedGases as lowercase but refrigerant.gasGroup as UPPERCASE). */
 const GAS_GROUP_TO_REFS: Record<string, string[]> = {
   co2: ['R744'],
   nh3: ['R717'],
@@ -93,6 +95,10 @@ const GAS_GROUP_TO_REFS: Record<string, string[]> = {
   no2: ['NO2'],
   o2: ['O2'],
 };
+
+function refsForGasGroup(code: string): string[] {
+  return GAS_GROUP_TO_REFS[code.toLowerCase()] ?? [];
+}
 
 /** Common refrigerants shown first */
 const COMMON_REFS = new Set(["R-404A", "R-407C", "R-410A", "R-134a", "R744", "R32", "R290", "R717"]);
@@ -174,8 +180,7 @@ export default function StepGasApp({
     const gases = getAppSuggestedGases(selectedApp);
     const ids = new Set<string>();
     for (const g of gases) {
-      const refs = GAS_GROUP_TO_REFS[g];
-      if (refs) refs.forEach(r => ids.add(r));
+      refsForGasGroup(g).forEach(r => ids.add(r));
     }
     return ids;
   }, [selectedApp]);
