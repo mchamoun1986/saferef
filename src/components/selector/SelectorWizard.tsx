@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import type { ProductRecord, DiscountRow, BOMZone } from '@/lib/m2-engine/types';
 import type { SelectionInput, SelectionResult, PricingInput, PricingResult } from '@/lib/engine-types';
 import { toProductEntries } from '@/lib/m2-engine/parse-product';
@@ -152,11 +153,11 @@ export default function SelectorWizard() {
   return (
     <div className="min-h-screen flex flex-col">
       <nav className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] text-white px-6 py-4 flex items-center justify-between border-b-2 border-[#E63946]">
-        <a href="/" className="flex items-center gap-1 hover:opacity-80 transition-opacity">
+        <Link href="/" className="flex items-center gap-1 hover:opacity-80 transition-opacity">
           <span className="text-[#E63946] font-extrabold text-xl">Safe</span>
           <span className="text-white font-extrabold text-xl">Ref</span>
           <span className="ml-3 text-sm text-[#6b8da5]">Selector</span>
-        </a>
+        </Link>
         <LanguageSwitcher compact />
       </nav>
 

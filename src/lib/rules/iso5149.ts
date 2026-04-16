@@ -34,7 +34,7 @@ function evaluateDetectionISO5149(input: RegulationInput): DetectionEvaluation {
   let detectionBasis = '';
   let governingRuleId = 'ISO5149-NONE';
   let ruleClasses: string[] = ['RECOMMENDED'];
-  let extraDetector = false;
+  const extraDetector = false;
 
   // Path A — Machinery Room (same as EN 378)
   if (input.isMachineryRoom) {

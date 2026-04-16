@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { type Lang, LANGS, LANG_FLAGS, LANG_NAMES, NAV, VALIDATION } from '@/components/configurator/i18n';
 import StepClient from '@/components/configurator/StepClient';
@@ -356,11 +357,11 @@ export default function ConfiguratorPage() {
     <div className="min-h-screen flex flex-col">
       {/* Navbar */}
       <nav className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] text-white px-6 py-4 flex items-center justify-between print:hidden border-b-2 border-[#E63946]">
-        <a href="/" className="flex items-center gap-1 hover:opacity-80 transition-opacity">
+        <Link href="/" className="flex items-center gap-1 hover:opacity-80 transition-opacity">
           <span className="text-[#E63946] font-extrabold text-xl tracking-wide">Safe</span>
           <span className="text-white font-extrabold text-xl">Ref</span>
           <span className="ml-3 text-sm text-[#6b8da5]">Designer</span>
-        </a>
+        </Link>
         <div ref={langRef} className="relative">
           <button
             onClick={() => setLangOpen(!langOpen)}

@@ -118,9 +118,12 @@ export default function SimulatorM2Page() {
     setInputs(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  // Live results (recalculated on every input change)
+  // Live results (recalculated on every input change).
+  // Note: performance.now() is technically impure but used only for a UI
+  // timing display; results themselves are deterministic functions of inputs.
   const liveResults = useMemo(() => {
     if (products.length === 0) return null;
+    // eslint-disable-next-line react-hooks/purity
     const start = performance.now();
     const selInput: SelectionInput = {
       regulationResult: {} as SelectionInput['regulationResult'],
@@ -142,6 +145,7 @@ export default function SimulatorM2Page() {
       discountMatrix, priceDb,
     };
     const pricing = calculatePricing(pricingInput);
+    // eslint-disable-next-line react-hooks/purity
     const runMs = Math.round(performance.now() - start);
     return { selection, pricing, runMs };
   }, [products, controllers, accessories, inputs, discountMatrix, priceDb]);

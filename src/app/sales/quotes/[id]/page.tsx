@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -122,9 +123,9 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
       <div className="max-w-2xl mx-auto px-6 py-16 text-center">
         <p className="text-2xl font-semibold text-gray-700 mb-2">Quote not found</p>
         <p className="text-gray-500 mb-6">The quote you are looking for does not exist or has been deleted.</p>
-        <a href="/sales/quotes" className="inline-flex items-center gap-2 text-[#16354B] hover:underline font-medium">
+        <Link href="/sales/quotes" className="inline-flex items-center gap-2 text-[#16354B] hover:underline font-medium">
           &larr; Back to quotes
-        </a>
+        </Link>
       </div>
     );
   }
@@ -139,9 +140,9 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div>
-        <a href="/sales/quotes" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#16354B] transition-colors mb-4">
+        <Link href="/sales/quotes" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#16354B] transition-colors mb-4">
           &larr; Back to quotes
-        </a>
+        </Link>
 
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>

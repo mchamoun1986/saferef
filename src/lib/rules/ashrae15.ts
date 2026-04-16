@@ -34,7 +34,7 @@ function evaluateDetectionAshrae15(input: RegulationInput): DetectionEvaluation 
   let detectionBasis = '';
   let governingRuleId = 'ASHRAE15-NONE';
   let ruleClasses: string[] = ['RECOMMENDED'];
-  let extraDetector = false;
+  const extraDetector = false;
 
   // Path A — Machinery Room
   if (input.isMachineryRoom) {
