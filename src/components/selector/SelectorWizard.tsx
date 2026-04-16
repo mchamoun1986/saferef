@@ -1,12 +1,16 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import type { ProductRecord, DiscountRow, SelectorInput, BOMZone, BOMResult } from '@/lib/m2-engine/types';
-import { buildBOM } from '@/lib/m2-engine/build-bom';
+import type { ProductRecord, DiscountRow, BOMZone } from '@/lib/m2-engine/types';
+import type { SelectionInput, SelectionResult, PricingInput, PricingResult } from '@/lib/engine-types';
+import { toProductEntries } from '@/lib/m2-engine/parse-product';
+import { selectProducts } from '@/lib/m2-engine/selection-engine';
+import { calculatePricing } from '@/lib/m2-engine/pricing-engine';
 import StepAppGas from './StepAppGas';
 import StepTechnical from './StepTechnical';
 import StepZoneQty from './StepZoneQty';
-import StepBOM from './StepBOM';
+import StepTieredBOM from './StepTieredBOM';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 const STEP_LABELS = ['Application & Gas', 'Technical', 'Zones', 'Quote'];
 
@@ -24,9 +28,15 @@ interface AppOption {
   suggestedGases?: string;
 }
 
+const CUSTOMER_GROUPS = [
+  '', 'EDC', 'OEM', '1Fo', '2Fo', '3Fo',
+  '1Contractor', '2Contractor', '3Contractor',
+  'AKund', 'BKund', 'NO',
+];
+
 export default function SelectorWizard() {
   const [step, setStep] = useState(1);
-  const [products, setProducts] = useState<ProductRecord[]>([]);
+  const [rawProducts, setRawProducts] = useState<ProductRecord[]>([]);
   const [discountMatrix, setDiscountMatrix] = useState<DiscountRow[]>([]);
   const [refrigerants, setRefrigerants] = useState<RefOption[]>([]);
   const [applications, setApplications] = useState<AppOption[]>([]);
@@ -49,7 +59,8 @@ export default function SelectorWizard() {
 
   // Step 4 state
   const [customerGroup, setCustomerGroup] = useState('');
-  const [bomResult, setBomResult] = useState<BOMResult | null>(null);
+  const [selectionResult, setSelectionResult] = useState<SelectionResult | null>(null);
+  const [pricingResult, setPricingResult] = useState<PricingResult | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -58,7 +69,7 @@ export default function SelectorWizard() {
       fetch('/api/applications').then(r => r.json()),
       fetch('/api/discount-matrix').then(r => r.json()).catch(() => []),
     ]).then(([prods, refs, apps, dm]) => {
-      setProducts(prods);
+      setRawProducts(prods);
       setRefrigerants(refs);
       setApplications(apps);
       setDiscountMatrix(Array.isArray(dm) ? dm : []);
@@ -66,24 +77,63 @@ export default function SelectorWizard() {
     }).catch(() => setLoading(false));
   }, []);
 
-  const selectorInput = useMemo((): SelectorInput => ({
-    gasGroup,
-    refrigerantRefs,
-    preferredFamily: preferredFamily || undefined,
-    voltage,
-    atexRequired,
-    mountType,
-    standalone,
-  }), [gasGroup, refrigerantRefs, preferredFamily, voltage, atexRequired, mountType, standalone]);
+  const { products, controllers, accessories } = useMemo(
+    () => toProductEntries(rawProducts),
+    [rawProducts],
+  );
 
-  function generateBOM() {
-    const result = buildBOM(selectorInput, zones, products);
-    setBomResult(result);
+  const priceDb = useMemo(() => {
+    const db = new Map<string, { price: number; productGroup: string; discontinued: boolean }>();
+    for (const p of rawProducts) db.set(p.code, { price: p.price, productGroup: p.productGroup || 'G', discontinued: p.discontinued });
+    return db;
+  }, [rawProducts]);
+
+  const totalDetectors = zones.reduce((s, z) => s + z.detectorQty, 0);
+
+  function generateQuote() {
+    const selInput: SelectionInput = {
+      regulationResult: {} as SelectionInput['regulationResult'],
+      totalDetectors,
+      selectedRefrigerant: refrigerantRefs[0] || '',
+      zoneType: application || 'supermarket',
+      zoneAtex: atexRequired,
+      outputRequired: 'any',
+      sitePowerVoltage: voltage,
+      mountingType: mountType,
+      projectCountry: 'SE',
+      products,
+      controllers,
+      accessories,
+    };
+
+    const sel = selectProducts(selInput);
+    setSelectionResult(sel);
+
+    const pInput: PricingInput = {
+      tiers: sel.tiers,
+      customerGroup: (customerGroup || 'NO') as PricingInput['customerGroup'],
+      discountMatrix,
+      priceDb,
+    };
+    setPricingResult(calculatePricing(pInput));
     setStep(4);
   }
 
+  // Recalculate pricing when customer group changes on step 4
+  useMemo(() => {
+    if (step !== 4 || !selectionResult) return;
+    const pInput: PricingInput = {
+      tiers: selectionResult.tiers,
+      customerGroup: (customerGroup || 'NO') as PricingInput['customerGroup'],
+      discountMatrix,
+      priceDb,
+    };
+    setPricingResult(calculatePricing(pInput));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerGroup]);
+
   function nextStep() {
-    if (step === 3) { generateBOM(); return; }
+    if (step === 3) { generateQuote(); return; }
     setStep(s => Math.min(s + 1, 4));
   }
 
@@ -107,6 +157,7 @@ export default function SelectorWizard() {
           <span className="text-white font-extrabold text-xl">Ref</span>
           <span className="ml-3 text-sm text-[#6b8da5]">Selector</span>
         </a>
+        <LanguageSwitcher compact />
       </nav>
 
       <div className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] py-5">
@@ -166,14 +217,15 @@ export default function SelectorWizard() {
         {step === 3 && (
           <StepZoneQty zones={zones} onChange={setZones} />
         )}
-        {step === 4 && bomResult && (
-          <StepBOM
-            bom={bomResult}
-            products={products}
-            selectorInput={selectorInput}
+        {step === 4 && selectionResult && pricingResult && (
+          <StepTieredBOM
+            selectionResult={selectionResult}
+            pricingResult={pricingResult}
             customerGroup={customerGroup}
+            customerGroups={CUSTOMER_GROUPS}
             onCustomerGroupChange={setCustomerGroup}
-            discountMatrix={discountMatrix}
+            clientData={{ firstName: '', lastName: '', company: '', email: '', phone: '', projectName: '', country: 'SE', customerGroup }}
+            gasAppData={{ zoneType: application, selectedRefrigerant: refrigerantRefs[0] || '', selectedRange: '', sitePowerVoltage: voltage, zoneAtex: atexRequired, mountingType: mountType }}
           />
         )}
 

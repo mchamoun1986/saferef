@@ -211,3 +211,247 @@ export interface AllZonesResult {
   /** Detection required in at least one zone */
   anyDetectionRequired: boolean;
 }
+
+// ─── M2 — Selection Engine ─────────────────────────────────────────
+
+export interface ProductEntry {
+  id: string;
+  code: string;
+  name: string;
+  family: string;
+  type: string;
+  description: string | null;
+  category: string;
+  price: number;
+  tier: string;
+  productGroup: string;
+  gas: string[];
+  refs: string[];
+  apps: string[];
+  range: string | null;
+  sensorTech: string | null;
+  sensorLife: string | null;
+  power: number | null;
+  voltage: string | null;
+  ip: string | null;
+  tempMin: number | null;
+  tempMax: number | null;
+  relay: number;
+  analog: string | null;
+  modbus: boolean;
+  standalone: boolean;
+  atex: boolean;
+  mount: string[];
+  remote: boolean;
+  features: string | null;
+  connectTo: string | null;
+  discontinued: boolean;
+  channels: number | null;
+  maxPower: number | null;
+  subCategory: string | null;
+  compatibleFamilies: string[];
+}
+
+export interface AlertAccessory {
+  key: string;
+  code: string;
+  name: string;
+  type: string;
+  price: number;
+  power: string | null;
+  ip: string | null;
+}
+
+export interface BomLine {
+  code: string;
+  name: string;
+  qty: number;
+  price: number;
+  subtotal: number;
+  reason?: string;
+}
+
+export interface TierSolution {
+  tier: 'PREMIUM' | 'STANDARD' | 'CENTRALIZED';
+  label: string;
+  solutionScore: number;
+  detector: {
+    code: string; name: string; qty: number; price: number;
+    gas: string; range: string | null; sensorTech: string | null;
+    sensorLife: string | null; ip: string | null;
+    tempMin: number | null; tempMax: number | null;
+  };
+  detectorSpecs: {
+    power: number | null; voltage: string | null;
+    relays: number; relaySpec: string | null;
+    analog: string | null; analogType: string | null;
+    modbus: boolean; modbusType: string | null;
+    connectTo: string | null; features: string | null;
+  };
+  controller: {
+    code: string; name: string; qty: number;
+    channels: number | null; maxPower: number | null;
+    price: number; subtotal: number;
+  } | null;
+  controllerSpecs: {
+    voltage: string | null; powerToSensors: number | null;
+    relayOutputs: number | null; ip: string | null;
+    analogIn: string | null; analogOut: string | null;
+    rs485: boolean; displayType: string | null;
+    tempRange: string | null; mounting: string | null;
+    cableMax: string | null; failsafe: boolean;
+    features: string | null;
+  } | null;
+  powerAccessories: BomLine[];
+  mountingAccessories: BomLine[];
+  alertAccessories: BomLine[];
+  serviceTools: BomLine[];
+  spareSensors: BomLine[];
+  totalBom: number;
+}
+
+export interface ComparisonTable {
+  rows: { label: string; premium: string; standard: string; centralized: string }[];
+  recommendation: 'premium' | 'standard' | 'centralized';
+  recommendationReason: string;
+}
+
+export interface SelectionInput {
+  regulationResult: RegulationResult;
+  totalDetectors: number;
+  selectedRefrigerant: string;
+  selectedRange?: string;
+  zoneType: string;
+  zoneAtex: boolean;
+  outputRequired: string;
+  sitePowerVoltage: '12V' | '24V' | '230V';
+  mountingType: string;
+  projectCountry: string;
+  products: ProductEntry[];
+  controllers: ProductEntry[];
+  accessories: ProductEntry[];
+  alertAccessory?: string;
+  appProductFamilies?: string[];
+  appDefaultRanges?: Record<string, string>;
+}
+
+export interface FilterStep {
+  name: string;
+  inputCount: number;
+  outputCount: number;
+  eliminated: number;
+  eliminatedProducts?: string[];
+}
+
+export interface ScoredCandidate {
+  id: string;
+  code: string;
+  name: string;
+  tier: string;
+  family: string;
+  score: {
+    tierPriority: number;
+    applicationFit: number;
+    outputMatch: number;
+    simplicity: number;
+    maintenanceCost: number;
+    featureRichness: number;
+    total: number;
+  };
+  price: number;
+  standalone: boolean;
+}
+
+export interface TierPickTrace {
+  tier: string;
+  candidateCount: number;
+  candidates: { id: string; code: string; score: number; price: number }[];
+  picked: string | null;
+  reason: string;
+}
+
+export interface BomFunctionTrace {
+  name: string;
+  tier: string;
+  applied: boolean;
+  reason: string;
+  items: { code: string; name: string; qty: number; subtotal: number }[];
+}
+
+export interface SelectionTrace {
+  filterPipeline: FilterStep[];
+  afterFilters: number;
+  scored: ScoredCandidate[];
+  tierPicks: TierPickTrace[];
+  bomFunctions?: BomFunctionTrace[];
+}
+
+export interface SelectionResult {
+  tiers: {
+    premium: TierSolution | null;
+    standard: TierSolution | null;
+    centralized: TierSolution | null;
+  };
+  comparison: ComparisonTable;
+  trace?: SelectionTrace;
+}
+
+// ─── M3 — Pricing Engine ───────────────────────────────────────────
+
+export type CustomerGroup =
+  | 'EDC' | 'OEM' | '1Fo' | '2Fo' | '3Fo'
+  | '1Contractor' | '2Contractor' | '3Contractor'
+  | 'AKund' | 'BKund' | 'NO';
+
+export interface PricedLine {
+  code: string;
+  name: string;
+  productGroup: string;
+  category: string;
+  qty: number;
+  listPrice: number;
+  discountPct: number;
+  discountAmount: number;
+  netTotal: number;
+  m2Price: number;
+}
+
+export interface PricedTier {
+  tier: string;
+  label: string;
+  solutionScore: number;
+  bomLines: PricedLine[];
+  summary: {
+    totalBeforeDiscount: number;
+    totalDiscount: number;
+    totalHt: number;
+  };
+  priceValidation: 'MATCH' | 'MISMATCH';
+}
+
+export interface PricingInput {
+  tiers: SelectionResult['tiers'];
+  customerGroup: CustomerGroup;
+  discountCode?: string;
+  discountMatrix: { customerGroup: string; productGroup: string; discountPct: number }[];
+  customerOverrides?: { discountCode: string; productGroup: string; ratePct: number }[];
+  priceDb: Map<string, { price: number; productGroup: string; discontinued: boolean }>;
+}
+
+export interface PricingResult {
+  quoteRef: string;
+  quoteDate: string;
+  quoteValidUntil: string;
+  priceListVersion: string;
+  tiers: {
+    premium: PricedTier | null;
+    standard: PricedTier | null;
+    centralized: PricedTier | null;
+  };
+  comparison: {
+    rows: { label: string; premium: string; standard: string; centralized: string }[];
+    savingsVsPremium: { standard: number | null; centralized: number | null };
+  };
+  recommended: 'premium' | 'standard' | 'centralized';
+  warnings: string[];
+}

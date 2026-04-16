@@ -11,8 +11,12 @@ const links = [
   { href: '/admin/products', label: 'Products' },
   { href: '/admin/calc-sheets', label: 'Calc Sheets' },
   { href: '/admin/engine', label: 'Engine' },
-  { href: '/admin/testlab', label: 'TestLab' },
-  { href: '/admin/simulator', label: 'Simulator' },
+  { href: '/admin/engine-m2', label: 'Engine M2' },
+  { href: '/admin/testlab', label: 'TestLab M1' },
+  { href: '/admin/testlab-m2', label: 'TestLab M2' },
+  { href: '/admin/simulator', label: 'Sim M1' },
+  { href: '/admin/simulator-m2', label: 'Sim M2' },
+  { href: '/admin/traceability', label: 'Traceability' },
   { href: '/sales', label: 'Sales' },
 ];
 

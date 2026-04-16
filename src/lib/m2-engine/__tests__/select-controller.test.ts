@@ -10,6 +10,8 @@ const mpu2: ProductRecord = {
   channels: 2, relay: 4, analog: null, modbus: true,
   productGroup: 'A', tier: 'standard', subCategory: null,
   compatibleFamilies: '[]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const mpu4: ProductRecord = {
@@ -20,6 +22,8 @@ const mpu4: ProductRecord = {
   channels: 4, relay: 8, analog: null, modbus: true,
   productGroup: 'A', tier: 'standard', subCategory: null,
   compatibleFamilies: '[]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const mpu6: ProductRecord = {
@@ -30,6 +34,8 @@ const mpu6: ProductRecord = {
   channels: 6, relay: 12, analog: null, modbus: true,
   productGroup: 'A', tier: 'standard', subCategory: null,
   compatibleFamilies: '[]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const scu64: ProductRecord = {
@@ -40,6 +46,8 @@ const scu64: ProductRecord = {
   channels: 64, relay: 16, analog: null, modbus: true,
   productGroup: 'D', tier: 'premium', subCategory: null,
   compatibleFamilies: '[]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const allControllers = [mpu2, mpu4, mpu6, scu64];

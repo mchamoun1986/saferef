@@ -10,6 +10,8 @@ const midiCO2: ProductRecord = {
   discontinued: false, channels: null, relay: 2, analog: 'selectable',
   modbus: true, productGroup: 'G', tier: 'standard', subCategory: null,
   compatibleFamilies: '[]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const mpu4: ProductRecord = {
@@ -20,6 +22,8 @@ const mpu4: ProductRecord = {
   channels: 4, relay: 8, analog: null, modbus: true,
   productGroup: 'A', tier: 'standard', subCategory: null,
   compatibleFamilies: '[]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const bracket: ProductRecord = {
@@ -30,6 +34,8 @@ const bracket: ProductRecord = {
   channels: null, relay: 0, analog: null, modbus: false,
   productGroup: 'A', tier: 'standard', subCategory: 'mounting',
   compatibleFamilies: '["MIDI"]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const calGas: ProductRecord = {
@@ -40,6 +46,8 @@ const calGas: ProductRecord = {
   channels: null, relay: 0, analog: null, modbus: false,
   productGroup: 'A', tier: 'standard', subCategory: 'service',
   compatibleFamilies: '["ALL"]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const allProducts = [midiCO2, mpu4, bracket, calGas];

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -49,10 +49,10 @@ interface Product {
 }
 
 const TYPES = ['detector', 'controller', 'accessory'] as const;
-const FAMILIES = ['MIDI', 'X5', 'RM', 'Aquis', 'Controller', 'Accessory'] as const;
-const TIERS = ['standard', 'premium', 'economy'] as const;
+const FAMILIES = ['MIDI', 'X5', 'RM', 'Aquis', 'G', 'TR', 'MP', 'Controller', 'Accessory'] as const;
+const TIERS = ['standard', 'premium', 'economic'] as const;
 const GAS_OPTIONS = ['CO2', 'HFC1', 'HFC2', 'NH3', 'R290', 'CO', 'NO2', 'O2'] as const;
-const MOUNT_OPTIONS = ['wall', 'ceiling', 'floor'] as const;
+const MOUNT_OPTIONS = ['wall', 'ceiling', 'floor', 'duct'] as const;
 
 const EMPTY_PRODUCT: Omit<Product, 'createdAt' | 'updatedAt'> = {
   id: '', type: 'detector', family: 'MIDI', name: '', code: '', price: 0,
@@ -67,241 +67,322 @@ const EMPTY_PRODUCT: Omit<Product, 'createdAt' | 'updatedAt'> = {
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function parseJson<T>(val: string, fallback: T): T {
+function parseJson<T>(val: string | null | undefined, fallback: T): T {
+  if (!val) return fallback;
   try { return JSON.parse(val); } catch { return fallback; }
 }
 
 function gasColor(g: string): string {
   const map: Record<string, string> = {
-    CO2: 'bg-blue-100 text-blue-700', HFC1: 'bg-green-100 text-green-700',
-    HFC2: 'bg-teal-100 text-teal-700', NH3: 'bg-purple-100 text-purple-700',
-    R290: 'bg-orange-100 text-orange-700', CO: 'bg-red-100 text-red-700',
-    NO2: 'bg-yellow-100 text-yellow-800', O2: 'bg-cyan-100 text-cyan-700',
+    CO2: 'bg-blue-500 text-white', HFC1: 'bg-green-500 text-white',
+    HFC2: 'bg-teal-500 text-white', NH3: 'bg-purple-500 text-white',
+    R290: 'bg-orange-500 text-white', CO: 'bg-red-500 text-white',
+    NO2: 'bg-yellow-500 text-white', O2: 'bg-cyan-500 text-white',
   };
-  return map[g] ?? 'bg-gray-100 text-gray-700';
+  return map[g] ?? 'bg-gray-400 text-white';
 }
+
+function tierBadge(tier: string) {
+  const map: Record<string, string> = {
+    premium: 'bg-blue-100 text-blue-700 border-blue-300',
+    standard: 'bg-green-100 text-green-700 border-green-300',
+    economic: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+  };
+  return map[tier] ?? 'bg-gray-100 text-gray-600 border-gray-300';
+}
+
+function connectionBadges(p: Product) {
+  if (p.standalone) {
+    return (
+      <div className="flex flex-wrap gap-0.5">
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-green-100 text-green-700 border border-green-300">Standalone</span>
+        {p.relay > 0 && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-700 border border-amber-300">Relay</span>}
+      </div>
+    );
+  }
+  const parts: string[] = [];
+  if (p.connectTo) {
+    const ct = p.connectTo.toUpperCase();
+    if (ct.includes('MPU')) parts.push('MPU');
+    if (ct.includes('SPU')) parts.push('SPU');
+    if (ct.includes('SPLS')) parts.push('SPLS');
+  }
+  if (parts.length === 0) parts.push('Via controller');
+  return (
+    <div className="flex flex-wrap gap-0.5">
+      {parts.map(pt => (
+        <span key={pt} className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-700 border border-blue-300">{pt}</span>
+      ))}
+    </div>
+  );
+}
+
+function outputDesc(p: Product): string {
+  const parts: string[] = [];
+  if (p.relay > 0) parts.push(`${p.relay} Relay${p.relay > 1 ? 's' : ''}`);
+  if (p.analog) parts.push(p.analog);
+  if (p.modbus) parts.push('Modbus');
+  if (parts.length === 0 && p.connectTo) return 'Via controller';
+  return parts.join(', ') || '\u2014';
+}
+
+function tempRange(p: Product): string {
+  if (p.tempMin !== null && p.tempMax !== null) return `${p.tempMin} to ${p.tempMax}\u00B0C`;
+  return '\u2014';
+}
+
+const TYPE_TABS = [
+  { value: 'detector', label: 'Detectors' },
+  { value: 'controller', label: 'Controllers' },
+  { value: 'accessory', label: 'Alarms & Accessories' },
+] as const;
 
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterType, setFilterType] = useState<string>('');
+  const [filterType, setFilterType] = useState<string>('detector');
   const [filterFamily, setFilterFamily] = useState<string>('');
+  const [filterGas, setFilterGas] = useState('');
+  const [filterSubCat, setFilterSubCat] = useState('');
   const [search, setSearch] = useState('');
   const [dialog, setDialog] = useState(false);
   const [isNew, setIsNew] = useState(false);
   const [form, setForm] = useState<Omit<Product, 'createdAt' | 'updatedAt'>>(EMPTY_PRODUCT);
   const [saving, setSaving] = useState(false);
 
-  // ── Fetch ─────────────────────────────────────────────────────────────────
-
   const fetchProducts = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (filterType) params.set('type', filterType);
-    if (filterFamily) params.set('family', filterFamily);
-    if (search) params.set('search', search);
-    const url = '/api/products' + (params.toString() ? '?' + params.toString() : '');
-    const res = await fetch(url);
+    const res = await fetch('/api/products');
     const data = await res.json();
     setProducts(Array.isArray(data) ? data : []);
     setLoading(false);
-  }, [filterType, filterFamily, search]);
+  }, []);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
-  // ── Stats ─────────────────────────────────────────────────────────────────
+  // Derived
+  const totalAll = products.filter(p => !p.discontinued).length;
+  const detectors = products.filter(p => p.type === 'detector' && !p.discontinued).length;
+  const controllers = products.filter(p => p.type === 'controller' && !p.discontinued).length;
+  const accessories = products.filter(p => p.type === 'accessory' && !p.discontinued).length;
+  const families = useMemo(() => {
+    const set = new Set(products.filter(p => p.type === filterType).map(p => p.family));
+    return Array.from(set).sort();
+  }, [products, filterType]);
+  const gasTypes = useMemo(() => {
+    const set = new Set<string>();
+    products.filter(p => p.type === filterType).forEach(p => parseJson<string[]>(p.gas, []).forEach(g => set.add(g)));
+    return Array.from(set).sort();
+  }, [products, filterType]);
+  const subCategories = useMemo(() => {
+    const set = new Set(products.filter(p => p.type === filterType && p.subCategory).map(p => p.subCategory!));
+    return Array.from(set).sort();
+  }, [products, filterType]);
+  const avgPrice = useMemo(() => {
+    const priced = products.filter(p => p.price > 0 && !p.discontinued);
+    return priced.length > 0 ? Math.round(priced.reduce((s, p) => s + p.price, 0) / priced.length) : 0;
+  }, [products]);
+  const withImage = products.filter(p => p.image && !p.discontinued).length;
+  const missingPrice = products.filter(p => p.price <= 0 && !p.discontinued).length;
 
-  const totalAll = products.length;
-  // We need unfiltered counts for the stats cards, so compute from all products
-  // But since products are already filtered, we fetch all for stats
-  const detectors = products.filter(p => p.type === 'detector').length;
-  const controllers = products.filter(p => p.type === 'controller').length;
-  const accessories = products.filter(p => p.type === 'accessory').length;
+  // Filter
+  const filtered = useMemo(() => {
+    let list = products;
+    if (filterType) list = list.filter(p => p.type === filterType);
+    if (filterFamily) list = list.filter(p => p.family === filterFamily);
+    if (filterGas) list = list.filter(p => parseJson<string[]>(p.gas, []).includes(filterGas));
+    if (filterSubCat) list = list.filter(p => p.subCategory === filterSubCat);
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(p => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
+    }
+    return list;
+  }, [products, filterType, filterFamily, filterGas, filterSubCat, search]);
 
-  // ── CRUD ──────────────────────────────────────────────────────────────────
-
-  function openNew() {
-    setIsNew(true);
-    setForm({ ...EMPTY_PRODUCT });
-    setDialog(true);
-  }
-
+  // CRUD
+  function openNew() { setIsNew(true); setForm({ ...EMPTY_PRODUCT, type: filterType || 'detector' }); setDialog(true); }
   function openEdit(p: Product) {
     setIsNew(false);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { createdAt, updatedAt, ...rest } = p;
+    const { createdAt: _c, updatedAt: _u, ...rest } = p;
     setForm({ ...rest });
     setDialog(true);
   }
-
   async function save() {
     setSaving(true);
     try {
       if (isNew) {
-        const { id, ...data } = form;
-        void id;
-        await fetch('/api/products', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
+        const { id: _id, ...data } = form;
+        await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
       } else {
-        await fetch('/api/products', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        });
+        await fetch('/api/products', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
       }
       await fetchProducts();
       setDialog(false);
-    } catch (err) {
-      console.error('Save error:', err);
-    }
+    } catch (err) { console.error('Save error:', err); }
     setSaving(false);
   }
-
   async function deleteProduct(id: string, code: string) {
     if (!confirm(`Delete product "${code}"?`)) return;
     await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
     await fetchProducts();
   }
 
-  // ── Form helpers ──────────────────────────────────────────────────────────
-
   function formGas(): string[] { return parseJson(form.gas, []); }
   function formMount(): string[] { return parseJson(form.mount, []); }
-
-  function toggleGas(g: string) {
-    const cur = formGas();
-    const next = cur.includes(g) ? cur.filter(x => x !== g) : [...cur, g];
-    setForm({ ...form, gas: JSON.stringify(next) });
-  }
-
-  function toggleMount(m: string) {
-    const cur = formMount();
-    const next = cur.includes(m) ? cur.filter(x => x !== m) : [...cur, m];
-    setForm({ ...form, mount: JSON.stringify(next) });
-  }
-
-  // ── Render ────────────────────────────────────────────────────────────────
+  function toggleGas(g: string) { const cur = formGas(); setForm({ ...form, gas: JSON.stringify(cur.includes(g) ? cur.filter(x => x !== g) : [...cur, g]) }); }
+  function toggleMount(m: string) { const cur = formMount(); setForm({ ...form, mount: JSON.stringify(cur.includes(m) ? cur.filter(x => x !== m) : [...cur, m]) }); }
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1a2332]">Products</h1>
-          <p className="text-sm text-gray-500 mt-1">{totalAll} products in catalog</p>
-        </div>
-        <button onClick={openNew}
-          className="bg-[#E63946] hover:bg-red-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors">
-          + Add Product
-        </button>
+    <div className="p-5 max-w-[1800px] mx-auto">
+      {/* Stats row — 8 cards */}
+      <div className="grid grid-cols-4 lg:grid-cols-8 gap-3 mb-5">
+        <StatCard value={totalAll} label="TOTAL PRODUCTS" />
+        <StatCard value={detectors} label="DETECTORS" />
+        <StatCard value={controllers} label="CONTROLLERS" />
+        <StatCard value={accessories} label="ALARMS & ACC." />
+        <StatCard value={families.length} label="FAMILIES" />
+        <StatCard value={gasTypes.length} label="GAS TYPES" />
+        <StatCard value={`${avgPrice} \u20AC`} label="AVG PRICE" />
+        <StatCard value={`${withImage}/${totalAll}`} label="WITH IMAGE" accent={withImage === totalAll ? 'text-green-600' : 'text-amber-600'} />
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        {[
-          { label: 'Total Products', value: totalAll, color: 'text-[#16354B]' },
-          { label: 'Detectors', value: detectors, color: 'text-blue-600' },
-          { label: 'Controllers', value: controllers, color: 'text-green-600' },
-          { label: 'Accessories', value: accessories, color: 'text-orange-600' },
-        ].map(s => (
-          <div key={s.label} className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
-            <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-            <div className="text-xs text-gray-500 mt-1">{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        {/* Type buttons */}
-        <div className="flex gap-1">
-          {[{ label: 'All', value: '' }, ...TYPES.map(t => ({ label: t.charAt(0).toUpperCase() + t.slice(1), value: t }))].map(t => (
-            <button key={t.value} onClick={() => setFilterType(t.value)}
-              className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
-                filterType === t.value ? 'bg-[#E63946] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+      {/* Type tabs + Add button */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex gap-2">
+          {TYPE_TABS.map(tab => (
+            <button key={tab.value} onClick={() => { setFilterType(tab.value); setFilterFamily(''); setFilterGas(''); setFilterSubCat(''); }}
+              className={`px-5 py-2 rounded-md text-sm font-semibold transition-colors ${
+                filterType === tab.value ? 'bg-[#E63946] text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
               }`}>
-              {t.label}
+              {tab.label}
             </button>
           ))}
         </div>
+        <button onClick={openNew}
+          className="bg-[#E63946] hover:bg-red-700 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-colors">
+          + Add {filterType === 'detector' ? 'Detectors' : filterType === 'controller' ? 'Controllers' : 'Accessories'}
+        </button>
+      </div>
 
-        {/* Family dropdown */}
-        <select value={filterFamily} onChange={e => setFilterFamily(e.target.value)}
-          className="px-3 py-1.5 border border-gray-300 rounded text-sm">
-          <option value="">All Families</option>
-          {FAMILIES.map(f => <option key={f} value={f}>{f}</option>)}
-        </select>
-
-        {/* Search */}
-        <input type="text" placeholder="Search by name or code..." value={search}
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <input type="text" placeholder="Search products..." value={search}
           onChange={e => setSearch(e.target.value)}
-          className="px-3 py-1.5 border border-gray-300 rounded text-sm w-64" />
+          className="px-3 py-2 border border-gray-300 rounded-md text-sm w-56 bg-white" />
+        <select value={filterFamily} onChange={e => setFilterFamily(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white">
+          <option value="">All Families</option>
+          {families.map(f => <option key={f} value={f}>{f}</option>)}
+        </select>
+        <select value={filterGas} onChange={e => setFilterGas(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white">
+          <option value="">All Gases</option>
+          {gasTypes.map(g => <option key={g} value={g}>{g}</option>)}
+        </select>
+        {filterType === 'accessory' && subCategories.length > 0 && (
+          <select value={filterSubCat} onChange={e => setFilterSubCat(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white">
+            <option value="">All Sub-Categories</option>
+            {subCategories.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        )}
+        <span className="text-sm text-gray-500 ml-auto font-mono">{filtered.length} / {products.filter(p => p.type === filterType).length}</span>
       </div>
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center text-gray-400">Loading...</div>
+          <div className="p-16 text-center text-gray-400">Loading...</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-[11px]">
               <thead>
-                <tr className="bg-[#16354B] text-left text-[10px] font-semibold text-white uppercase tracking-wider">
-                  <th className="px-3 py-2.5">Code</th>
-                  <th className="px-3 py-2.5">Name</th>
-                  <th className="px-3 py-2.5">Family</th>
-                  <th className="px-3 py-2.5">Type</th>
-                  <th className="px-3 py-2.5">Tier</th>
-                  <th className="px-3 py-2.5">Gas</th>
-                  <th className="px-3 py-2.5">Range</th>
-                  <th className="px-3 py-2.5">Voltage</th>
-                  <th className="px-3 py-2.5">Price</th>
-                  <th className="px-3 py-2.5">ATEX</th>
-                  <th className="px-3 py-2.5">Status</th>
-                  <th className="px-3 py-2.5">Actions</th>
+                <tr className="bg-[#f0f1f5] text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-2 py-2.5">ACTIONS</th>
+                  <th className="px-2 py-2.5">IMAGE</th>
+                  <th className="px-2 py-2.5">FAMILY</th>
+                  <th className="px-2 py-2.5 min-w-[160px]">PRODUCT NAME</th>
+                  <th className="px-2 py-2.5">ORDER CODE</th>
+                  <th className="px-2 py-2.5 text-right">PRICE {'\u20AC'}</th>
+                  <th className="px-2 py-2.5 text-center">TIER</th>
+                  <th className="px-2 py-2.5 text-center">GROUP</th>
+                  <th className="px-2 py-2.5">GASES</th>
+                  <th className="px-2 py-2.5">RANGE</th>
+                  <th className="px-2 py-2.5">SENSOR</th>
+                  <th className="px-2 py-2.5">ELECTRICAL</th>
+                  <th className="px-2 py-2.5 text-center">IP</th>
+                  <th className="px-2 py-2.5">OUTPUT</th>
+                  <th className="px-2 py-2.5">FEATURES</th>
+                  <th className="px-2 py-2.5 text-center">CERT.</th>
+                  <th className="px-2 py-2.5">CONNECTION</th>
+                  <th className="px-2 py-2.5 text-center">POWER</th>
+                  <th className="px-2 py-2.5">TEMP</th>
+                  <th className="px-2 py-2.5">MOUNTING</th>
+                  {filterType === 'accessory' && <th className="px-2 py-2.5">SUB-CAT</th>}
+                  {filterType === 'accessory' && <th className="px-2 py-2.5">COMPATIBLE</th>}
                 </tr>
               </thead>
               <tbody>
-                {products.map(p => {
+                {filtered.map((p, idx) => {
                   const gases: string[] = parseJson(p.gas, []);
+                  const mounts: string[] = parseJson(p.mount, []);
                   return (
-                    <tr key={p.id} className="border-b border-gray-100 hover:bg-blue-50/40 transition-colors">
-                      <td className="px-3 py-2 font-mono text-xs font-semibold">{p.code}</td>
-                      <td className="px-3 py-2 text-xs font-semibold max-w-[200px] truncate">{p.name}</td>
-                      <td className="px-3 py-2 text-xs"><span className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">{p.family}</span></td>
-                      <td className="px-3 py-2 text-xs capitalize">{p.type}</td>
-                      <td className="px-3 py-2 text-xs capitalize">{p.tier}</td>
-                      <td className="px-3 py-2">
-                        <div className="flex flex-wrap gap-1">
-                          {gases.map(g => (
-                            <span key={g} className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${gasColor(g)}`}>{g}</span>
-                          ))}
+                    <tr key={p.id} className={`border-b border-gray-100 hover:bg-blue-50/40 transition-colors ${p.discontinued ? 'opacity-40' : ''} ${idx % 2 === 1 ? 'bg-gray-50/50' : ''}`}>
+                      <td className="px-2 py-1.5">
+                        <div className="flex gap-1">
+                          <button onClick={() => openEdit(p)} title="Edit"
+                            className="w-6 h-6 rounded bg-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-200 text-[10px] font-bold">E</button>
+                          <button onClick={() => deleteProduct(p.id, p.code)} title="Delete"
+                            className="w-6 h-6 rounded bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-200 text-[10px] font-bold">X</button>
                         </div>
                       </td>
-                      <td className="px-3 py-2 text-xs text-gray-600">{p.range ?? '—'}</td>
-                      <td className="px-3 py-2 text-xs text-gray-600">{p.voltage ?? '—'}</td>
-                      <td className="px-3 py-2 text-xs font-semibold">{p.price > 0 ? `${p.price.toFixed(0)} \u20AC` : '—'}</td>
-                      <td className="px-3 py-2 text-xs">{p.atex ? <span className="text-green-600 font-bold">&#10003;</span> : ''}</td>
-                      <td className="px-3 py-2 text-xs">
-                        {p.discontinued && <span className="bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-[10px] font-bold">EOL</span>}
+                      <td className="px-2 py-1.5">
+                        {p.image ? (
+                          <img src={`/assets/${p.image}`} alt={p.code} className="w-9 h-9 object-contain rounded bg-gray-50" />
+                        ) : (
+                          <div className="w-9 h-9 rounded bg-gray-100 flex items-center justify-center">
+                            <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                          </div>
+                        )}
                       </td>
-                      <td className="px-3 py-2">
-                        <div className="flex gap-2">
-                          <button onClick={() => openEdit(p)} className="text-blue-600 hover:text-blue-800 text-xs font-medium">Edit</button>
-                          <button onClick={() => deleteProduct(p.id, p.code)} className="text-red-500 hover:text-red-700 text-xs font-medium">Delete</button>
+                      <td className="px-2 py-1.5"><span className="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-[10px] font-bold">{p.family}</span></td>
+                      <td className="px-2 py-1.5 font-semibold text-[#1a2332] max-w-[180px]">{p.name}</td>
+                      <td className="px-2 py-1.5 font-mono text-gray-500">{p.code}</td>
+                      <td className="px-2 py-1.5 text-right font-bold text-[#1a2332]">{p.price > 0 ? <>{p.price.toFixed(0)} <span className="text-gray-400 font-normal">{'\u20AC'}</span></> : '\u2014'}</td>
+                      <td className="px-2 py-1.5 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border ${tierBadge(p.tier)}`}>{p.tier}</span></td>
+                      <td className="px-2 py-1.5 text-center"><span className="bg-gray-200 px-1.5 py-0.5 rounded text-[9px] font-bold">{p.productGroup}</span></td>
+                      <td className="px-2 py-1.5">
+                        <div className="flex flex-wrap gap-0.5">
+                          {gases.map(g => <span key={g} className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${gasColor(g)}`}>{g}</span>)}
                         </div>
                       </td>
+                      <td className="px-2 py-1.5 text-gray-600">{p.range ?? '\u2014'}</td>
+                      <td className="px-2 py-1.5">
+                        {p.sensorTech && <div><span className="font-semibold">{p.sensorTech}</span>{p.sensorLife && <div className="text-[9px] text-gray-400">{p.sensorLife}</div>}</div>}
+                        {!p.sensorTech && '\u2014'}
+                      </td>
+                      <td className="px-2 py-1.5 text-gray-600">{p.voltage ?? '\u2014'}</td>
+                      <td className="px-2 py-1.5 text-center text-gray-600">{p.ip ?? '\u2014'}</td>
+                      <td className="px-2 py-1.5 text-gray-600 max-w-[120px]">{outputDesc(p)}</td>
+                      <td className="px-2 py-1.5 text-gray-500 max-w-[100px] truncate text-[10px]">{p.features ?? '\u2014'}</td>
+                      <td className="px-2 py-1.5 text-center">
+                        <div className="flex flex-wrap gap-0.5 justify-center">
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-gray-200 text-gray-600">CE</span>
+                          {p.atex && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-500 text-white">ATEX</span>}
+                        </div>
+                      </td>
+                      <td className="px-2 py-1.5">{connectionBadges(p)}</td>
+                      <td className="px-2 py-1.5 text-center text-gray-600">{p.power ? `${p.power}W` : '\u2014'}</td>
+                      <td className="px-2 py-1.5 text-gray-600 whitespace-nowrap">{tempRange(p)}</td>
+                      <td className="px-2 py-1.5 text-gray-600">{mounts.length > 0 ? mounts.join(', ') : '\u2014'}</td>
+                      {filterType === 'accessory' && <td className="px-2 py-1.5 text-gray-600">{p.subCategory ?? '\u2014'}</td>}
+                      {filterType === 'accessory' && <td className="px-2 py-1.5 text-gray-500 text-[10px]">{parseJson<string[]>(p.compatibleFamilies, []).join(', ') || '\u2014'}</td>}
                     </tr>
                   );
                 })}
-                {products.length === 0 && (
-                  <tr><td colSpan={12} className="px-3 py-8 text-center text-gray-400">No products found</td></tr>
-                )}
+                {filtered.length === 0 && <tr><td colSpan={22} className="px-3 py-12 text-center text-gray-400">No products found</td></tr>}
               </tbody>
             </table>
           </div>
@@ -317,18 +398,13 @@ export default function ProductsPage() {
               <h2 className="text-lg font-bold">{isNew ? 'New Product' : `Edit ${form.code}`}</h2>
             </div>
             <div className="p-6 space-y-4">
-              {/* Row 1: code, name, type, family, tier, price */}
               <div className="grid grid-cols-6 gap-3">
                 <F label="Code" value={form.code} onChange={v => setForm({ ...form, code: v })} mono />
-                <div className="col-span-2">
-                  <F label="Name" value={form.name} onChange={v => setForm({ ...form, name: v })} />
-                </div>
+                <div className="col-span-2"><F label="Name" value={form.name} onChange={v => setForm({ ...form, name: v })} /></div>
                 <Sel label="Type" value={form.type} options={[...TYPES]} onChange={v => setForm({ ...form, type: v })} />
                 <Sel label="Family" value={form.family} options={[...FAMILIES]} onChange={v => setForm({ ...form, family: v })} />
                 <Sel label="Tier" value={form.tier} options={[...TIERS]} onChange={v => setForm({ ...form, tier: v })} />
               </div>
-
-              {/* Row 2: gas checkboxes, range, sensorTech, sensorLife */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Gas Types</label>
                 <div className="flex flex-wrap gap-2 mb-3">
@@ -346,56 +422,25 @@ export default function ProductsPage() {
                 <F label="Sensor Life" value={form.sensorLife ?? ''} onChange={v => setForm({ ...form, sensorLife: v || null })} />
                 <N label="Price" value={form.price} onChange={v => setForm({ ...form, price: v })} />
               </div>
-
-              {/* Row 3: voltage, power, relay, analog, modbus */}
               <div className="grid grid-cols-5 gap-3">
                 <F label="Voltage" value={form.voltage ?? ''} onChange={v => setForm({ ...form, voltage: v || null })} />
                 <N label="Power (W)" value={form.power ?? 0} onChange={v => setForm({ ...form, power: v || null })} />
                 <N label="Relay" value={form.relay} onChange={v => setForm({ ...form, relay: Math.round(v) })} />
                 <F label="Analog" value={form.analog ?? ''} onChange={v => setForm({ ...form, analog: v || null })} />
-                <div className="flex items-end pb-1">
-                  <label className="flex items-center gap-2 text-xs">
-                    <input type="checkbox" checked={form.modbus} onChange={e => setForm({ ...form, modbus: e.target.checked })} className="rounded" />
-                    Modbus
-                  </label>
-                </div>
+                <div className="flex items-end pb-1"><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={form.modbus} onChange={e => setForm({ ...form, modbus: e.target.checked })} className="rounded" /> Modbus</label></div>
               </div>
-
-              {/* Row 4: mount checkboxes, ip, standalone, atex, remote */}
               <div className="grid grid-cols-5 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Mount</label>
                   <div className="flex flex-wrap gap-2">
-                    {MOUNT_OPTIONS.map(m => (
-                      <label key={m} className="flex items-center gap-1 text-xs">
-                        <input type="checkbox" checked={formMount().includes(m)} onChange={() => toggleMount(m)} className="rounded" />
-                        {m}
-                      </label>
-                    ))}
+                    {MOUNT_OPTIONS.map(m => (<label key={m} className="flex items-center gap-1 text-xs"><input type="checkbox" checked={formMount().includes(m)} onChange={() => toggleMount(m)} className="rounded" />{m}</label>))}
                   </div>
                 </div>
                 <F label="IP Rating" value={form.ip ?? ''} onChange={v => setForm({ ...form, ip: v || null })} />
-                <div className="flex items-end pb-1">
-                  <label className="flex items-center gap-2 text-xs">
-                    <input type="checkbox" checked={form.standalone} onChange={e => setForm({ ...form, standalone: e.target.checked })} className="rounded" />
-                    Standalone
-                  </label>
-                </div>
-                <div className="flex items-end pb-1">
-                  <label className="flex items-center gap-2 text-xs">
-                    <input type="checkbox" checked={form.atex} onChange={e => setForm({ ...form, atex: e.target.checked })} className="rounded" />
-                    ATEX
-                  </label>
-                </div>
-                <div className="flex items-end pb-1">
-                  <label className="flex items-center gap-2 text-xs">
-                    <input type="checkbox" checked={form.remote} onChange={e => setForm({ ...form, remote: e.target.checked })} className="rounded" />
-                    Remote
-                  </label>
-                </div>
+                <div className="flex items-end pb-1"><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={form.standalone} onChange={e => setForm({ ...form, standalone: e.target.checked })} className="rounded" /> Standalone</label></div>
+                <div className="flex items-end pb-1"><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={form.atex} onChange={e => setForm({ ...form, atex: e.target.checked })} className="rounded" /> ATEX</label></div>
+                <div className="flex items-end pb-1"><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={form.remote} onChange={e => setForm({ ...form, remote: e.target.checked })} className="rounded" /> Remote</label></div>
               </div>
-
-              {/* Row 5: channels, maxPower, connectTo, subCategory, compatibleFamilies */}
               <div className="grid grid-cols-5 gap-3">
                 <N label="Channels" value={form.channels ?? 0} onChange={v => setForm({ ...form, channels: v || null })} />
                 <N label="Max Power (W)" value={form.maxPower ?? 0} onChange={v => setForm({ ...form, maxPower: v || null })} />
@@ -403,23 +448,15 @@ export default function ProductsPage() {
                 <F label="Sub-Category" value={form.subCategory ?? ''} onChange={v => setForm({ ...form, subCategory: v || null })} />
                 <F label="Compatible Families" value={form.compatibleFamilies} onChange={v => setForm({ ...form, compatibleFamilies: v })} mono />
               </div>
-
-              {/* Row 6: features, discontinued */}
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Features</label>
-                  <textarea value={form.features ?? ''} onChange={e => setForm({ ...form, features: e.target.value || null })}
-                    rows={3} className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" />
-                </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><N label="Temp Min" value={form.tempMin ?? 0} onChange={v => setForm({ ...form, tempMin: v || null })} /></div>
+                <div><N label="Temp Max" value={form.tempMax ?? 0} onChange={v => setForm({ ...form, tempMax: v || null })} /></div>
               </div>
               <div>
-                <label className="flex items-center gap-2 text-xs">
-                  <input type="checkbox" checked={form.discontinued} onChange={e => setForm({ ...form, discontinued: e.target.checked })} className="rounded" />
-                  <span className="font-semibold text-red-600">Discontinued (EOL)</span>
-                </label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Features</label>
+                <textarea value={form.features ?? ''} onChange={e => setForm({ ...form, features: e.target.value || null })} rows={2} className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" />
               </div>
-
-              {/* Actions */}
+              <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={form.discontinued} onChange={e => setForm({ ...form, discontinued: e.target.checked })} className="rounded" /><span className="font-semibold text-red-600">Discontinued (EOL)</span></label>
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
                 <button onClick={() => setDialog(false)} className="px-4 py-2 text-sm text-gray-600">Cancel</button>
                 <button onClick={save} disabled={saving || !form.code || !form.name}
@@ -437,33 +474,23 @@ export default function ProductsPage() {
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 
-function F({ label, value, onChange, mono }: { label: string; value: string; onChange: (v: string) => void; mono?: boolean }) {
+function StatCard({ value, label, accent }: { value: string | number; label: string; accent?: string }) {
   return (
-    <div>
-      <label className="block text-xs font-semibold text-gray-600 mb-1">{label}</label>
-      <input value={value} onChange={e => onChange(e.target.value)}
-        className={`w-full px-2 py-1.5 border border-gray-300 rounded text-sm ${mono ? 'font-mono' : ''}`} />
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-4 py-3">
+      <div className={`text-xl font-bold ${accent ?? 'text-[#1a2332]'}`}>{value}</div>
+      <div className="text-[9px] text-gray-400 uppercase tracking-wider mt-0.5 font-semibold">{label}</div>
     </div>
   );
+}
+
+function F({ label, value, onChange, mono }: { label: string; value: string; onChange: (v: string) => void; mono?: boolean }) {
+  return (<div><label className="block text-xs font-semibold text-gray-600 mb-1">{label}</label><input value={value} onChange={e => onChange(e.target.value)} className={`w-full px-2 py-1.5 border border-gray-300 rounded text-sm ${mono ? 'font-mono' : ''}`} /></div>);
 }
 
 function N({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
-  return (
-    <div>
-      <label className="block text-xs font-semibold text-gray-600 mb-1">{label}</label>
-      <input type="number" step="any" value={value} onChange={e => onChange(+e.target.value)}
-        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm font-mono" />
-    </div>
-  );
+  return (<div><label className="block text-xs font-semibold text-gray-600 mb-1">{label}</label><input type="number" step="any" value={value} onChange={e => onChange(+e.target.value)} className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm font-mono" /></div>);
 }
 
 function Sel({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (v: string) => void }) {
-  return (
-    <div>
-      <label className="block text-xs font-semibold text-gray-600 mb-1">{label}</label>
-      <select value={value} onChange={e => onChange(e.target.value)} className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
-    </div>
-  );
+  return (<div><label className="block text-xs font-semibold text-gray-600 mb-1">{label}</label><select value={value} onChange={e => onChange(e.target.value)} className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">{options.map(o => <option key={o} value={o}>{o}</option>)}</select></div>);
 }

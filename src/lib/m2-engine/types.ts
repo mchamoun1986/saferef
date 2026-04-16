@@ -70,17 +70,24 @@ export interface ProductRecord {
   name: string;
   code: string;
   price: number;
+  image?: string | null;
   gas: string;
   refs: string;
   apps: string;
   range: string | null;
   sensorTech: string | null;
+  sensorLife: string | null;
+  power: number | null;
   voltage: string | null;
+  ip: string | null;
+  tempMin: number | null;
+  tempMax: number | null;
   atex: boolean;
   mount: string;
   standalone: boolean;
   discontinued: boolean;
   channels: number | null;
+  maxPower: number | null;
   relay: number;
   analog: string | null;
   modbus: boolean;
@@ -89,6 +96,8 @@ export interface ProductRecord {
   subCategory: string | null;
   compatibleFamilies: string;
   remote: boolean;
+  features: string | null;
+  connectTo: string | null;
 }
 
 /** Discount matrix row */

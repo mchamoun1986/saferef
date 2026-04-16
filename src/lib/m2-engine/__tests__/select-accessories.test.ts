@@ -10,6 +10,8 @@ const bracket: ProductRecord = {
   channels: null, relay: 0, analog: null, modbus: false,
   productGroup: 'A', tier: 'standard', subCategory: 'mounting',
   compatibleFamilies: '["MIDI"]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const calGasCO2: ProductRecord = {
@@ -20,6 +22,8 @@ const calGasCO2: ProductRecord = {
   channels: null, relay: 0, analog: null, modbus: false,
   productGroup: 'A', tier: 'standard', subCategory: 'service',
   compatibleFamilies: '["ALL"]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const siren: ProductRecord = {
@@ -30,6 +34,8 @@ const siren: ProductRecord = {
   channels: null, relay: 0, analog: null, modbus: false,
   productGroup: 'A', tier: 'standard', subCategory: 'alert',
   compatibleFamilies: '["ALL"]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const bracketX5: ProductRecord = {
@@ -40,6 +46,8 @@ const bracketX5: ProductRecord = {
   channels: null, relay: 0, analog: null, modbus: false,
   productGroup: 'A', tier: 'standard', subCategory: 'mounting',
   compatibleFamilies: '["X5"]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const psu: ProductRecord = {
@@ -50,6 +58,8 @@ const psu: ProductRecord = {
   channels: null, relay: 0, analog: null, modbus: false,
   productGroup: 'A', tier: 'standard', subCategory: 'power',
   compatibleFamilies: '["ALL"]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const allAccessories = [bracket, calGasCO2, siren, bracketX5, psu];

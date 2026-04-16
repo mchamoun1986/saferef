@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import type { ClientData, GasAppData, ZoneData } from './types';
-import type { RefrigerantV5, ZoneRegulationResult } from '@/lib/engine-types';
-import type { ProductRecord, SelectorInput, BOMZone, DiscountRow } from '@/lib/m2-engine/types';
-import { buildBOM } from '@/lib/m2-engine/build-bom';
-import StepBOM from '@/components/selector/StepBOM';
+import type { RefrigerantV5, ZoneRegulationResult, SelectionInput, SelectionResult, PricingInput, PricingResult } from '@/lib/engine-types';
+import type { ProductRecord, DiscountRow } from '@/lib/m2-engine/types';
+import { toProductEntries } from '@/lib/m2-engine/parse-product';
+import { selectProducts } from '@/lib/m2-engine/selection-engine';
+import { calculatePricing } from '@/lib/m2-engine/pricing-engine';
+import StepTieredBOM from '@/components/selector/StepTieredBOM';
 import { type Lang } from './i18n';
 
 interface Props {
@@ -17,10 +19,16 @@ interface Props {
   lang?: Lang;
 }
 
+const CUSTOMER_GROUPS = [
+  '', 'EDC', 'OEM', '1Fo', '2Fo', '3Fo',
+  '1Contractor', '2Contractor', '3Contractor',
+  'AKund', 'BKund', 'NO',
+];
+
 export default function StepProducts({
   clientData, gasAppData, zones, refrigerant, zoneRegulations, lang = 'en',
 }: Props) {
-  const [products, setProducts] = useState<ProductRecord[]>([]);
+  const [rawProducts, setRawProducts] = useState<ProductRecord[]>([]);
   const [discountMatrix, setDiscountMatrix] = useState<DiscountRow[]>([]);
   const [customerGroup, setCustomerGroup] = useState(clientData.customerGroup || '');
   const [loading, setLoading] = useState(true);
@@ -30,40 +38,77 @@ export default function StepProducts({
       fetch('/api/products?discontinued=false').then(r => r.json()),
       fetch('/api/discount-matrix').then(r => r.json()).catch(() => []),
     ]).then(([prods, dm]) => {
-      setProducts(prods);
+      setRawProducts(prods);
       setDiscountMatrix(Array.isArray(dm) ? dm : []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
 
-  const selectorInput = useMemo((): SelectorInput => {
+  // Parse raw products into engine-compatible ProductEntry arrays
+  const { products, controllers, accessories } = useMemo(
+    () => toProductEntries(rawProducts),
+    [rawProducts],
+  );
+
+  // Total detectors from M1 regulation results
+  const totalDetectors = useMemo(
+    () => zoneRegulations.reduce((sum, zr) => sum + zr.result.recommendedDetectors, 0),
+    [zoneRegulations],
+  );
+
+  // Build SelectionInput for the new engine
+  const selectionInput = useMemo((): SelectionInput | null => {
+    if (products.length === 0) return null;
     const atexRequired = zoneRegulations.some(zr =>
       zr.result.extraRequirements.some(er => er.id === 'ATEX' && er.mandatory)
     );
+    const firstReg = zoneRegulations[0]?.result;
     return {
-      gasGroup: refrigerant.gasGroup,
-      refrigerantRefs: [refrigerant.id],
-      preferredFamily: gasAppData.selectedRange || undefined,
-      voltage: gasAppData.sitePowerVoltage,
-      atexRequired: gasAppData.zoneAtex || atexRequired,
-      mountType: gasAppData.mountingType || 'wall',
-      standalone: false,
+      regulationResult: firstReg,
+      totalDetectors,
+      selectedRefrigerant: refrigerant.id,
+      selectedRange: gasAppData.selectedRange || undefined,
+      zoneType: gasAppData.zoneType || 'supermarket',
+      zoneAtex: gasAppData.zoneAtex || atexRequired,
+      outputRequired: 'any',
+      sitePowerVoltage: gasAppData.sitePowerVoltage,
+      mountingType: gasAppData.mountingType || 'wall',
+      projectCountry: clientData.country || 'SE',
+      products,
+      controllers,
+      accessories,
+      alertAccessory: undefined,
     };
-  }, [refrigerant, gasAppData, zoneRegulations]);
+  }, [products, controllers, accessories, refrigerant, gasAppData, zoneRegulations, totalDetectors, clientData]);
 
-  const bomZones = useMemo((): BOMZone[] => {
-    return zoneRegulations.map((zr) => ({
-      name: zr.zoneName,
-      detectorQty: zr.result.recommendedDetectors,
-    }));
-  }, [zoneRegulations]);
+  // Run M2 selection engine
+  const selectionResult = useMemo((): SelectionResult | null => {
+    if (!selectionInput) return null;
+    return selectProducts(selectionInput);
+  }, [selectionInput]);
 
-  const bomResult = useMemo(() => {
-    if (products.length === 0) return null;
-    return buildBOM(selectorInput, bomZones, products);
-  }, [selectorInput, bomZones, products]);
+  // Build price DB from raw products
+  const priceDb = useMemo(() => {
+    const db = new Map<string, { price: number; productGroup: string; discontinued: boolean }>();
+    for (const p of rawProducts) {
+      db.set(p.code, { price: p.price, productGroup: p.productGroup || 'G', discontinued: p.discontinued });
+    }
+    return db;
+  }, [rawProducts]);
 
-  if (loading || !bomResult) {
+  // Run M3 pricing engine
+  const pricingResult = useMemo((): PricingResult | null => {
+    if (!selectionResult) return null;
+    const pricingInput: PricingInput = {
+      tiers: selectionResult.tiers,
+      customerGroup: (customerGroup || 'NO') as PricingInput['customerGroup'],
+      discountMatrix,
+      priceDb,
+    };
+    return calculatePricing(pricingInput);
+  }, [selectionResult, customerGroup, discountMatrix, priceDb]);
+
+  if (loading || !selectionResult || !pricingResult) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-4 border-red-600 border-t-transparent" />
@@ -72,13 +117,15 @@ export default function StepProducts({
   }
 
   return (
-    <StepBOM
-      bom={bomResult}
-      products={products}
-      selectorInput={selectorInput}
+    <StepTieredBOM
+      selectionResult={selectionResult}
+      pricingResult={pricingResult}
       customerGroup={customerGroup}
+      customerGroups={CUSTOMER_GROUPS}
       onCustomerGroupChange={setCustomerGroup}
-      discountMatrix={discountMatrix}
+      clientData={clientData}
+      gasAppData={gasAppData}
+      regulationResult={zoneRegulations[0]?.result}
     />
   );
 }

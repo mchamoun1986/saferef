@@ -10,6 +10,8 @@ const midiCO2: ProductRecord = {
   discontinued: false, channels: null, relay: 2, analog: 'selectable',
   modbus: true, productGroup: 'G', tier: 'standard', subCategory: null,
   compatibleFamilies: '[]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const x5NH3: ProductRecord = {
@@ -20,6 +22,8 @@ const x5NH3: ProductRecord = {
   discontinued: false, channels: null, relay: 3, analog: '4-20mA x2',
   modbus: true, productGroup: 'G', tier: 'premium', subCategory: null,
   compatibleFamilies: '[]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const midiHFC: ProductRecord = {
@@ -30,6 +34,8 @@ const midiHFC: ProductRecord = {
   discontinued: false, channels: null, relay: 2, analog: 'selectable',
   modbus: true, productGroup: 'G', tier: 'standard', subCategory: null,
   compatibleFamilies: '[]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const rmHFC: ProductRecord = {
@@ -40,6 +46,8 @@ const rmHFC: ProductRecord = {
   discontinued: false, channels: null, relay: 1, analog: null,
   modbus: false, productGroup: 'G', tier: 'standard', subCategory: null,
   compatibleFamilies: '[]', remote: false,
+  sensorLife: null, power: null, ip: null, tempMin: null, tempMax: null,
+  maxPower: null, features: null, connectTo: null,
 };
 
 const discontinuedDet: ProductRecord = {
