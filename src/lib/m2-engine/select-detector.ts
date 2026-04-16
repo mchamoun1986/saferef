@@ -26,8 +26,9 @@ export function selectDetector(input: SelectorInput, products: ProductRecord[]):
     }
     if (input.atexRequired && !p.atex) return false;
     if (!voltageCompatible(p.voltage, input.voltage)) return false;
-    const mounts = parseJson<string>(p.mount);
-    if (mounts.length > 0 && !mounts.includes(input.mountType)) return false;
+    const mounts = parseJson<string>(p.mount).map(m => m.toLowerCase());
+    const wantMount = input.mountType.toLowerCase();
+    if (mounts.length > 0 && !mounts.includes(wantMount)) return false;
     return true;
   });
 

@@ -115,4 +115,14 @@ describe('selectDetector', () => {
     const result = selectDetector(input, allProducts);
     expect(result).toEqual([]);
   });
+
+  // M-1/M-5 regression: UI passes "Wall" (capitalized), DB stores "wall" (lowercase)
+  it('mount type match is case-insensitive (UI capitalizes, DB stores lowercase)', () => {
+    const input: SelectorInput = {
+      gasGroup: 'CO2', refrigerantRefs: ['R744'], voltage: '24V',
+      atexRequired: false, mountType: 'Wall', standalone: false,  // capital W from UI
+    };
+    const result = selectDetector(input, allProducts);
+    expect(result.length).toBeGreaterThan(0);
+  });
 });
