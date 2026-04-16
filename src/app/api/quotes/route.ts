@@ -3,6 +3,7 @@
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { requireRole } from '@/lib/auth';
 
 // ── Ref generation ────────────────────────────────────────────────────
 
@@ -77,6 +78,9 @@ export async function GET(request: Request) {
 // ── POST — create quote ───────────────────────────────────────────────
 
 export async function POST(request: Request) {
+  const authError = await requireRole(['admin', 'sales']);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const {

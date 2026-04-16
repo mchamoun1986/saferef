@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { requireRole } from "@/lib/auth";
 
 function safeParse(value: string | null | undefined) {
   if (!value) return null;
@@ -33,6 +34,9 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = await requireRole(['admin', 'sales']);
+  if (authError) return authError;
+
   const { id } = await params;
 
   const body = await request.json();
@@ -83,6 +87,9 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = await requireRole(['admin', 'sales']);
+  if (authError) return authError;
+
   const { id } = await params;
 
   await prisma.quote.delete({ where: { id } });

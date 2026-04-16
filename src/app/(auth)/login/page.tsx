@@ -1,14 +1,23 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
-export default function AdminLoginPage() {
-  const [email, setEmail] = useState('');
+const ROLE_DEFAULTS: Record<string, string> = {
+  admin: '/admin',
+  sales: '/sales',
+  management: '/admin/products',
+};
+
+function LoginForm() {
+  const [role, setRole] = useState<'admin' | 'sales' | 'management'>('admin');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const params = useSearchParams();
+  const from = params.get('from');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,7 +28,7 @@ export default function AdminLoginPage() {
       const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ role, password }),
       });
 
       if (!res.ok) {
@@ -28,7 +37,7 @@ export default function AdminLoginPage() {
         return;
       }
 
-      router.push('/admin');
+      router.push(from || ROLE_DEFAULTS[role]);
       router.refresh();
     } catch {
       setError('Network error');
@@ -37,21 +46,28 @@ export default function AdminLoginPage() {
     }
   }
 
+  const roleColors: Record<string, string> = {
+    admin: 'bg-red-600 hover:bg-red-700',
+    sales: 'bg-blue-600 hover:bg-blue-700',
+    management: 'bg-green-600 hover:bg-green-700',
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8]">
       <div className="w-full max-w-sm">
         {/* Brand header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2">
-            <span className="text-red-600 font-bold text-3xl tracking-tight">SafeRef</span>
-          </div>
-          <p className="text-gray-500 text-sm mt-2">Admin — restricted access</p>
+          <Link href="/" className="inline-flex items-center gap-0.5">
+            <span className="text-[#E63946] font-extrabold text-3xl tracking-tight">Safe</span>
+            <span className="text-[#16354B] font-extrabold text-3xl tracking-tight">Ref</span>
+          </Link>
+          <p className="text-gray-500 text-sm mt-2">Restricted access</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-md border border-gray-200 p-8 space-y-5">
           <div>
-            <h2 className="text-lg font-bold text-[#0a1628]">Sign in</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Enter your admin credentials to continue</p>
+            <h2 className="text-lg font-bold text-[#16354B]">Sign in</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Select your role and enter password</p>
           </div>
 
           {error && (
@@ -62,16 +78,16 @@ export default function AdminLoginPage() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-                placeholder="admin@refcalc.com"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
-              />
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Role</label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value as typeof role)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+              >
+                <option value="admin">Admin</option>
+                <option value="sales">Sales</option>
+                <option value="management">Management</option>
+              </select>
             </div>
 
             <div>
@@ -82,6 +98,7 @@ export default function AdminLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
+                autoFocus
                 placeholder="••••••••"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
               />
@@ -90,17 +107,25 @@ export default function AdminLoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-red-600 text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-red-700 disabled:opacity-50 transition-colors"
+            disabled={loading || !password}
+            className={`w-full text-white py-2.5 rounded-lg font-semibold text-sm transition-colors disabled:opacity-50 ${roleColors[role]}`}
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? 'Signing in...' : `Sign in as ${role.charAt(0).toUpperCase() + role.slice(1)}`}
           </button>
         </form>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          SafeRef &mdash; Refrigerant Gas Detection
+          <Link href="/" className="hover:text-gray-600 transition-colors">&larr; Back to home</Link>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-gray-400">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

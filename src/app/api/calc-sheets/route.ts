@@ -3,6 +3,7 @@
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { requireRole } from '@/lib/auth';
 
 // ── Ref generation ────────────────────────────────────────────────────
 
@@ -127,6 +128,9 @@ export async function GET(request: Request) {
 // ── POST — create sheet ───────────────────────────────────────────────
 
 export async function POST(request: Request) {
+  const authError = await requireRole(['admin', 'management']);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { clientJson, gasAppJson, zonesJson, resultJson, status, regulation } = body;
@@ -159,6 +163,9 @@ export async function POST(request: Request) {
 // ── PUT — update sheet (status, fields) ───────────────────────────────
 
 export async function PUT(request: Request) {
+  const authError = await requireRole(['admin', 'management']);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { id, status, resultJson, zonesJson, clientJson, gasAppJson, regulation } = body;
@@ -190,6 +197,9 @@ export async function PUT(request: Request) {
 // ── DELETE — delete sheet ─────────────────────────────────────────────
 
 export async function DELETE(request: Request) {
+  const authError = await requireRole(['admin', 'management']);
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

@@ -3,7 +3,7 @@
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { requireAdmin } from '@/lib/auth';
+import { requireRole } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
@@ -90,7 +90,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const authError = await requireAdmin();
+  const authError = await requireRole(['admin', 'management']);
   if (authError) return authError;
 
   try {
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const authError = await requireAdmin();
+  const authError = await requireRole(['admin', 'management']);
   if (authError) return authError;
 
   try {
@@ -136,7 +136,7 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const authError = await requireAdmin();
+  const authError = await requireRole(['admin', 'management']);
   if (authError) return authError;
 
   try {

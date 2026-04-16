@@ -1,61 +1,52 @@
-// POST /api/login — admin authentication
-// Validates email + password against AdminUser table (bcrypt hash).
-// Returns a signed HMAC session cookie on success (8-hour lifetime).
+// POST /api/login — role-based authentication
+// Validates password against role-specific env hash. Returns signed session cookie.
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
-import { ADMIN_SESSION_COOKIE, signSession } from '@/lib/auth';
+import { signSession, SESSION_COOKIE, SESSION_MAX_AGE, type Role } from '@/lib/auth';
+
+const ROLE_ENV_VARS: Record<Role, string> = {
+  admin: 'ADMIN_PASSWORD_HASH',
+  sales: 'SALES_PASSWORD_HASH',
+  management: 'MANAGEMENT_PASSWORD_HASH',
+};
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const { role, password } = body;
 
-    if (!email || !password) {
+    if (!role || !password) {
+      return NextResponse.json({ error: 'Role and password required' }, { status: 400 });
+    }
+    if (typeof role !== 'string' || !['admin', 'sales', 'management'].includes(role)) {
+      return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+    }
+    if (typeof password !== 'string' || password.length < 4) {
+      return NextResponse.json({ error: 'Invalid password' }, { status: 400 });
+    }
+
+    const hash = process.env[ROLE_ENV_VARS[role as Role]];
+    if (!hash) {
       return NextResponse.json(
-        { error: 'Email and password required' },
-        { status: 400 },
+        { error: `${role} role not configured — set ${ROLE_ENV_VARS[role as Role]} in .env` },
+        { status: 500 },
       );
     }
 
-    // Basic input validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (typeof email !== 'string' || !emailRegex.test(email)) {
-      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
-    }
-    if (typeof password !== 'string' || password.length < 8) {
-      return NextResponse.json(
-        { error: 'Password must be at least 8 characters' },
-        { status: 400 },
-      );
-    }
-
-    const user = await prisma.adminUser.findUnique({ where: { email } });
-    if (!user) {
-      // Use generic message to avoid user enumeration
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-    }
-
-    const valid = await bcrypt.compare(password, user.password);
+    const valid = await bcrypt.compare(password, hash);
     if (!valid) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    // Set signed session cookie
-    const sessionValue = signSession({ userId: user.id, role: user.role });
+    const sessionValue = signSession({ role: role as Role, loggedInAt: Date.now() });
 
-    const response = NextResponse.json({
-      success: true,
-      name: user.name,
-      role: user.role,
-    });
-
-    response.cookies.set(ADMIN_SESSION_COOKIE, sessionValue, {
+    const response = NextResponse.json({ success: true, role });
+    response.cookies.set(SESSION_COOKIE, sessionValue, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 8, // 8 hours
+      maxAge: SESSION_MAX_AGE,
       path: '/',
     });
 
