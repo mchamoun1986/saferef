@@ -389,79 +389,158 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {/* ── Edit / Create Modal ── */}
+      {/* ── Edit / Create Modal (DetectBuilder layout) ── */}
       {dialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setDialog(false)} />
-          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="bg-[#1a2332] text-white px-6 py-4 rounded-t-xl">
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[92vh] overflow-y-auto">
+            {/* Header */}
+            <div className="bg-[#1a2332] text-white px-6 py-4 rounded-t-xl sticky top-0 z-10 flex items-center justify-between">
               <h2 className="text-lg font-bold">{isNew ? 'New Product' : `Edit ${form.code}`}</h2>
+              <button onClick={() => setDialog(false)} className="text-white/70 hover:text-white text-xl leading-none">&times;</button>
             </div>
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-6 gap-3">
-                <F label="Code" value={form.code} onChange={v => setForm({ ...form, code: v })} mono />
-                <div className="col-span-2"><F label="Name" value={form.name} onChange={v => setForm({ ...form, name: v })} /></div>
-                <Sel label="Type" value={form.type} options={[...TYPES]} onChange={v => setForm({ ...form, type: v })} />
-                <Sel label="Family" value={form.family} options={[...FAMILIES]} onChange={v => setForm({ ...form, family: v })} />
-                <Sel label="Tier" value={form.tier} options={[...TIERS]} onChange={v => setForm({ ...form, tier: v })} />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Gas Types</label>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {GAS_OPTIONS.map(g => (
-                    <label key={g} className="flex items-center gap-1 text-xs">
-                      <input type="checkbox" checked={formGas().includes(g)} onChange={() => toggleGas(g)} className="rounded" />
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${gasColor(g)}`}>{g}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-4 gap-3">
-                <F label="Range" value={form.range ?? ''} onChange={v => setForm({ ...form, range: v || null })} />
-                <F label="Sensor Tech" value={form.sensorTech ?? ''} onChange={v => setForm({ ...form, sensorTech: v || null })} />
-                <F label="Sensor Life" value={form.sensorLife ?? ''} onChange={v => setForm({ ...form, sensorLife: v || null })} />
-                <N label="Price" value={form.price} onChange={v => setForm({ ...form, price: v })} />
-              </div>
-              <div className="grid grid-cols-5 gap-3">
-                <F label="Voltage" value={form.voltage ?? ''} onChange={v => setForm({ ...form, voltage: v || null })} />
-                <N label="Power (W)" value={form.power ?? 0} onChange={v => setForm({ ...form, power: v || null })} />
-                <N label="Relay" value={form.relay} onChange={v => setForm({ ...form, relay: Math.round(v) })} />
-                <F label="Analog" value={form.analog ?? ''} onChange={v => setForm({ ...form, analog: v || null })} />
-                <div className="flex items-end pb-1"><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={form.modbus} onChange={e => setForm({ ...form, modbus: e.target.checked })} className="rounded" /> Modbus</label></div>
-              </div>
-              <div className="grid grid-cols-5 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Mount</label>
-                  <div className="flex flex-wrap gap-2">
-                    {MOUNT_OPTIONS.map(m => (<label key={m} className="flex items-center gap-1 text-xs"><input type="checkbox" checked={formMount().includes(m)} onChange={() => toggleMount(m)} className="rounded" />{m}</label>))}
+
+            <div className="p-6 space-y-6">
+
+              {/* ═══ BASIC INFORMATION ═══ */}
+              <Section title="BASIC INFORMATION" color="text-[#1a2332]" defaultOpen>
+                <div className="grid grid-cols-2 gap-4">
+                  <Sel label="Type" value={form.type} options={[...TYPES]} onChange={v => setForm({ ...form, type: v })} />
+                  <F label="Family" value={form.family} onChange={v => setForm({ ...form, family: v })} />
+                  <F label="Product Name" value={form.name} onChange={v => setForm({ ...form, name: v })} />
+                  <F label="Order Code" value={form.code} onChange={v => setForm({ ...form, code: v })} mono />
+                  <N label="Price (EUR)" value={form.price} onChange={v => setForm({ ...form, price: v })} />
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Image</label>
+                    <div className="flex gap-2">
+                      <input value={form.image ?? ''} onChange={e => setForm({ ...form, image: e.target.value || null })}
+                        placeholder="e.g. midi-integrated.png"
+                        className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-sm font-mono" />
+                    </div>
                   </div>
                 </div>
-                <F label="IP Rating" value={form.ip ?? ''} onChange={v => setForm({ ...form, ip: v || null })} />
-                <div className="flex items-end pb-1"><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={form.standalone} onChange={e => setForm({ ...form, standalone: e.target.checked })} className="rounded" /> Standalone</label></div>
-                <div className="flex items-end pb-1"><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={form.atex} onChange={e => setForm({ ...form, atex: e.target.checked })} className="rounded" /> ATEX</label></div>
-                <div className="flex items-end pb-1"><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={form.remote} onChange={e => setForm({ ...form, remote: e.target.checked })} className="rounded" /> Remote</label></div>
+                {/* Image preview */}
+                {form.image && (
+                  <div className="mt-3 flex items-center gap-3">
+                    <img src={`/assets/${form.image}`} alt="preview"
+                      className="w-16 h-16 object-contain rounded border border-gray-200 bg-gray-50" />
+                    <button onClick={() => setForm({ ...form, image: null })}
+                      className="text-red-500 hover:text-red-700 text-xs font-semibold">
+                      X Remove
+                    </button>
+                  </div>
+                )}
+              </Section>
+
+              {/* ═══ CLASSIFICATION M2 ═══ */}
+              <Section title="CLASSIFICATION (M2)" color="text-[#E63946]" defaultOpen>
+                <div className="grid grid-cols-2 gap-4">
+                  <Sel label="Tier" value={form.tier} options={[...TIERS]} onChange={v => setForm({ ...form, tier: v })} />
+                  <F label="Product Group" value={form.productGroup} onChange={v => setForm({ ...form, productGroup: v })} mono />
+                </div>
+                {/* Gas Types checkboxes */}
+                <div className="mt-3">
+                  <label className="block text-xs font-semibold text-gray-600 mb-2">Gas Types</label>
+                  <div className="flex flex-wrap gap-2">
+                    {GAS_OPTIONS.map(g => (
+                      <label key={g} className="flex items-center gap-1.5 text-xs cursor-pointer">
+                        <input type="checkbox" checked={formGas().includes(g)} onChange={() => toggleGas(g)} className="rounded" />
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${gasColor(g)}`}>{g}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <TA label="Gas Groups (JSON)" value={form.gas} onChange={v => setForm({ ...form, gas: v })} rows={1} mono />
+                <TA label="Compatible Refrigerants (JSON)" value={form.refs} onChange={v => setForm({ ...form, refs: v })} rows={1} mono />
+                <TA label="Compatible Applications (JSON)" value={form.apps} onChange={v => setForm({ ...form, apps: v })} rows={2} mono />
+              </Section>
+
+              {/* ═══ DETECTION ═══ */}
+              <Section title="DETECTION" color="text-[#1a2332]">
+                <div className="grid grid-cols-2 gap-4">
+                  <F label="Range" value={form.range ?? ''} onChange={v => setForm({ ...form, range: v || null })} placeholder="e.g. 0-10000ppm" />
+                  <F label="Sensor Tech" value={form.sensorTech ?? ''} onChange={v => setForm({ ...form, sensorTech: v || null })} placeholder="IR / SC / EC / pH" />
+                  <F label="Sensor Life" value={form.sensorLife ?? ''} onChange={v => setForm({ ...form, sensorLife: v || null })} placeholder="e.g. 7-10y" />
+                  <F label="IP Rating" value={form.ip ?? ''} onChange={v => setForm({ ...form, ip: v || null })} placeholder="e.g. IP54" />
+                  <N label="Temp Min (C)" value={form.tempMin ?? 0} onChange={v => setForm({ ...form, tempMin: v || null })} />
+                  <N label="Temp Max (C)" value={form.tempMax ?? 0} onChange={v => setForm({ ...form, tempMax: v || null })} />
+                </div>
+              </Section>
+
+              {/* ═══ ELECTRICAL ═══ */}
+              <Section title="ELECTRICAL" color="text-[#1a2332]">
+                <div className="grid grid-cols-2 gap-4">
+                  <F label="Voltage" value={form.voltage ?? ''} onChange={v => setForm({ ...form, voltage: v || null })} placeholder="e.g. 15-24V" />
+                  <N label="Power (W)" value={form.power ?? 0} onChange={v => setForm({ ...form, power: v || null })} />
+                </div>
+              </Section>
+
+              {/* ═══ OUTPUTS ═══ */}
+              <Section title="OUTPUTS" color="text-[#1a2332]">
+                <div className="grid grid-cols-2 gap-4">
+                  <N label="Relay count" value={form.relay} onChange={v => setForm({ ...form, relay: Math.round(v) })} />
+                  <F label="Analog" value={form.analog ?? ''} onChange={v => setForm({ ...form, analog: v || null })} placeholder="selectable / 4-20mA / 0-10V" />
+                </div>
+                <div className="grid grid-cols-3 gap-4 mt-3">
+                  <Check label="Modbus" checked={form.modbus} onChange={v => setForm({ ...form, modbus: v })} />
+                  <Check label="Remote" checked={form.remote} onChange={v => setForm({ ...form, remote: v })} />
+                  <Check label="Standalone" checked={form.standalone} onChange={v => setForm({ ...form, standalone: v })} />
+                </div>
+              </Section>
+
+              {/* ═══ CONNECTION ═══ */}
+              <Section title="CONNECTION" color="text-[#1a2332]">
+                <div className="grid grid-cols-2 gap-4">
+                  <F label="Connect To" value={form.connectTo ?? ''} onChange={v => setForm({ ...form, connectTo: v || null })} placeholder="e.g. MPU/SPU/SPLS" />
+                  <F label="Compatible Families" value={form.compatibleFamilies} onChange={v => setForm({ ...form, compatibleFamilies: v })} mono placeholder='["MIDI","X5"] or ["ALL"]' />
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-3">
+                  <N label="Channels" value={form.channels ?? 0} onChange={v => setForm({ ...form, channels: v || null })} />
+                  <N label="Max Power (W)" value={form.maxPower ?? 0} onChange={v => setForm({ ...form, maxPower: v || null })} />
+                </div>
+              </Section>
+
+              {/* ═══ MOUNTING ═══ */}
+              <Section title="MOUNTING" color="text-[#1a2332]">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-2">Mount Types</label>
+                  <div className="flex flex-wrap gap-3">
+                    {MOUNT_OPTIONS.map(m => (
+                      <label key={m} className="flex items-center gap-1.5 text-xs cursor-pointer bg-gray-50 px-3 py-1.5 rounded border border-gray-200">
+                        <input type="checkbox" checked={formMount().includes(m)} onChange={() => toggleMount(m)} className="rounded" />
+                        <span className="capitalize">{m}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </Section>
+
+              {/* ═══ CERTIFICATIONS & FEATURES ═══ */}
+              <Section title="CERTIFICATIONS & FEATURES" color="text-[#1a2332]">
+                <div className="grid grid-cols-2 gap-4 mb-3">
+                  <Check label="ATEX certified" checked={form.atex} onChange={v => setForm({ ...form, atex: v })} />
+                  <F label="Sub-Category" value={form.subCategory ?? ''} onChange={v => setForm({ ...form, subCategory: v || null })} placeholder="alert/service/mounting/power/spare" />
+                </div>
+                <TA label="Features" value={form.features ?? ''} onChange={v => setForm({ ...form, features: v || null })} rows={3} placeholder="LED display, Bluetooth app, etc." />
+              </Section>
+
+              {/* ═══ STATUS ═══ */}
+              <div className="pt-4 border-t border-gray-200">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.discontinued} onChange={e => setForm({ ...form, discontinued: e.target.checked })} className="rounded" />
+                  <span className="text-sm font-semibold text-red-600">Discontinued (End of Life)</span>
+                </label>
               </div>
-              <div className="grid grid-cols-5 gap-3">
-                <N label="Channels" value={form.channels ?? 0} onChange={v => setForm({ ...form, channels: v || null })} />
-                <N label="Max Power (W)" value={form.maxPower ?? 0} onChange={v => setForm({ ...form, maxPower: v || null })} />
-                <F label="Connect To" value={form.connectTo ?? ''} onChange={v => setForm({ ...form, connectTo: v || null })} />
-                <F label="Sub-Category" value={form.subCategory ?? ''} onChange={v => setForm({ ...form, subCategory: v || null })} />
-                <F label="Compatible Families" value={form.compatibleFamilies} onChange={v => setForm({ ...form, compatibleFamilies: v })} mono />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><N label="Temp Min" value={form.tempMin ?? 0} onChange={v => setForm({ ...form, tempMin: v || null })} /></div>
-                <div><N label="Temp Max" value={form.tempMax ?? 0} onChange={v => setForm({ ...form, tempMax: v || null })} /></div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Features</label>
-                <textarea value={form.features ?? ''} onChange={e => setForm({ ...form, features: e.target.value || null })} rows={2} className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" />
-              </div>
-              <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={form.discontinued} onChange={e => setForm({ ...form, discontinued: e.target.checked })} className="rounded" /><span className="font-semibold text-red-600">Discontinued (EOL)</span></label>
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                <button onClick={() => setDialog(false)} className="px-4 py-2 text-sm text-gray-600">Cancel</button>
+
+              {/* ═══ Actions ═══ */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 sticky bottom-0 bg-white">
+                <button onClick={() => setDialog(false)}
+                  className="px-5 py-2 text-sm text-gray-600 hover:text-gray-900 font-medium">
+                  Cancel
+                </button>
                 <button onClick={save} disabled={saving || !form.code || !form.name}
-                  className="bg-[#E63946] hover:bg-red-700 disabled:opacity-50 text-white px-5 py-2 rounded-md text-sm font-semibold">
-                  {saving ? 'Saving...' : isNew ? 'Create' : 'Update'}
+                  className="bg-[#E63946] hover:bg-red-700 disabled:opacity-50 text-white px-6 py-2 rounded-md text-sm font-semibold">
+                  {saving ? 'Saving...' : isNew ? 'Create Product' : 'Update Product'}
                 </button>
               </div>
             </div>
@@ -483,14 +562,68 @@ function StatCard({ value, label, accent }: { value: string | number; label: str
   );
 }
 
-function F({ label, value, onChange, mono }: { label: string; value: string; onChange: (v: string) => void; mono?: boolean }) {
-  return (<div><label className="block text-xs font-semibold text-gray-600 mb-1">{label}</label><input value={value} onChange={e => onChange(e.target.value)} className={`w-full px-2 py-1.5 border border-gray-300 rounded text-sm ${mono ? 'font-mono' : ''}`} /></div>);
+function F({ label, value, onChange, mono, placeholder }: { label: string; value: string; onChange: (v: string) => void; mono?: boolean; placeholder?: string }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-gray-700 mb-1.5">{label}</label>
+      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+        className={`w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#E63946]/30 focus:border-[#E63946] ${mono ? 'font-mono' : ''}`} />
+    </div>
+  );
 }
 
 function N({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
-  return (<div><label className="block text-xs font-semibold text-gray-600 mb-1">{label}</label><input type="number" step="any" value={value} onChange={e => onChange(+e.target.value)} className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm font-mono" /></div>);
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-gray-700 mb-1.5">{label}</label>
+      <input type="number" step="any" value={value} onChange={e => onChange(+e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#E63946]/30 focus:border-[#E63946]" />
+    </div>
+  );
 }
 
 function Sel({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (v: string) => void }) {
-  return (<div><label className="block text-xs font-semibold text-gray-600 mb-1">{label}</label><select value={value} onChange={e => onChange(e.target.value)} className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">{options.map(o => <option key={o} value={o}>{o}</option>)}</select></div>);
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-gray-700 mb-1.5">{label}</label>
+      <select value={value} onChange={e => onChange(e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#E63946]/30 focus:border-[#E63946]">
+        {options.map(o => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
+      </select>
+    </div>
+  );
+}
+
+function TA({ label, value, onChange, rows = 2, mono, placeholder }: { label: string; value: string; onChange: (v: string) => void; rows?: number; mono?: boolean; placeholder?: string }) {
+  return (
+    <div className="mt-3">
+      <label className="block text-xs font-semibold text-gray-700 mb-1.5">{label}</label>
+      <textarea value={value} onChange={e => onChange(e.target.value)} rows={rows} placeholder={placeholder}
+        className={`w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#E63946]/30 focus:border-[#E63946] ${mono ? 'font-mono' : ''}`} />
+    </div>
+  );
+}
+
+function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex items-center gap-2 cursor-pointer bg-gray-50 px-3 py-2 rounded-md border border-gray-200 hover:bg-gray-100 transition-colors">
+      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)}
+        className="rounded border-gray-300 text-[#E63946] focus:ring-[#E63946]" />
+      <span className="text-sm text-gray-700 font-medium">{label}</span>
+    </label>
+  );
+}
+
+function Section({ title, color = 'text-[#1a2332]', defaultOpen = false, children }: { title: string; color?: string; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div>
+      <button type="button" onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between py-2 border-b border-gray-200 hover:border-gray-300 transition-colors">
+        <span className={`text-xs font-bold tracking-wider ${color}`}>{title}</span>
+        <span className="text-gray-400 text-lg font-light">{open ? '\u2212' : '+'}</span>
+      </button>
+      {open && <div className="mt-4 space-y-3">{children}</div>}
+    </div>
+  );
 }
