@@ -9,6 +9,7 @@ const links = [
   { href: '/admin/applications', label: 'Applications' },
   { href: '/admin/space-types', label: 'Space Types' },
   { href: '/admin/products', label: 'Products' },
+  { href: '/admin/discount-matrix', label: 'Discounts' },
   { href: '/admin/calc-sheets', label: 'Calc Sheets' },
   { href: '/admin/engine', label: 'Engine' },
   { href: '/admin/engine-m2', label: 'Engine M2' },
