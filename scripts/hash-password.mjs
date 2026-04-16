@@ -11,4 +11,8 @@ if (!pwd) {
 }
 
 const hash = await bcrypt.hash(pwd, 10);
-console.log(hash);
+const escaped = hash.replace(/\$/g, '\\$');
+console.log('Raw hash:     ' + hash);
+console.log('For .env:     "' + escaped + '"');
+console.log('');
+console.log('Paste the "For .env" line into .env.local');

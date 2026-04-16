@@ -1,12 +1,11 @@
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth';
 import AdminNav from './nav';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies();
-  const session = cookieStore.get('refcalc-admin-session');
+  const session = await getSession();
 
-  if (!session?.value) {
+  if (!session) {
     redirect('/login');
   }
 

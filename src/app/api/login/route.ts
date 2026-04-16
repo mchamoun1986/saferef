@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const sessionValue = signSession({ role: role as Role, loggedInAt: Date.now() });
+    const sessionValue = await signSession({ role: role as Role, loggedInAt: Date.now() });
 
     const response = NextResponse.json({ success: true, role });
     response.cookies.set(SESSION_COOKIE, sessionValue, {

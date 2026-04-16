@@ -35,7 +35,7 @@ function findAllowedRoles(pathname: string): Role[] | null {
   return bestMatch ? ROUTE_ROLES[bestMatch] : null;
 }
 
-export function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const allowedRoles = findAllowedRoles(pathname);
 
@@ -49,7 +49,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const payload = verifySession(cookie.value);
+  const payload = await verifySession(cookie.value);
   if (!payload) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('from', pathname);
