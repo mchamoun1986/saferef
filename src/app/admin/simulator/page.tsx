@@ -1153,7 +1153,7 @@ export default function SimulatorPage() {
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = `detectcalc-sim-${new Date().toISOString().slice(0, 10)}.csv`;
+                        a.download = `saferef-sim-${new Date().toISOString().slice(0, 10)}.csv`;
                         a.click();
                         URL.revokeObjectURL(url);
                       }}

@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# runtime database (contains user data, not seed data)
+*.db
+
+# playwright MCP
+.playwright-mcp/

@@ -16,9 +16,9 @@ import { PRODUCTS } from './seed-data/products';
 import { DISCOUNT_MATRIX } from './seed-data/discount-matrix';
 
 function createPrismaClient() {
-  // DATABASE_URL from .env: "file:./detectcalc.db" — db push creates it at prisma/detectcalc.db
+  // DATABASE_URL from .env: "file:./saferef.db"
   // Resolve relative to project root
-  const rawUrl = process.env.DATABASE_URL ?? "file:./detectcalc.db";
+  const rawUrl = process.env.DATABASE_URL ?? "file:./saferef.db";
   let resolvedUrl: string;
   if (rawUrl.startsWith("file:")) {
     const filePath = rawUrl.slice("file:".length);

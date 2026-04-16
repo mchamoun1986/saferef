@@ -180,7 +180,7 @@ export default function ConfiguratorPage() {
     if (draftChecked.current) return;
     draftChecked.current = true;
     try {
-      const raw = localStorage.getItem('refcalc-wizard-draft');
+      const raw = localStorage.getItem('saferef-wizard-draft');
       if (raw) {
         setHasDraft(true);
       }
@@ -194,13 +194,13 @@ export default function ConfiguratorPage() {
     if (!clientData.firstName && !clientData.company && !gasAppData.zoneType && zones.length === 0) return;
     try {
       const draft = { step, clientData, gasAppData, zones };
-      localStorage.setItem('refcalc-wizard-draft', JSON.stringify(draft));
+      localStorage.setItem('saferef-wizard-draft', JSON.stringify(draft));
     } catch { /* ignore */ }
   }, [step, clientData, gasAppData, zones, loading]);
 
   function restoreDraft() {
     try {
-      const raw = localStorage.getItem('refcalc-wizard-draft');
+      const raw = localStorage.getItem('saferef-wizard-draft');
       if (!raw) return;
       const draft = JSON.parse(raw);
       if (draft.clientData) setClientData(draft.clientData);
@@ -214,7 +214,7 @@ export default function ConfiguratorPage() {
   }
 
   function dismissDraft() {
-    localStorage.removeItem('refcalc-wizard-draft');
+    localStorage.removeItem('saferef-wizard-draft');
     setHasDraft(false);
   }
 
@@ -330,7 +330,7 @@ export default function ConfiguratorPage() {
       setCalcResult(result);
       setStep(4);
       // Clear draft on successful calculation
-      try { localStorage.removeItem('refcalc-wizard-draft'); } catch { /* ignore */ }
+      try { localStorage.removeItem('saferef-wizard-draft'); } catch { /* ignore */ }
       return;
     }
 

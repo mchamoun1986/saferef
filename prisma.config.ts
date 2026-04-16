@@ -1,4 +1,4 @@
-// Prisma config for RefCalc
+// Prisma config for SafeRef
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 

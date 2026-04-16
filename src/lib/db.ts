@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 
 function createClient() {
-  const url = process.env.DATABASE_URL ?? "file:./detectcalc.db";
+  const url = process.env.DATABASE_URL ?? "file:./saferef.db";
   const adapter = new PrismaLibSql({ url });
   return new PrismaClient({ adapter });
 }
