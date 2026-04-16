@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { requireRole } from "@/lib/auth";
 
 function safeParse<T>(json: string, fallback: T): T {
   try { return JSON.parse(json) as T; }
@@ -67,6 +68,9 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = await requireRole(['admin', 'sales']);
+  if (authError) return authError;
+
   const { id } = await params;
   const quote = await prisma.quote.findUnique({ where: { id } });
 

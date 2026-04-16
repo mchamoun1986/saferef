@@ -40,6 +40,9 @@ function normalize(val: unknown, fallback: string): string {
 // ── GET — list quotes ─────────────────────────────────────────────────
 
 export async function GET(request: Request) {
+  const authError = await requireRole(['admin', 'sales']);
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');

@@ -44,6 +44,9 @@ function normalize(val: unknown, fallback: string): string {
 // ── GET — list sheets OR detail by ?id= ──────────────────────────────
 
 export async function GET(request: Request) {
+  const authError = await requireRole(['admin', 'sales', 'management']);
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const detailId = searchParams.get('id');
