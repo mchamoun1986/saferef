@@ -151,6 +151,24 @@ export default function ProductsPage() {
   const [filterSensor, setFilterSensor] = useState('');
   const [filterCompat, setFilterCompat] = useState('');
   const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  function toggleSelect(id: string) {
+    setSelected(prev => { const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s; });
+  }
+  function toggleSelectAll() {
+    if (selected.size === filtered.length) setSelected(new Set());
+    else setSelected(new Set(filtered.map(p => p.id)));
+  }
+  async function deleteSelected() {
+    if (selected.size === 0) return;
+    if (!confirm(`Delete ${selected.size} products? This cannot be undone.`)) return;
+    for (const id of selected) {
+      await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
+    }
+    setSelected(new Set());
+    fetchProducts();
+  }
   const [dialog, setDialog] = useState(false);
   const [isNew, setIsNew] = useState(false);
   const [form, setForm] = useState<Omit<Product, 'createdAt' | 'updatedAt'>>(EMPTY_PRODUCT);
@@ -326,6 +344,12 @@ export default function ProductsPage() {
             <option value="ALL">ALL</option>
           </select>
         )}
+        {selected.size > 0 && (
+          <button onClick={deleteSelected}
+            className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-md transition-colors">
+            Delete {selected.size} selected
+          </button>
+        )}
         <span className="text-sm text-gray-500 ml-auto font-mono">{filtered.length} / {products.filter(p => p.type === filterType).length}</span>
       </div>
 
@@ -338,6 +362,10 @@ export default function ProductsPage() {
             <table className="w-full text-[11px]">
               <thead>
                 <tr className="bg-[#f0f1f5] text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b-2 border-gray-200">
+                  <th className="px-2 py-2.5 w-8">
+                    <input type="checkbox" checked={filtered.length > 0 && selected.size === filtered.length}
+                      onChange={toggleSelectAll} className="rounded" />
+                  </th>
                   <th className="px-2 py-2.5">ACTIONS</th>
                   <th className="px-2 py-2.5">IMAGE</th>
                   <th className="px-2 py-2.5">FAMILY</th>
@@ -367,7 +395,10 @@ export default function ProductsPage() {
                   const gases: string[] = parseJson(p.gas, []);
                   const mounts: string[] = parseJson(p.mount, []);
                   return (
-                    <tr key={p.id} className={`border-b border-gray-100 hover:bg-blue-50/40 transition-colors ${p.discontinued ? 'opacity-40' : ''} ${idx % 2 === 1 ? 'bg-gray-50/50' : ''}`}>
+                    <tr key={p.id} className={`border-b border-gray-100 hover:bg-blue-50/40 transition-colors ${p.discontinued ? 'opacity-40' : ''} ${idx % 2 === 1 ? 'bg-gray-50/50' : ''} ${selected.has(p.id) ? 'bg-red-50' : ''}`}>
+                      <td className="px-2 py-1.5">
+                        <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} className="rounded" />
+                      </td>
                       <td className="px-2 py-1.5">
                         <div className="flex gap-1">
                           <button onClick={() => openEdit(p)} title="Edit"
