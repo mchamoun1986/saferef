@@ -45,3 +45,9 @@ next-env.d.ts
 
 # playwright MCP
 .playwright-mcp/
+
+# Brainstorm & review artifacts
+.superpowers/
+review/
+test-output.pdf
+*.lnk
