@@ -14,7 +14,7 @@ function readEnvPasswords(): { admin: string; sales: string; management: string 
   try {
     const content = readFileSync(ENV_PATH, 'utf-8');
     const extract = (role: string): string => {
-      const regex = new RegExp(`#\\s*${role}:\\s*(.+)`, 'i');
+      const regex = new RegExp(`#\\\\s*${role}:\\\\s*(.+)`, 'i');
       const match = content.match(regex);
       return match?.[1]?.trim() || '(unknown)';
     };
