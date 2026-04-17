@@ -12,11 +12,12 @@ const ENV_PATH = join(process.cwd(), '.env.local');
 
 function readEnvPasswords(): { admin: string; sales: string; management: string } {
   try {
-    const content = readFileSync(ENV_PATH, 'utf-8');
+    const lines = readFileSync(ENV_PATH, 'utf-8').split('\n');
     const extract = (role: string): string => {
-      const regex = new RegExp(`#\\\\s*${role}:\\\\s*(.+)`, 'i');
-      const match = content.match(regex);
-      return match?.[1]?.trim() || '(unknown)';
+      const prefix = `# ${role}:`;
+      const line = lines.find(l => l.trimStart().startsWith(prefix));
+      if (!line) return '(not set)';
+      return line.substring(line.indexOf(prefix) + prefix.length).trim();
     };
     return {
       admin: extract('ADMIN'),
