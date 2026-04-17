@@ -14,11 +14,24 @@ interface CalcSheet {
   projectName?: string;
 }
 
+interface Quote {
+  id: string;
+  ref: string;
+  status: string;
+  clientName: string;
+  clientCompany: string;
+  projectName: string;
+  totalGross: number;
+  currency: string;
+  createdAt: string;
+}
+
 interface DashboardData {
   refrigerants: { id: string }[];
   applications: { id: string }[];
   spaceTypes: { id: string }[];
   calcSheets: CalcSheet[];
+  quotes: Quote[];
 }
 
 /* ───── helpers ───── */
@@ -40,6 +53,8 @@ const STATUS_DOT: Record<string, string> = {
   validated: "bg-blue-400",
   sent: "bg-emerald-400",
   archived: "bg-gray-500",
+  accepted: "bg-green-500",
+  rejected: "bg-red-400",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -48,6 +63,8 @@ const STATUS_LABEL: Record<string, string> = {
   validated: "Validated",
   sent: "Sent",
   archived: "Archived",
+  accepted: "Accepted",
+  rejected: "Rejected",
 };
 
 /* ───── skeleton ───── */
@@ -73,6 +90,7 @@ const QUICK_LINKS = [
   { href: "/admin/applications", label: "Applications", icon: "🏭", desc: "Application configurations (M1 + M2)" },
   { href: "/admin/space-types", label: "Space Types", icon: "📐", desc: "Zone types with regulatory defaults" },
   { href: "/admin/calc-sheets", label: "Calc Sheets", icon: "📄", desc: "Saved calculation sheets" },
+  { href: "/admin/quotes", label: "Quotes", icon: "💰", desc: "Sales quotes & pricing" },
 ];
 
 /* ───── component ───── */
@@ -84,18 +102,20 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [refRes, appRes, stRes, csRes] = await Promise.all([
+        const [refRes, appRes, stRes, csRes, qtRes] = await Promise.all([
           fetch("/api/refrigerants-v5"),
           fetch("/api/applications"),
           fetch("/api/space-types"),
           fetch("/api/calc-sheets"),
+          fetch("/api/quotes"),
         ]);
 
-        const [refrigerants, applications, spaceTypes, calcSheets] = await Promise.all([
+        const [refrigerants, applications, spaceTypes, calcSheets, quotesData] = await Promise.all([
           refRes.ok ? refRes.json() : [],
           appRes.ok ? appRes.json() : [],
           stRes.ok ? stRes.json() : [],
           csRes.ok ? csRes.json() : [],
+          qtRes.ok ? qtRes.json() : { quotes: [], total: 0 },
         ]);
 
         setData({
@@ -103,6 +123,7 @@ export default function AdminDashboardPage() {
           applications: Array.isArray(applications) ? applications : [],
           spaceTypes: Array.isArray(spaceTypes) ? spaceTypes : [],
           calcSheets: Array.isArray(calcSheets) ? calcSheets : calcSheets.data ?? [],
+          quotes: Array.isArray(quotesData) ? quotesData : quotesData.quotes ?? [],
         });
       } catch (e) {
         setError(String(e));
@@ -123,10 +144,15 @@ export default function AdminDashboardPage() {
         sheetsValidated: data.calcSheets.filter((s) => s.status === "validated").length,
         sheetsDraft: data.calcSheets.filter((s) => s.status === "draft").length,
         sheetsSent: data.calcSheets.filter((s) => s.status === "sent").length,
+        totalQuotes: data.quotes.length,
+        quotesDraft: data.quotes.filter((q) => q.status === "draft").length,
+        quotesSent: data.quotes.filter((q) => q.status === "sent").length,
+        quotesAccepted: data.quotes.filter((q) => q.status === "accepted").length,
       }
     : null;
 
   const recentSheets = data?.calcSheets.slice(0, 5) ?? [];
+  const recentQuotes = data?.quotes.slice(0, 5) ?? [];
 
   /* ── render ── */
   return (
@@ -144,9 +170,10 @@ export default function AdminDashboardPage() {
       )}
 
       {/* KPI cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         {loading ? (
           <>
+            <KpiSkeleton />
             <KpiSkeleton />
             <KpiSkeleton />
             <KpiSkeleton />
@@ -179,18 +206,29 @@ export default function AdminDashboardPage() {
             <div className="rounded-xl bg-[#0a1628] text-white p-6 border border-white/5">
               <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Calc Sheets</p>
               <p className="text-3xl font-bold">{stats.totalCalcSheets}</p>
-              <div className="mt-3 flex gap-2 text-xs text-gray-400">
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-400">
                 <span className="bg-gray-500/20 text-gray-300 px-2 py-0.5 rounded">{stats.sheetsDraft} draft</span>
                 <span className="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded">{stats.sheetsValidated} valid</span>
                 <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded">{stats.sheetsSent} sent</span>
+              </div>
+            </div>
+
+            {/* Quotes */}
+            <div className="rounded-xl bg-[#0a1628] text-white p-6 border border-white/5">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Quotes</p>
+              <p className="text-3xl font-bold">{stats.totalQuotes}</p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-400">
+                <span className="bg-gray-500/20 text-gray-300 px-2 py-0.5 rounded">{stats.quotesDraft} draft</span>
+                <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded">{stats.quotesSent} sent</span>
+                <span className="bg-green-500/20 text-green-300 px-2 py-0.5 rounded">{stats.quotesAccepted} accepted</span>
               </div>
             </div>
           </>
         ) : null}
       </div>
 
-      {/* Two-column: recent calc sheets + quick links */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Recent tables + quick links */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Recent calc sheets */}
         <div className="lg:col-span-2 rounded-xl bg-white border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -271,6 +309,69 @@ export default function AdminDashboardPage() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Recent Quotes */}
+      <div className="rounded-xl bg-white border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="font-semibold text-[#0a1628]">Recent Quotes</h2>
+          <Link
+            href="/admin/quotes"
+            className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            View all &rarr;
+          </Link>
+        </div>
+
+        {loading ? (
+          <div className="p-6 space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="animate-pulse rounded bg-gray-100 h-10 w-full" />
+            ))}
+          </div>
+        ) : recentQuotes.length === 0 ? (
+          <div className="p-10 text-center text-gray-400 text-sm">No quotes yet</div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3">Ref</th>
+                <th className="px-6 py-3">Client</th>
+                <th className="px-6 py-3">Project</th>
+                <th className="px-6 py-3">Status</th>
+                <th className="px-6 py-3 text-right">Total (list)</th>
+                <th className="px-6 py-3">Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {recentQuotes.map((q) => (
+                <tr
+                  key={q.id}
+                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => window.location.href = `/admin/quotes/${q.id}`}
+                >
+                  <td className="px-6 py-3 font-mono text-xs text-gray-700">{q.ref}</td>
+                  <td className="px-6 py-3 text-gray-700">
+                    {q.clientCompany || q.clientName || "—"}
+                  </td>
+                  <td className="px-6 py-3 text-gray-600">{q.projectName || "—"}</td>
+                  <td className="px-6 py-3">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${STATUS_DOT[q.status] ?? "bg-gray-400"}`} />
+                      <span className="capitalize text-gray-600">{STATUS_LABEL[q.status] ?? q.status}</span>
+                    </span>
+                  </td>
+                  <td className="px-6 py-3 text-right font-medium text-gray-800">
+                    {q.totalGross > 0
+                      ? `${q.totalGross.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${q.currency}`
+                      : "—"}
+                  </td>
+                  <td className="px-6 py-3 text-gray-500">{fmtDate(q.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

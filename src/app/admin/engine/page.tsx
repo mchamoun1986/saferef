@@ -212,8 +212,7 @@ export default function EngineDocPage() {
       <div className="bg-[#1a2332] text-white px-8 py-8">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-2xl font-bold">
-            Moteur de Calcul{' '}
-            <span className="text-gray-400 font-normal">/ Calculation Engine</span>
+            Calculation Engine
           </h1>
           <p className="text-gray-400 text-sm mt-2">
             Technical reference for all formulas, regulation rules, and decision logic used by SafeRef.

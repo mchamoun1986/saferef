@@ -114,7 +114,7 @@ export default function SpaceTypesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[#1a2332]">Space Types (Zones)</h1>
-          <p className="text-sm text-gray-500 mt-1">{items.length} space types — defaults réglementaires par type de zone</p>
+          <p className="text-sm text-gray-500 mt-1">{items.length} space types — regulatory defaults per zone type</p>
         </div>
         <button onClick={openNew} className="bg-[#E63946] hover:bg-red-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors">
           + Add Space Type

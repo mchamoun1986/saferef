@@ -95,8 +95,8 @@ export default function ArchitectureOverview({ defaultExpanded = false }: { defa
           {/* Stats Bar */}
           <div className="grid grid-cols-6 gap-px bg-gray-100">
             {[
-              { value: d ? data.pages.total : "—", label: "Pages", sub: d ? `${data.pages.public} public · ${data.pages.admin} admin` : "" },
-              { value: d ? data.api.total : "—", label: "API Routes", sub: d ? `${data.api.public} public · ${data.api.auth} auth` : "" },
+              { value: d ? data.pages.total + 1 : "—", label: "Pages", sub: d ? `${data.pages.public} public · ${data.pages.admin + 1} admin` : "" },
+              { value: d ? data.api.total + 1 : "—", label: "API Routes", sub: d ? `${data.api.public} public · ${data.api.auth + 1} auth` : "" },
               { value: d ? data.models : "—", label: "DB Models", sub: "6 seed · 3 runtime" },
               { value: d ? d.products.total : "—", label: "Products", sub: d ? `${d.products.detectors} det · ${d.products.controllers} ctrl · ${d.products.accessories} acc` : "" },
               { value: d ? d.refrigerants : "—", label: "Refrigerants", sub: d ? `${d.gasCategories} categories` : "" },
@@ -285,7 +285,7 @@ function VariablesTab() {
           { name: "sitePowerVoltage", type: "'12V'|'24V'|'230V'", source: "Config step 2" },
           { name: "zoneAtex", type: "boolean", source: "Config step 2" },
           { name: "outputRequired", type: "string", source: "relay / analog / modbus" },
-          { name: "mountingType", type: "string", source: "wall / ceiling / duct" },
+          { name: "mountingType", type: "'ambient'|'duct'|'pipe_valve'", source: "Detection Location — ambient/duct/pipe" },
           { name: "customerGroup", type: "string", source: "Config step 1 (EDC/OEM/...)" },
         ]} />
       </Section>
@@ -298,7 +298,7 @@ function VariablesTab() {
           { name: "F3 Range", type: "filter", note: "product.range vs selectedRange" },
           { name: "F4 Output", type: "filter", note: "product.relay/analog/modbus" },
           { name: "F5 Voltage", type: "filter", note: "product.voltage vs sitePowerVoltage" },
-          { name: "F6 Mount", type: "filter", note: "product.mount vs mountingType" },
+          { name: "F6 Detection Location", type: "filter", note: "ambient=all, duct=MIDI remote only, pipe=MIDI remote+Aquis" },
           { name: "F7 ATEX", type: "filter", note: "product.atex vs zoneAtex" },
           { name: "F8 Standalone", type: "filter", note: "product.standalone requirement" },
           { name: "F9 Score", type: "scoring", note: "21-point → tier assignment" },
@@ -339,6 +339,7 @@ function DetailsTab({ data }: { data: ArchData | null }) {
               ["/sales", "Dashboard", "sales+"],
               ["/sales/quotes", "Quotes", "sales+"],
               ["/admin", "Dashboard", "admin"],
+              ["/admin/architecture", "Architecture", "admin"],
             ].map(([route, label, auth]) => (
               <tr key={route} className="border-t border-gray-50">
                 <td className="py-1 font-mono text-[10px] text-gray-500">{route}</td>
@@ -436,10 +437,21 @@ function ChangesTab() {
       </div>
       <div className="space-y-2">
         {[
-          { icon: "🔀", text: "Route renamed: /configurator → /calculator", meta: "page.tsx, nav.tsx, next.config.ts" },
-          { icon: "🌐", text: "i18n unified: Global language context", meta: "Calculator uses I18nProvider cookie" },
-          { icon: "🎨", text: 'Renamed: "Designer" → "Calculator" (5 langs)', meta: "i18n-common.ts, StepCalcSheet.tsx" },
-          { icon: "🔒", text: "Nav secured: Hidden Sales/Admin from public", meta: "Discreet user icon → /login" },
+          { icon: "🔀", text: "Route /configurator → /calculator + redirect 301", meta: "Aligned URL with UI label" },
+          { icon: "🏷️", text: 'Rebranded: "SAMON AB" → "SafeRef" everywhere (~40 occurrences)', meta: "i18n, engines, PDF, footer, disclaimers" },
+          { icon: "🌐", text: "i18n unified: global language context across all pages", meta: "Calculator + Selector use I18nProvider cookie" },
+          { icon: "🔒", text: "Public navbar: Sales/Admin hidden → discreet login icon", meta: "page.tsx" },
+          { icon: "📊", text: "Architecture Overview page added (/admin/architecture)", meta: "5 tabs: Overview, Organigramme, Variables, Details, Changes" },
+          { icon: "📋", text: "CalcSheet UX: single threshold, Continue to Products CTA, Save removed", meta: "StepCalcSheet.tsx" },
+          { icon: "🛒", text: "Step 5 Products: list prices only, photos, disclaimer, no discounts", meta: "StepTieredBOM.tsx, StepProducts.tsx" },
+          { icon: "📝", text: 'Request a Quote: business form (VAT, company type, address, comments)', meta: "Replaces Generate Quote — feeds Sales pipeline" },
+          { icon: "📄", text: "PDF complete report: calc results + product BOM + pricing", meta: "StepTieredBOM.tsx handleDownloadReport" },
+          { icon: "🎯", text: 'Detection Location replaces Mounting Type (ambient/duct/pipe_valve)', meta: "M2 filter: MIDI remote for duct/pipe, X5 ambient only" },
+          { icon: "👤", text: "Selector: +Client step with RGPD, redesigned all steps", meta: "SelectorWizard.tsx, StepAppGas, StepTechnical, StepZoneQty" },
+          { icon: "📊", text: "Dashboard: +Recent Quotes table, +Quotes KPI card", meta: "admin/page.tsx" },
+          { icon: "🧪", text: "Gas Categories: HFC→HFC & HFO, refrigerants clickable, coverage removed", meta: "admin/gas/page.tsx" },
+          { icon: "🏭", text: "Applications: families from DB (dynamic), all labels EN", meta: "admin/applications/page.tsx" },
+          { icon: "🇬🇧", text: "All admin pages switched to English", meta: "Applications, Space Types, Engine, TestLab" },
           { icon: "⚠️", text: "5 bugs open: M-4, N-1, N-4, N-5, voltage", meta: "Non-critical, pending fix" },
         ].map((c, i) => (
           <div key={i} className="flex items-start gap-3 py-2 border-b border-gray-50">

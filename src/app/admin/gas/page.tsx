@@ -22,6 +22,25 @@ const EMPTY_GC: GasCat = { id: '', nameFr: '', nameEn: '', code: '', safetyClass
 const GAS_GROUPS = ['CO2', 'HFC1', 'HFC2', 'NH3', 'R290', 'CO', 'NO2', 'O2'];
 const SAFETY_CLASSES = ['A1', 'A2L', 'A2', 'A3', 'B1', 'B2L', 'B2', 'B3'];
 
+/** Color map for gas group badges */
+const GAS_GROUP_COLORS: Record<string, string> = {
+  CO2: 'bg-blue-100 text-blue-700',
+  HFC1: 'bg-green-100 text-green-700',
+  HFC2: 'bg-teal-100 text-teal-700',
+  NH3: 'bg-red-100 text-red-700',
+  HC: 'bg-orange-100 text-orange-700',
+  CO: 'bg-gray-200 text-gray-700',
+  NO2: 'bg-purple-100 text-purple-700',
+  O2: 'bg-cyan-100 text-cyan-700',
+  R290: 'bg-orange-100 text-orange-700',
+  NH3W: 'bg-red-50 text-red-600',
+};
+
+/** Display-only name transform: "HFC Group" -> "HFC & HFO Group" */
+function displayNameEn(nameEn: string): string {
+  return nameEn.replace(/HFC Group/g, 'HFC & HFO Group');
+}
+
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function GasPage() {
@@ -170,7 +189,7 @@ export default function GasPage() {
                         <td className="px-3 py-2"><span className={`px-2 py-0.5 rounded text-[10px] font-bold ${badges[r.safetyClass] ?? 'bg-gray-100 text-gray-700'}`}>{r.safetyClass}</span></td>
                         <td className="px-3 py-2 text-xs text-gray-600">{r.toxicityClass}</td>
                         <td className="px-3 py-2 text-xs text-gray-600">{r.flammabilityClass}</td>
-                        <td className="px-3 py-2 text-xs"><span className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">{r.gasGroup}</span></td>
+                        <td className="px-3 py-2 text-xs"><span className={`px-1.5 py-0.5 rounded font-mono font-bold text-[10px] ${GAS_GROUP_COLORS[r.gasGroup] ?? 'bg-gray-100 text-gray-700'}`}>{r.gasGroup}</span></td>
                         <td className="px-3 py-2 text-xs text-gray-600">{r.molecularMass}</td>
                         <td className="px-3 py-2 text-xs text-gray-600">{r.vapourDensity}</td>
                         <td className="px-3 py-2 text-xs text-gray-600">{r.gwp ?? '—'}</td>
@@ -202,23 +221,27 @@ export default function GasPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
               {gasCategories.map(gc => {
                 const badges: Record<string, string> = { A1: 'bg-blue-100 text-blue-700', A2L: 'bg-amber-100 text-amber-700', B2L: 'bg-purple-100 text-purple-700', A3: 'bg-red-100 text-red-700', Toxic: 'bg-pink-100 text-pink-700' };
-                const refCount = refrigerants.filter(r => r.gasGroup === gc.id).length;
+                const matchingRefs = refrigerants.filter(r => r.gasGroup === gc.code);
+                const refCount = matchingRefs.length;
                 return (
                   <div key={gc.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                     <div className="bg-[#16354B] px-4 py-3 flex items-center justify-between">
-                      <div className="text-white font-semibold text-sm">{gc.nameFr}</div>
+                      <div className="text-white font-semibold text-sm">{displayNameEn(gc.nameEn)}</div>
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${badges[gc.safetyClass] ?? 'bg-gray-100 text-gray-700'}`}>{gc.safetyClass}</span>
                     </div>
                     <div className="px-4 py-3 space-y-2 text-xs">
-                      <div className="flex justify-between"><span className="text-gray-500">Code</span><span className="font-mono font-semibold">{gc.code}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Densite</span><span className="font-semibold">{gc.density}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Coverage</span><span className="font-semibold">{gc.coverage} m2</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Code</span><span className={`font-mono font-semibold px-1.5 py-0.5 rounded ${GAS_GROUP_COLORS[gc.code] ?? 'bg-gray-100 text-gray-700'}`}>{gc.code}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Density</span><span className="font-semibold">{gc.density}</span></div>
                       <div className="border-t border-gray-100 pt-2">
                         <span className="text-[10px] font-bold text-[#A7C031] uppercase">Refrigerants ({refCount})</span>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {refrigerants.filter(r => r.gasGroup === gc.id).map(r => (
-                            <span key={r.id} className="bg-gray-100 text-gray-600 text-[10px] font-mono px-1.5 py-0.5 rounded">{r.id}</span>
+                          {matchingRefs.map(r => (
+                            <button key={r.id} onClick={() => { setTab('refrigerants'); setTimeout(() => openRefEdit(r), 100); }}
+                              className="bg-gray-100 text-gray-600 text-[10px] font-mono px-1.5 py-0.5 rounded hover:bg-[#16354B] hover:text-white transition-colors cursor-pointer">
+                              {r.id}
+                            </button>
                           ))}
+                          {refCount === 0 && <span className="text-[10px] text-gray-400 italic">No refrigerants assigned</span>}
                         </div>
                       </div>
                       <div className="flex gap-3 pt-2 border-t border-gray-100">
@@ -284,7 +307,6 @@ export default function GasPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Sel label="Densite" value={gcForm.density} options={['heavier', 'lighter', 'neutral']} onChange={v => setGcForm({ ...gcForm, density: v })} />
-            <N label="Coverage (m2)" value={gcForm.coverage} onChange={v => setGcForm({ ...gcForm, coverage: v })} />
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
             <button onClick={() => setGcDialog(false)} className="px-4 py-2 text-sm text-gray-600">Cancel</button>

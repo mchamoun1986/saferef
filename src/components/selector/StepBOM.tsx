@@ -103,7 +103,7 @@ export default function StepBOM({
       });
       const data = await res.json();
       if (data.id) {
-        router.push(`/sales/quotes/${data.id}`);
+        router.push(`/admin/quotes/${data.id}`);
       }
     } finally {
       setSaving(false);

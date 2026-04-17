@@ -45,13 +45,12 @@ const EMPTY_APP: AppItem = {
   sortOrder: 99,
 };
 
-const FAMILIES = ['MIDI', 'X5', 'G', 'GXR', 'GEX', 'TR', 'MP', 'RM', 'AQUIS', 'GK', 'GR'];
-
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function ApplicationsPage() {
   const [apps, setApps] = useState<AppItem[]>([]);
   const [allSpaceTypes, setAllSpaceTypes] = useState<SpaceTypeItem[]>([]);
+  const [realFamilies, setRealFamilies] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogTab, setDialogTab] = useState<'identity' | 'regulatory' | 'selection'>('identity');
@@ -64,14 +63,19 @@ export default function ApplicationsPage() {
   async function fetchApps() {
     setLoading(true);
     try {
-      const [appsRes, stRes] = await Promise.all([
+      const [appsRes, stRes, prodsRes] = await Promise.all([
         fetch('/api/applications'),
         fetch('/api/space-types'),
+        fetch('/api/products?type=detector&discontinued=false'),
       ]);
       const appsData = await appsRes.json();
       const stData = await stRes.json();
+      const prodsData = await prodsRes.json();
       setApps(Array.isArray(appsData) ? appsData : []);
       setAllSpaceTypes(Array.isArray(stData) ? stData : []);
+      // Extract real families from products DB
+      const families = [...new Set((Array.isArray(prodsData) ? prodsData : []).map((p: { family: string }) => p.family))].sort() as string[];
+      setRealFamilies(families);
     } catch { /* ignore */ }
     setLoading(false);
   }
@@ -170,7 +174,7 @@ export default function ApplicationsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[#1a2332]">Applications</h1>
-          <p className="text-sm text-gray-500 mt-1">{apps.length} applications — source de verite pour M1 + M2</p>
+          <p className="text-sm text-gray-500 mt-1">{apps.length} applications — regulatory defaults for M1 + product matching for M2</p>
         </div>
         <button onClick={openNew} className="bg-[#E63946] hover:bg-red-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors">
           + Add Application
@@ -189,36 +193,37 @@ export default function ApplicationsPage() {
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">{app.icon}</span>
                   <div>
-                    <div className="text-white font-semibold">{app.labelFr}</div>
-                    <div className="text-white/50 text-xs">{app.labelEn}</div>
+                    <div className="text-white font-semibold">{app.labelEn}</div>
+                    <div className="text-white/50 text-xs">{app.labelFr}</div>
                   </div>
                 </div>
                 <span className="font-mono text-[10px] text-white/30 bg-white/10 px-2 py-0.5 rounded">{app.id}</span>
               </div>
               <div className="px-5 py-4 space-y-3 text-xs">
-                <p className="text-sm text-gray-600">{app.descFr}</p>
+                <p className="text-sm text-gray-600">{app.descEn || app.descFr}</p>
 
                 {/* M1 summary */}
                 <div className="flex flex-wrap gap-1">
                   <Tag label={`Cat.${app.accessCategory}`} />
                   <Tag label={`Loc.${app.locationClass}`} />
-                  {app.isMachineryRoom && <Tag label="Salle machines" color="red" />}
-                  {app.isOccupiedSpace && <Tag label="Occupe" color="blue" />}
-                  {app.humanComfort && <Tag label="Confort" color="blue" />}
-                  {app.belowGround && <Tag label="Sous-sol" color="orange" />}
+                  {app.isMachineryRoom && <Tag label="Machinery Room" color="red" />}
+                  {app.isOccupiedSpace && <Tag label="Occupied" color="blue" />}
+                  {app.humanComfort && <Tag label="Comfort" color="blue" />}
+                  {app.belowGround && <Tag label="Below Ground" color="orange" />}
                   {app.c3Applicable && <Tag label="C.3" color="green" />}
-                  {app.mechVentilation && <Tag label="Ventil." color="green" />}
+                  {app.mechVentilation && <Tag label="Mech. Vent." color="green" />}
                 </div>
 
                 {/* M2 summary */}
                 <div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase">Familles M2:</span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">Product Families (M2):</span>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {families.map(f => <span key={f} className="bg-purple-100 text-purple-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">{f}</span>)}
+                    {families.filter(f => realFamilies.includes(f)).map(f => <span key={f} className="bg-purple-100 text-purple-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">{f}</span>)}
+                    {families.filter(f => !realFamilies.includes(f)).map(f => <span key={f} className="bg-red-50 text-red-400 text-[10px] font-semibold px-2 py-0.5 rounded-full line-through" title="Family not found in products">{f}</span>)}
                   </div>
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase">Gaz:</span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">Gas:</span>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {gases.map(g => <span key={g} className="bg-[#A7C031]/15 text-[#6b7d1e] text-[10px] font-semibold px-2 py-0.5 rounded-full">{g}</span>)}
                   </div>
@@ -256,14 +261,14 @@ export default function ApplicationsPage() {
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="bg-[#1a2332] text-white px-6 py-4 rounded-t-xl">
-              <h2 className="text-lg font-bold">{isNew ? 'New Application' : `Edit: ${form.labelFr}`}</h2>
+              <h2 className="text-lg font-bold">{isNew ? 'New Application' : `Edit: ${form.labelEn}`}</h2>
               <div className="flex gap-1 mt-2">
                 {(['identity', 'regulatory', 'selection'] as const).map(t => (
                   <button key={t} onClick={() => setDialogTab(t)}
                     className={`px-4 py-1.5 rounded text-xs font-medium transition-colors ${
                       dialogTab === t ? 'bg-white text-[#1a2332]' : 'text-white/60 hover:text-white'
                     }`}>
-                    {t === 'identity' ? 'Identite' : t === 'regulatory' ? 'Reglementaire (M1)' : 'Selection (M2)'}
+                    {t === 'identity' ? 'Identity' : t === 'regulatory' ? 'Regulatory (M1)' : 'Selection (M2)'}
                   </button>
                 ))}
               </div>
@@ -304,39 +309,39 @@ export default function ApplicationsPage() {
                 <p className="text-xs text-gray-500">Valeurs pre-remplies dans le wizard quand cette application est selectionnee. L&apos;utilisateur peut override.</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Categorie d&apos;acces</label>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Access Category</label>
                     <select value={form.accessCategory} onChange={e => setForm({ ...form, accessCategory: e.target.value })} className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
-                      <option value="a">a — Acces autorise</option>
-                      <option value="b">b — Acces general</option>
-                      <option value="c">c — Acces supervise</option>
+                      <option value="a">a — Authorized access</option>
+                      <option value="b">b — General access</option>
+                      <option value="c">c — Supervised access</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Classe d&apos;emplacement</label>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Location Class</label>
                     <select value={form.locationClass} onChange={e => setForm({ ...form, locationClass: e.target.value })} className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
                       <option value="I">I</option>
                       <option value="II">II</option>
                       <option value="III">III</option>
-                      <option value="IV">IV — Enceinte ventilee</option>
+                      <option value="IV">IV — Ventilated enclosure</option>
                     </select>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
-                  <DToggle label="Sous-sol" checked={form.belowGround} onChange={v => setForm({ ...form, belowGround: v })} />
-                  <DToggle label="Salle des machines" checked={form.isMachineryRoom} onChange={v => setForm({ ...form, isMachineryRoom: v })} />
-                  <DToggle label="Espace occupe" checked={form.isOccupiedSpace} onChange={v => setForm({ ...form, isOccupiedSpace: v })} />
-                  <DToggle label="Confort humain" checked={form.humanComfort} onChange={v => setForm({ ...form, humanComfort: v })} />
-                  <DToggle label="C.3 applicable" checked={form.c3Applicable} onChange={v => setForm({ ...form, c3Applicable: v })} />
-                  <DToggle label="Ventilation mecanique" checked={form.mechVentilation} onChange={v => setForm({ ...form, mechVentilation: v })} />
+                  <DToggle label="Below Ground" checked={form.belowGround} onChange={v => setForm({ ...form, belowGround: v })} />
+                  <DToggle label="Machinery Room" checked={form.isMachineryRoom} onChange={v => setForm({ ...form, isMachineryRoom: v })} />
+                  <DToggle label="Occupied Space" checked={form.isOccupiedSpace} onChange={v => setForm({ ...form, isOccupiedSpace: v })} />
+                  <DToggle label="Human Comfort" checked={form.humanComfort} onChange={v => setForm({ ...form, humanComfort: v })} />
+                  <DToggle label="C.3 Applicable" checked={form.c3Applicable} onChange={v => setForm({ ...form, c3Applicable: v })} />
+                  <DToggle label="Mechanical Ventilation" checked={form.mechVentilation} onChange={v => setForm({ ...form, mechVentilation: v })} />
                 </div>
                 <div className="bg-blue-50 border border-blue-200 rounded p-3 text-xs text-blue-700">
-                  Ces valeurs seront auto-remplies dans le Step 3 du calculateur quand l&apos;utilisateur choisit cette application.
+                  These values will be auto-filled in the Calculator Step 3 when the user selects this application.
                 </div>
               </>)}
 
               {/* ── Selection Tab (M2) ── */}
               {dialogTab === 'selection' && (<>
-                <p className="text-xs text-gray-500">Familles de produits prioritaires et ranges par defaut pour le moteur de selection M2.</p>
+                <p className="text-xs text-gray-500">Priority product families and default ranges for M2 selection engine.</p>
 
                 <div>
                   <label className="block text-xs font-bold text-gray-600 mb-2 uppercase">Zones applicables</label>
@@ -360,9 +365,9 @@ export default function ApplicationsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-2 uppercase">Familles produits prioritaires</label>
+                  <label className="block text-xs font-bold text-gray-600 mb-2 uppercase">Priority Product Families</label>
                   <div className="flex flex-wrap gap-2">
-                    {FAMILIES.map(f => {
+                    {realFamilies.map(f => {
                       const active = parsedFamilies().includes(f);
                       return (
                         <button key={f} onClick={() => toggleFamily(f)}
@@ -377,7 +382,7 @@ export default function ApplicationsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-2 uppercase">Gaz suggeres</label>
+                  <label className="block text-xs font-bold text-gray-600 mb-2 uppercase">Suggested Gas Groups</label>
                   <div className="flex flex-wrap gap-2">
                     {['co2', 'hfc1', 'hfc2', 'nh3', 'r290', 'co', 'no2', 'o2'].map(g => {
                       const active = parsedGases().includes(g);
@@ -394,7 +399,7 @@ export default function ApplicationsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-2 uppercase">Ranges par defaut (refrigerant → range)</label>
+                  <label className="block text-xs font-bold text-gray-600 mb-2 uppercase">Default Ranges (refrigerant → range)</label>
                   <div className="space-y-2">
                     {['R744', 'R717', 'CO', 'NO2'].map(ref => {
                       const ranges = parsedRanges();
