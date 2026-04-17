@@ -118,7 +118,7 @@ export const CLIENT = {
     clientType: 'You are', selectType: 'Select your profile',
     typeDistributor: 'Distributor / Wholesaler', typeInstaller: 'Installer / Contractor', typeEndUser: 'End User / Operator',
     typeEngineer: 'Engineering Firm', typeOEM: 'Manufacturer / OEM', typeOther: 'Other',
-    rgpdTitle: 'Data Protection', rgpdText: 'I consent to my data being processed by SAMON for this request (GDPR EU 2016/679).',
+    rgpdTitle: 'Data Protection', rgpdText: 'I consent to my data being processed by SafeRef for this request (GDPR EU 2016/679).',
   },
   fr: {
     clientInfo: 'Informations client', firstName: 'Pr\u00e9nom', lastName: 'Nom', company: 'Soci\u00e9t\u00e9', email: 'Email', phone: 'T\u00e9l\u00e9phone',
@@ -127,7 +127,7 @@ export const CLIENT = {
     clientType: 'Vous \u00eates', selectType: 'S\u00e9lectionnez votre profil',
     typeDistributor: 'Distributeur / Grossiste', typeInstaller: 'Installateur / Frigoriste', typeEndUser: 'Client final / Exploitant',
     typeEngineer: "Bureau d'\u00e9tudes", typeOEM: 'Fabricant / OEM', typeOther: 'Autre',
-    rgpdTitle: 'Donn\u00e9es personnelles', rgpdText: "J'accepte le traitement de mes donn\u00e9es par SAMON pour cette demande (RGPD UE 2016/679).",
+    rgpdTitle: 'Donn\u00e9es personnelles', rgpdText: "J'accepte le traitement de mes donn\u00e9es par SafeRef pour cette demande (RGPD UE 2016/679).",
   },
   sv: {
     clientInfo: 'Kundinformation', firstName: 'F\u00f6rnamn', lastName: 'Efternamn', company: 'F\u00f6retag', email: 'E-post', phone: 'Telefon',
@@ -136,7 +136,7 @@ export const CLIENT = {
     clientType: 'Du \u00e4r', selectType: 'V\u00e4lj din profil',
     typeDistributor: 'Distribut\u00f6r / Grossist', typeInstaller: 'Installat\u00f6r / Entrepren\u00f6r', typeEndUser: 'Slutanv\u00e4ndare / Operat\u00f6r',
     typeEngineer: 'Konsultf\u00f6retag', typeOEM: 'Tillverkare / OEM', typeOther: 'Annat',
-    rgpdTitle: 'Dataskydd', rgpdText: 'Jag samtycker till att mina uppgifter behandlas av SAMON f\u00f6r denna f\u00f6rfr\u00e5gan (GDPR EU 2016/679).',
+    rgpdTitle: 'Dataskydd', rgpdText: 'Jag samtycker till att mina uppgifter behandlas av SafeRef f\u00f6r denna f\u00f6rfr\u00e5gan (GDPR EU 2016/679).',
   },
   de: {
     clientInfo: 'Kundeninformationen', firstName: 'Vorname', lastName: 'Nachname', company: 'Unternehmen', email: 'E-Mail', phone: 'Telefon',
@@ -145,7 +145,7 @@ export const CLIENT = {
     clientType: 'Sie sind', selectType: 'W\u00e4hlen Sie Ihr Profil',
     typeDistributor: 'Distributor / Gro\u00dfh\u00e4ndler', typeInstaller: 'Installateur / K\u00e4ltetechniker', typeEndUser: 'Endkunde / Betreiber',
     typeEngineer: 'Ingenieurb\u00fcro', typeOEM: 'Hersteller / OEM', typeOther: 'Sonstiges',
-    rgpdTitle: 'Datenschutz', rgpdText: 'Ich stimme der Verarbeitung meiner Daten durch SAMON f\u00fcr diese Anfrage zu (DSGVO EU 2016/679).',
+    rgpdTitle: 'Datenschutz', rgpdText: 'Ich stimme der Verarbeitung meiner Daten durch SafeRef f\u00fcr diese Anfrage zu (DSGVO EU 2016/679).',
   },
   es: {
     clientInfo: 'Informaci\u00f3n del cliente', firstName: 'Nombre', lastName: 'Apellido', company: 'Empresa', email: 'Email', phone: 'Tel\u00e9fono',
@@ -154,7 +154,7 @@ export const CLIENT = {
     clientType: 'Usted es', selectType: 'Seleccione su perfil',
     typeDistributor: 'Distribuidor / Mayorista', typeInstaller: 'Instalador / Frigorista', typeEndUser: 'Usuario final / Operador',
     typeEngineer: 'Oficina de ingenier\u00eda', typeOEM: 'Fabricante / OEM', typeOther: 'Otro',
-    rgpdTitle: 'Protecci\u00f3n de datos', rgpdText: 'Acepto el tratamiento de mis datos por SAMON para esta solicitud (RGPD UE 2016/679).',
+    rgpdTitle: 'Protecci\u00f3n de datos', rgpdText: 'Acepto el tratamiento de mis datos por SafeRef para esta solicitud (RGPD UE 2016/679).',
   },
 } as const;
 
@@ -168,7 +168,7 @@ export const GAS_APP = {
     siteVoltage: 'Site Power Voltage', safetyAtex: 'Safety & ATEX', atexZone1: 'ATEX Zone 1 Required',
     atexWarning: 'ATEX Zone 1: only ATEX-certified detectors will be selected. Verify zone classification with an expert.',
     atexCheck: '(check if applicable)', techOptions: 'Technical Options',
-    installation: 'Installation', mountingType: 'Mounting Type', selectMounting: 'Select mounting type', noResults: 'No results',
+    installation: 'Installation', mountingType: 'Detection Location', selectMounting: 'Select detection location', noResults: 'No results',
     groupCommon: 'Common', groupHfcHfo: 'HFC / HFO', groupNatural: 'Natural', groupToxic: 'Toxic / Special',
   },
   fr: {
@@ -178,7 +178,7 @@ export const GAS_APP = {
     siteVoltage: "Tension d'alimentation du site", safetyAtex: 'S\u00e9curit\u00e9 & ATEX', atexZone1: 'Zone ATEX 1 requise',
     atexWarning: 'Zone ATEX 1 : seuls les d\u00e9tecteurs certifi\u00e9s ATEX seront s\u00e9lectionn\u00e9s. V\u00e9rifiez la classification de zone avec un expert.',
     atexCheck: '(cocher si applicable)', techOptions: 'Options techniques',
-    installation: 'Installation', mountingType: 'Type de montage', selectMounting: 'S\u00e9lectionner un type de montage', noResults: 'Aucun r\u00e9sultat',
+    installation: 'Installation', mountingType: 'Lieu de d\u00e9tection', selectMounting: 'S\u00e9lectionner le lieu de d\u00e9tection', noResults: 'Aucun r\u00e9sultat',
     groupCommon: 'Courants', groupHfcHfo: 'HFC / HFO', groupNatural: 'Naturels', groupToxic: 'Toxiques / Sp\u00e9ciaux',
   },
   sv: {
@@ -188,7 +188,7 @@ export const GAS_APP = {
     siteVoltage: 'Anl\u00e4ggningens sp\u00e4nning', safetyAtex: 'S\u00e4kerhet & ATEX', atexZone1: 'ATEX Zon 1 kr\u00e4vs',
     atexWarning: 'ATEX Zon 1: endast ATEX-certifierade detektorer v\u00e4ljs. Verifiera zonklassificering med en expert.',
     atexCheck: '(kryssa om till\u00e4mpligt)', techOptions: 'Tekniska alternativ',
-    installation: 'Installation', mountingType: 'Monteringstyp', selectMounting: 'V\u00e4lj monteringstyp', noResults: 'Inga resultat',
+    installation: 'Installation', mountingType: 'Detektionsplats', selectMounting: 'V\u00e4lj detektionsplats', noResults: 'Inga resultat',
     groupCommon: 'Vanliga', groupHfcHfo: 'HFC / HFO', groupNatural: 'Naturliga', groupToxic: 'Giftiga / Speciella',
   },
   de: {
@@ -198,7 +198,7 @@ export const GAS_APP = {
     siteVoltage: 'Standortspannung', safetyAtex: 'Sicherheit & ATEX', atexZone1: 'ATEX Zone 1 erforderlich',
     atexWarning: 'ATEX Zone 1: nur ATEX-zertifizierte Detektoren werden ausgew\u00e4hlt. Zoneneinstufung mit einem Experten \u00fcberpr\u00fcfen.',
     atexCheck: '(ankreuzen wenn zutreffend)', techOptions: 'Technische Optionen',
-    installation: 'Installation', mountingType: 'Montagetyp', selectMounting: 'Montagetyp ausw\u00e4hlen', noResults: 'Keine Ergebnisse',
+    installation: 'Installation', mountingType: 'Detektionsort', selectMounting: 'Detektionsort ausw\u00e4hlen', noResults: 'Keine Ergebnisse',
     groupCommon: 'H\u00e4ufig', groupHfcHfo: 'HFC / HFO', groupNatural: 'Nat\u00fcrlich', groupToxic: 'Giftig / Speziell',
   },
   es: {
@@ -208,7 +208,7 @@ export const GAS_APP = {
     siteVoltage: 'Voltaje del sitio', safetyAtex: 'Seguridad & ATEX', atexZone1: 'Zona ATEX 1 requerida',
     atexWarning: 'Zona ATEX 1: solo se seleccionar\u00e1n detectores certificados ATEX. Verifique la clasificaci\u00f3n de zona con un experto.',
     atexCheck: '(marcar si aplica)', techOptions: 'Opciones t\u00e9cnicas',
-    installation: 'Instalaci\u00f3n', mountingType: 'Tipo de montaje', selectMounting: 'Seleccionar tipo de montaje', noResults: 'Sin resultados',
+    installation: 'Instalaci\u00f3n', mountingType: 'Ubicaci\u00f3n de detecci\u00f3n', selectMounting: 'Seleccionar ubicaci\u00f3n de detecci\u00f3n', noResults: 'Sin resultados',
     groupCommon: 'Comunes', groupHfcHfo: 'HFC / HFO', groupNatural: 'Naturales', groupToxic: 'T\u00f3xicos / Especiales',
   },
 } as const;
@@ -216,13 +216,9 @@ export const GAS_APP = {
 // ─── Mounting options (multilingual) ─────────────────────────────────────────
 
 export const MOUNTING_TYPES = [
-  { value: 'wall', en: 'Wall', fr: 'Mural', sv: 'V\u00e4gg', de: 'Wand', es: 'Pared' },
-  { value: 'flush', en: 'Flush', fr: 'Encastr\u00e9', sv: 'Inf\u00e4lld', de: 'Einbau', es: 'Empotrado' },
-  { value: 'surface', en: 'Surface', fr: 'Surface', sv: 'Yta', de: 'Aufputz', es: 'Superficie' },
-  { value: 'duct', en: 'Duct', fr: 'Gaine', sv: 'Kanal', de: 'Kanal', es: 'Conducto' },
-  { value: 'pipe', en: 'Pipe', fr: 'Tube', sv: 'R\u00f6r', de: 'Rohr', es: 'Tubo' },
-  { value: 'pole', en: 'Pole', fr: 'Poteau', sv: 'Stolpe', de: 'Mast', es: 'Poste' },
-  { value: 'din_rail', en: 'DIN Rail', fr: 'Rail DIN', sv: 'DIN-skena', de: 'DIN-Schiene', es: 'Riel DIN' },
+  { value: 'ambient', en: 'Ambient Detection', fr: 'D\u00e9tection ambiante', sv: 'Omgivningsdetektion', de: 'Umgebungsdetektion', es: 'Detecci\u00f3n ambiental' },
+  { value: 'duct', en: 'Duct Detection', fr: 'D\u00e9tection en gaine', sv: 'Kanaldetektion', de: 'Kanaldetektion', es: 'Detecci\u00f3n en conducto' },
+  { value: 'pipe_valve', en: 'Pipe / Valve Detection', fr: 'D\u00e9tection tuyauterie / vanne', sv: 'R\u00f6r/ventildetektion', de: 'Rohr-/Ventildetektion', es: 'Detecci\u00f3n tuber\u00eda / v\u00e1lvula' },
 ];
 
 // ─── StepZones ───────────────────────────────────────────────────────────────
@@ -345,7 +341,7 @@ export const ZONES = {
 export const CALC_SHEET = {
   en: {
     calcSheetTitle: 'CALCULATION SHEET', standard: 'EN 378-3:2016',
-    samonAb: 'SAMON AB \u2014 Gas Detection Systems',
+    samonAb: 'SafeRef AB \u2014 Gas Detection Systems',
     ref: 'Ref', date: 'Date', project: 'PROJECT', client: 'Client', projectName: 'Project', country: 'Country',
     appRefrigerant: 'APPLICATION & REFRIGERANT', application: 'Application', refrigerant: 'Refrigerant',
     safetyClass: 'Safety Class', gwp: 'GWP', lfl: 'LFL', atelOdl: 'ATEL/ODL',
@@ -364,12 +360,12 @@ export const CALC_SHEET = {
     mechVent: 'Mech. ventilation', c3: 'C3',
     emergencyVent: 'Emergency ventilation', ventFlow: 'Flow rate', ventFormula: 'Formula', ventClause: 'Clause',
     disclaimer: 'Disclaimer',
-    disclaimerText: 'This calculation sheet is provided for informational purposes only. SAMON AB accepts no liability for errors in calculations or regulatory recommendations. Final compliance of the gas detection system remains the sole responsibility of the installer, engineering firm, and building owner.',
+    disclaimerText: 'This calculation sheet is provided for informational purposes only. SafeRef AB accepts no liability for errors in calculations or regulatory recommendations. Final compliance of the gas detection system remains the sole responsibility of the installer, engineering firm, and building owner.',
     accessCat: 'Cat.', locClass: 'Class',
   },
   fr: {
     calcSheetTitle: 'FICHE DE CALCUL', standard: 'EN 378-3:2016',
-    samonAb: 'SAMON AB \u2014 Syst\u00e8mes de d\u00e9tection de gaz',
+    samonAb: 'SafeRef AB \u2014 Syst\u00e8mes de d\u00e9tection de gaz',
     ref: 'R\u00e9f', date: 'Date', project: 'PROJET', client: 'Client', projectName: 'Projet', country: 'Pays',
     appRefrigerant: 'APPLICATION & R\u00c9FRIG\u00c9RANT', application: 'Application', refrigerant: 'R\u00e9frig\u00e9rant',
     safetyClass: 'Classe de s\u00e9curit\u00e9', gwp: 'GWP', lfl: 'LII', atelOdl: 'ATEL/ODL',
@@ -388,12 +384,12 @@ export const CALC_SHEET = {
     mechVent: 'Ventilation m\u00e9c.', c3: 'C3',
     emergencyVent: "Ventilation d'urgence", ventFlow: 'D\u00e9bit', ventFormula: 'Formule', ventClause: 'Clause',
     disclaimer: 'Avertissement',
-    disclaimerText: "Cette fiche de calcul est fournie \u00e0 titre indicatif uniquement. SAMON AB d\u00e9cline toute responsabilit\u00e9 en cas d'erreur dans les calculs ou recommandations r\u00e9glementaires. La conformit\u00e9 finale du syst\u00e8me de d\u00e9tection de gaz rel\u00e8ve de la responsabilit\u00e9 exclusive de l'installateur, du bureau d'\u00e9tudes et du ma\u00eetre d'ouvrage.",
+    disclaimerText: "Cette fiche de calcul est fournie \u00e0 titre indicatif uniquement. SafeRef AB d\u00e9cline toute responsabilit\u00e9 en cas d'erreur dans les calculs ou recommandations r\u00e9glementaires. La conformit\u00e9 finale du syst\u00e8me de d\u00e9tection de gaz rel\u00e8ve de la responsabilit\u00e9 exclusive de l'installateur, du bureau d'\u00e9tudes et du ma\u00eetre d'ouvrage.",
     accessCat: 'Cat.', locClass: 'Classe',
   },
   sv: {
     calcSheetTitle: 'BER\u00c4KNINGSBLAD', standard: 'EN 378-3:2016',
-    samonAb: 'SAMON AB \u2014 Gasdetektionssystem',
+    samonAb: 'SafeRef AB \u2014 Gasdetektionssystem',
     ref: 'Ref', date: 'Datum', project: 'PROJEKT', client: 'Kund', projectName: 'Projekt', country: 'Land',
     appRefrigerant: 'APPLIKATION & K\u00d6LDMEDIUM', application: 'Applikation', refrigerant: 'K\u00f6ldmedium',
     safetyClass: 'S\u00e4kerhetsklass', gwp: 'GWP', lfl: 'LFL', atelOdl: 'ATEL/ODL',
@@ -412,12 +408,12 @@ export const CALC_SHEET = {
     mechVent: 'Mek. ventilation', c3: 'C3',
     emergencyVent: 'N\u00f6dventilation', ventFlow: 'Fl\u00f6de', ventFormula: 'Formel', ventClause: 'Klausul',
     disclaimer: 'Ansvarsfriskrivning',
-    disclaimerText: 'Detta ber\u00e4kningsblad tillhandah\u00e5lls endast i informationssyfte. SAMON AB tar inget ansvar f\u00f6r fel i ber\u00e4kningar eller regulatoriska rekommendationer. Slutlig \u00f6verensst\u00e4mmelse av gasdetektionssystemet \u00e4r installat\u00f6rens, konsultens och byggherrens ansvar.',
+    disclaimerText: 'Detta ber\u00e4kningsblad tillhandah\u00e5lls endast i informationssyfte. SafeRef AB tar inget ansvar f\u00f6r fel i ber\u00e4kningar eller regulatoriska rekommendationer. Slutlig \u00f6verensst\u00e4mmelse av gasdetektionssystemet \u00e4r installat\u00f6rens, konsultens och byggherrens ansvar.',
     accessCat: 'Kat.', locClass: 'Klass',
   },
   de: {
     calcSheetTitle: 'BERECHNUNGSBLATT', standard: 'EN 378-3:2016',
-    samonAb: 'SAMON AB \u2014 Gasdetektionssysteme',
+    samonAb: 'SafeRef AB \u2014 Gasdetektionssysteme',
     ref: 'Ref', date: 'Datum', project: 'PROJEKT', client: 'Kunde', projectName: 'Projekt', country: 'Land',
     appRefrigerant: 'ANWENDUNG & K\u00c4LTEMITTEL', application: 'Anwendung', refrigerant: 'K\u00e4ltemittel',
     safetyClass: 'Sicherheitsklasse', gwp: 'GWP', lfl: 'UEG', atelOdl: 'ATEL/ODL',
@@ -436,12 +432,12 @@ export const CALC_SHEET = {
     mechVent: 'Mech. Bel\u00fcftung', c3: 'C3',
     emergencyVent: 'Notl\u00fcftung', ventFlow: 'Volumenstrom', ventFormula: 'Formel', ventClause: 'Klausel',
     disclaimer: 'Haftungsausschluss',
-    disclaimerText: 'Dieses Berechnungsblatt dient nur zu Informationszwecken. SAMON AB \u00fcbernimmt keine Haftung f\u00fcr Fehler in Berechnungen oder regulatorischen Empfehlungen. Die endg\u00fcltige Konformit\u00e4t des Gasdetektionssystems liegt in der alleinigen Verantwortung des Installateurs, des Ingenieurb\u00fcros und des Bauherrn.',
+    disclaimerText: 'Dieses Berechnungsblatt dient nur zu Informationszwecken. SafeRef AB \u00fcbernimmt keine Haftung f\u00fcr Fehler in Berechnungen oder regulatorischen Empfehlungen. Die endg\u00fcltige Konformit\u00e4t des Gasdetektionssystems liegt in der alleinigen Verantwortung des Installateurs, des Ingenieurb\u00fcros und des Bauherrn.',
     accessCat: 'Kat.', locClass: 'Klasse',
   },
   es: {
     calcSheetTitle: 'HOJA DE C\u00c1LCULO', standard: 'EN 378-3:2016',
-    samonAb: 'SAMON AB \u2014 Sistemas de detecci\u00f3n de gas',
+    samonAb: 'SafeRef AB \u2014 Sistemas de detecci\u00f3n de gas',
     ref: 'Ref', date: 'Fecha', project: 'PROYECTO', client: 'Cliente', projectName: 'Proyecto', country: 'Pa\u00eds',
     appRefrigerant: 'APLICACI\u00d3N Y REFRIGERANTE', application: 'Aplicaci\u00f3n', refrigerant: 'Refrigerante',
     safetyClass: 'Clase de seguridad', gwp: 'GWP', lfl: 'LII', atelOdl: 'ATEL/ODL',
@@ -460,7 +456,7 @@ export const CALC_SHEET = {
     mechVent: 'Vent. mec\u00e1nica', c3: 'C3',
     emergencyVent: 'Ventilaci\u00f3n de emergencia', ventFlow: 'Caudal', ventFormula: 'F\u00f3rmula', ventClause: 'Cl\u00e1usula',
     disclaimer: 'Aviso legal',
-    disclaimerText: 'Esta hoja de c\u00e1lculo se proporciona solo con fines informativos. SAMON AB no acepta responsabilidad por errores en c\u00e1lculos o recomendaciones regulatorias. El cumplimiento final del sistema de detecci\u00f3n de gas es responsabilidad exclusiva del instalador, la oficina de ingenier\u00eda y el propietario del edificio.',
+    disclaimerText: 'Esta hoja de c\u00e1lculo se proporciona solo con fines informativos. SafeRef AB no acepta responsabilidad por errores en c\u00e1lculos o recomendaciones regulatorias. El cumplimiento final del sistema de detecci\u00f3n de gas es responsabilidad exclusiva del instalador, la oficina de ingenier\u00eda y el propietario del edificio.',
     accessCat: 'Cat.', locClass: 'Clase',
   },
 } as const;

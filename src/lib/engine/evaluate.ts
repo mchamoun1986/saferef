@@ -201,7 +201,7 @@ export function evaluateRegulation(
 
   // Assemble result based on detection decision
   if (detection.detectionRequired === 'RECOMMENDED') {
-    // SAMON policy recommendation — no normative requirement
+    // SafeRef policy recommendation — no normative requirement
     const recommendedDetectors = Math.max(1, Math.ceil(input.roomArea / 50));
     return {
       regulationId: ruleSet.id,

@@ -114,7 +114,7 @@ export default function StepBOM({
     const { jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     doc.setFontSize(18);
-    doc.text('SAMON Product Quote', 14, 20);
+    doc.text('SafeRef Product Quote', 14, 20);
     doc.setFontSize(10);
     doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 30);
 

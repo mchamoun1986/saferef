@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAMON Product Selection Engine — Simulator V5</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--card:#1a1d28;--card2:#222633;--border:#2a2e3d;--text:#e0e0e0;--dim:#888;--blue:#0054A6;--blue2:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f59e0b;--cyan:#06b6d4;--purple:#a855f7}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:370px;min-width:370px;background:var(--card);border-right:1px solid var(--border);padding:20px;overflow-y:auto;position:sticky;top:0;height:100vh}
+.main{flex:1;padding:24px;overflow-y:auto}
+header{text-align:center;margin-bottom:24px}
+header h1{font-size:1.4em;color:var(--blue2);margin-bottom:4px}
+header p{font-size:.8em;color:var(--dim)}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:.75em;font-weight:600;color:var(--blue2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+select,input[type=number]{width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.85em}
+select:focus,input:focus{outline:none;border-color:var(--blue2)}
+.gas-section{margin-bottom:6px}
+.gas-group-header{display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--card2);border-radius:6px;cursor:pointer;user-select:none;font-size:.8em;font-weight:600;border:1px solid var(--border)}
+.gas-group-header:hover{border-color:var(--blue2)}
+.gas-group-header input{accent-color:var(--blue2)}
+.gas-group-header .chevron{margin-left:auto;font-size:.7em;color:var(--dim);transition:.2s}
+.gas-group-header.open .chevron{transform:rotate(90deg)}
+.gas-refs{display:none;padding:2px 0 2px 22px;max-height:140px;overflow-y:auto}
+.gas-group-header.open+.gas-refs{display:block}
+.gas-refs label{font-size:.75em;display:flex;align-items:center;gap:5px;cursor:pointer;padding:2px 6px;border-radius:3px;color:var(--dim)}
+.gas-refs label:hover{background:var(--card2);color:var(--text)}
+.gas-refs input{accent-color:var(--cyan);width:13px;height:13px}
+.gas-other{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-top:4px}
+.gas-other label{font-size:.8em;display:flex;align-items:center;gap:5px;cursor:pointer;padding:4px 6px;border-radius:4px}
+.gas-other label:hover{background:var(--card2)}
+.gas-other input{accent-color:var(--blue2)}
+.radio-group{display:flex;gap:8px}
+.radio-group label{font-size:.82em;display:flex;align-items:center;gap:4px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:6px}
+.radio-group input:checked+span{color:var(--blue2);font-weight:600}
+.radio-group label:has(input:checked){border-color:var(--blue2);background:rgba(0,84,166,.1)}
+.toggle{display:flex;align-items:center;gap:10px}
+.toggle-switch{width:44px;height:24px;background:var(--border);border-radius:12px;cursor:pointer;position:relative;transition:.3s}
+.toggle-switch.active{background:var(--red)}
+.toggle-switch::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.3s}
+.toggle-switch.active::after{left:23px}
+.toggle span{font-size:.82em}
+.num-input{display:flex;align-items:center;gap:6px}
+.num-input button{width:32px;height:32px;border:1px solid var(--border);background:var(--card2);color:var(--text);border-radius:6px;cursor:pointer;font-size:1.1em}
+.num-input button:hover{background:var(--blue);border-color:var(--blue)}
+.num-input input{width:60px;text-align:center}
+.run-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:8px;font-size:1em;font-weight:700;cursor:pointer;margin-top:10px;transition:.2s;text-transform:uppercase;letter-spacing:1px}
+.run-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,84,166,.4)}
+.run-btn:active{transform:translateY(0)}
+.step-card{background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.step-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;user-select:none}
+.step-header:hover{background:var(--card2)}
+.step-id{font-size:.7em;font-weight:700;padding:3px 8px;border-radius:4px;margin-right:10px;min-width:30px;text-align:center}
+.step-title{flex:1;font-weight:600;font-size:.9em}
+.step-badge{font-size:.7em;padding:2px 8px;border-radius:10px;margin-left:8px}
+.step-chevron{color:var(--dim);transition:.2s;font-size:.8em}
+.step-card.open .step-chevron{transform:rotate(90deg)}
+.step-body{padding:0 16px 14px;display:none;font-size:.85em}
+.step-card.open .step-body{display:block}
+table{width:100%;border-collapse:collapse;margin:8px 0;font-size:.85em}
+th{background:var(--card2);padding:6px 10px;text-align:left;font-size:.75em;text-transform:uppercase;color:var(--dim);letter-spacing:.5px}
+td{padding:6px 10px;border-top:1px solid var(--border)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.eliminated{color:var(--red);text-decoration:line-through;opacity:.6}
+.kept{color:var(--green)}
+.code{font-family:'Cascadia Code',Consolas,monospace;font-size:.85em;background:var(--bg);padding:1px 5px;border-radius:3px}
+.badge{display:inline-block;font-size:.75em;padding:2px 8px;border-radius:10px;font-weight:600}
+.badge-pass{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-error{background:rgba(239,68,68,.15);color:var(--red)}
+.badge-warn{background:rgba(245,158,11,.15);color:var(--orange)}
+.badge-info{background:rgba(6,182,212,.15);color:var(--cyan)}
+.power-bar{height:20px;background:var(--bg);border-radius:10px;overflow:hidden;margin:8px 0;position:relative}
+.power-fill{height:100%;border-radius:10px;transition:.5s}
+.power-label{position:absolute;right:8px;top:0;line-height:20px;font-size:.7em;font-weight:700}
+.score-row{display:flex;align-items:center;gap:8px;margin:4px 0}
+.score-label{width:160px;font-size:.8em;color:var(--dim)}
+.score-bar-bg{flex:1;height:14px;background:var(--bg);border-radius:7px;overflow:hidden}
+.score-bar-fill{height:100%;background:var(--blue2);border-radius:7px;transition:.5s}
+.score-val{width:30px;text-align:right;font-size:.8em;font-weight:700}
+.bom-section{margin:10px 0}
+.bom-section h4{font-size:.8em;color:var(--blue2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.solution-card{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:14px;margin:10px 0}
+.solution-rank{font-size:1.4em;font-weight:800;color:var(--blue2)}
+.tier-label{display:inline-block;padding:2px 10px;border-radius:4px;font-size:.75em;font-weight:700;margin-left:8px}
+.tier-premium{background:rgba(168,85,247,.2);color:var(--purple)}
+.tier-standard{background:rgba(59,130,246,.2);color:var(--blue2)}
+.tier-economic{background:rgba(34,197,94,.2);color:var(--green)}
+.desc{color:var(--dim);font-size:.82em;margin:6px 0}
+.empty-state{text-align:center;padding:60px 20px;color:var(--dim)}
+.empty-state .icon{font-size:3em;margin-bottom:16px;opacity:.3}
+.validation-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.val-item{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--bg);border-radius:6px;font-size:.8em}
+@media(max-width:900px){.layout{flex-direction:column}.sidebar{width:100%;min-width:auto;height:auto;position:relative}.validation-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="layout">
+<div class="sidebar">
+<header>
+<h1>SAMON Product Selection Engine</h1>
+<p>Simulator V5 — 13-Function Algorithm</p>
+</header>
+
+<div class="form-group">
+<label>F0 — Application Type</label>
+<select id="zone_type">
+<option value="">— Select —</option>
+<option value="supermarket">Supermarket / Food retail</option>
+<option value="cold_room">Cold room / Walk-in freezer</option>
+<option value="machinery_room">Industrial machinery room</option>
+<option value="cold_storage">Cold storage / Food processing</option>
+<option value="hotel">Hotel room (VRF/VRV)</option>
+<option value="office">Office (VRF)</option>
+<option value="parking">Parking garage</option>
+<option value="ice_rink">Ice rink / Stadium</option>
+<option value="heat_pump">Heat pump</option>
+<option value="pressure_relief">Pressure relief / Vent line</option>
+<option value="duct">Ventilation duct</option>
+<option value="atex_zone">ATEX Zone 1</option>
+<option value="water_brine">Water/brine secondary cooling</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>F1 — Country</label>
+<select id="project_country">
+<option value="france">France</option>
+<option value="germany">Germany</option>
+<option value="sweden">Sweden</option>
+<option value="uk">United Kingdom</option>
+<option value="italy">Italy</option>
+<option value="spain">Spain</option>
+<option value="netherlands">Netherlands</option>
+<option value="uae">UAE</option>
+<option value="saudi">Saudi Arabia</option>
+<option value="lebanon">Lebanon</option>
+<option value="qatar">Qatar</option>
+<option value="usa">USA</option>
+<option value="canada">Canada</option>
+<option value="japan">Japan</option>
+<option value="singapore">Singapore</option>
+<option value="india">India</option>
+<option value="south_africa">South Africa</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>F2 — ATEX Zone</label>
+<div class="toggle">
+<span>None</span>
+<div class="toggle-switch" id="zone_atex" onclick="this.classList.toggle('active')"></div>
+<span>Zone 1</span>
+</div>
+</div>
+
+<div class="form-group">
+<label>F3 — Refrigerant</label>
+<select id="refrigerant_select">
+<option value="">-- Select refrigerant --</option>
+<optgroup label="CO2 (Infrared)">
+<option value="R744">R744 (CO2)</option>
+</optgroup>
+<optgroup label="HFC/HFO Group 1 (SC)">
+<option value="R32">R32</option>
+<option value="R407A">R407A</option>
+<option value="R407C">R407C</option>
+<option value="R407F">R407F</option>
+<option value="R410A">R410A</option>
+<option value="R448A">R448A</option>
+<option value="R449A">R449A</option>
+<option value="R452A">R452A</option>
+<option value="R452B">R452B</option>
+<option value="R454A">R454A</option>
+<option value="R454B">R454B</option>
+<option value="R454C">R454C</option>
+<option value="R455A">R455A</option>
+<option value="R464A">R464A</option>
+<option value="R465A">R465A</option>
+<option value="R466A">R466A</option>
+<option value="R468A">R468A</option>
+<option value="R507A">R507A</option>
+</optgroup>
+<optgroup label="HFC/HFO Group 2 (SC)">
+<option value="R134a">R134a</option>
+<option value="R404A">R404A</option>
+<option value="R450A">R450A</option>
+<option value="R513A">R513A</option>
+<option value="R1234yf">R1234yf</option>
+<option value="R1234ze">R1234ze</option>
+<option value="R1233zd">R1233zd(E)</option>
+</optgroup>
+<optgroup label="NH3 (Electrochemical)">
+<option value="R717">R717 (NH3)</option>
+</optgroup>
+<optgroup label="HC Group 3 (SC)">
+<option value="R290">R290 (Propane)</option>
+<option value="R50">R50 (Methane)</option>
+<option value="R600a">R600a (Isobutane)</option>
+<option value="R1150">R1150 (Ethylene)</option>
+<option value="R1270">R1270 (Propylene)</option>
+</optgroup>
+<optgroup label="Other gases">
+<option value="CO">CO (Carbon Monoxide)</option>
+<option value="NO2">NO2 (Nitrogen Dioxide)</option>
+<option value="O2">O2 (Oxygen)</option>
+<option value="NH3W">NH3 in water</option>
+</optgroup>
+</select>
+</div>
+
+<div class="form-group" id="rangeGroup" style="display:none">
+<label>F3b — Detection Range</label>
+<select id="detection_range">
+</select>
+</div>
+
+<div class="form-group">
+<label>Number of Detectors</label>
+<div class="num-input">
+<button onclick="adj('total_detectors',-1)">−</button>
+<input type="number" id="total_detectors" value="2" min="1" max="108">
+<button onclick="adj('total_detectors',1)">+</button>
+</div>
+</div>
+<input type="hidden" id="detector_count_future" value="0">
+
+<input type="hidden" id="existing_system_type" value="none">
+
+<input type="hidden" id="connectivity_preference" value="bluetooth">
+<div class="form-group">
+<label>F4 — Output Required</label>
+<select id="output_required">
+<option value="any">Any (no constraint)</option>
+<option value="relay">Relay only (standalone)</option>
+<option value="420mA">Analog 4-20mA</option>
+<option value="010V">Analog 0-10V</option>
+<option value="210V">Analog 2-10V / 1-5V / 0-5V</option>
+<option value="modbus">Modbus RTU</option>
+<option value="relay_analog_modbus">Relay + Analog + Modbus (simultaneous)</option>
+<option value="relay_dual_analog">Relay + Dual 4-20mA (simultaneous)</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>F9 — Site Power</label>
+<div class="radio-group">
+<label><input type="radio" name="power" value="24V" checked><span>24V</span></label>
+<label><input type="radio" name="power" value="230V"><span>230V</span></label>
+<label><input type="radio" name="power" value="12V"><span>12V</span></label>
+</div>
+</div>
+
+<div class="form-group">
+<label>F10 — Mounting</label>
+<select id="mounting_type_required">
+<option value="wall">Wall mount</option>
+<option value="flush">Flush mount</option>
+<option value="surface">Surface mount</option>
+<option value="duct">Duct mount</option>
+<option value="pipe">Pipe / Vent line</option>
+<option value="pole">Pole mount</option>
+<option value="din">DIN rail</option>
+</select>
+</div>
+
+<button class="run-btn" onclick="runEngine()">&#9654; Run Engine</button>
+</div>
+
+<div class="main" id="results">
+<div class="empty-state">
+<div class="icon">&#9881;</div>
+<p>Configure inputs and click <strong>Run Engine</strong><br>to execute the 13-function selection algorithm.</p>
+</div>
+</div>
+</div>
+
+<script>
+function adj(id,d){const e=document.getElementById(id);e.value=Math.max(+e.min,Math.min(+e.max,(+e.value||0)+d))}
+
+// Refrigerant to gas group mapping
+const REF_TO_GAS = {
+  R744:['CO2'], R32:['HFC1'], R407A:['HFC1'], R407C:['HFC1'], R407F:['HFC1'],
+  R410A:['HFC1'], R448A:['HFC1'], R449A:['HFC1'], R452A:['HFC1'], R452B:['HFC1'],
+  R454A:['HFC1'], R454B:['HFC1'], R454C:['HFC1'], R455A:['HFC1'], R464A:['HFC1'],
+  R465A:['HFC1'], R466A:['HFC1'], R468A:['HFC1'], R507A:['HFC1'],
+  R134a:['HFC2'], R404A:['HFC2'], R450A:['HFC2'], R513A:['HFC2'],
+  R1234yf:['HFC2'], R1234ze:['HFC2'], R1233zd:['HFC2'],
+  R717:['NH3'], R290:['R290'], R50:['R290'], R600a:['R290'], R1150:['R290'], R1270:['R290'],
+  CO:['CO'], NO2:['NO2'], O2:['O2'], NH3W:['NH3W']
+};
+function getSelectedRefrigerant(){ return document.getElementById('refrigerant_select').value; }
+function getGasGroupsForRef(ref){ return REF_TO_GAS[ref]||[]; }
+
+// ── DETECTION RANGE OPTIONS per refrigerant ──
+// Refrigerants with multiple ppm ranges available
+const REF_RANGES = {
+  R717: [
+    {value:'0-100ppm',  label:'0-100 ppm (early warning / comfort)'},
+    {value:'0-500ppm',  label:'0-500 ppm (standard monitoring)'},
+    {value:'0-1000ppm', label:'0-1000 ppm (industrial standard)'},
+    {value:'0-5000ppm', label:'0-5000 ppm (high concentration)'}
+  ],
+  R744: [
+    {value:'0-10000ppm', label:'0-10,000 ppm (standard)'},
+    {value:'0-5000ppm',  label:'0-5,000 ppm (X5)'},
+    {value:'0-30000ppm', label:'0-30,000 ppm (high range)'},
+    {value:'0-5%vol',    label:'0-5% vol (very high)'}
+  ],
+  CO: [
+    {value:'0-100ppm', label:'0-100 ppm (X5)'},
+    {value:'0-300ppm', label:'0-300 ppm (TR)'}
+  ],
+  NO2: [
+    {value:'0-5ppm',  label:'0-5 ppm (X5)'},
+    {value:'0-20ppm', label:'0-20 ppm (TR)'}
+  ]
+};
+// Default range per application + refrigerant
+const APP_DEFAULT_RANGE = {
+  machinery_room:  {R717:'0-1000ppm', R744:'0-10000ppm'},
+  cold_storage:    {R717:'0-100ppm',  R744:'0-10000ppm'},
+  ice_rink:        {R717:'0-500ppm',  R744:'0-10000ppm'},
+  supermarket:     {R744:'0-10000ppm'},
+  cold_room:       {R744:'0-10000ppm'},
+  parking:         {CO:'0-100ppm', NO2:'0-5ppm'}
+};
+
+// Update range dropdown when refrigerant changes
+function updateRangeDropdown(){
+  const ref = getSelectedRefrigerant();
+  const rangeGroup = document.getElementById('rangeGroup');
+  const rangeSelect = document.getElementById('detection_range');
+  const ranges = REF_RANGES[ref];
+  if(!ranges || ranges.length<=1){
+    rangeGroup.style.display='none';
+    rangeSelect.innerHTML='';
+    return;
+  }
+  rangeGroup.style.display='block';
+  // Auto-select based on app
+  const zone = document.getElementById('zone_type').value;
+  const appDef = APP_DEFAULT_RANGE[zone];
+  const recRange = appDef && appDef[ref] ? appDef[ref] : null;
+  rangeSelect.innerHTML = ranges.map(r=>{
+    const isRec = r.value === recRange;
+    return `<option value="${r.value}"${isRec?' selected':''}>${r.label}${isRec?' — RECOMMENDED':''}</option>`;
+  }).join('');
+  if(recRange) rangeSelect.value = recRange;
+}
+document.getElementById('refrigerant_select').addEventListener('change', updateRangeDropdown);
+document.getElementById('zone_type').addEventListener('change', function(){
+  setTimeout(updateRangeDropdown, 50); // after zone default ref is set
+});
+
+// ── REFRIGERANT LISTS (for refs) ──
+const _HFC1 = ['R32','R407A','R407C','R407F','R410A','R448A','R449A','R452A','R452B','R454A','R454B','R454C','R455A','R464A','R465A','R466A','R468A','R507A'];
+const _HFC2 = ['R134a','R404A','R450A','R513A','R1234yf','R1234ze','R1233zd'];
+const _ALL_HFC = [..._HFC1, ..._HFC2];
+const _HC = ['R290','R50','R600a','R1150','R1270'];
+
+// ── APPLICATION LISTS (for apps) ──
+// Commercial refrigeration (supermarket, cold room, cold storage)
+const _COMMERCIAL = ['supermarket','cold_room','cold_storage'];
+// Industrial (machinery room, cold storage, ice rink)
+const _INDUSTRIAL = ['machinery_room','cold_storage','ice_rink'];
+// Comfort/VRF (hotel, office)
+const _COMFORT = ['hotel','office'];
+// Special mounting
+const _DUCT = ['duct'];
+const _PIPE = ['pressure_relief'];
+// All standard wall-mount applications
+const _ALL_APPS = ['supermarket','cold_room','machinery_room','cold_storage','hotel','office','parking','ice_rink','heat_pump','pressure_relief','duct','atex_zone','water_brine'];
+
+// ── PRODUCT CATALOGUE (specs from samon_database_export.md) ──
+const PRODUCTS = {
+  MIDI_CO2_10k:    {id:'MIDI_CO2_10k',    name:'MIDI IR CO2 10000ppm',   code:'31-210-32', family:'MIDI', gas:['CO2'],  refs:['R744'], tech:'IR', range:'0-10000ppm', ip:'IP67', tempMin:-40, tempMax:50, power:0.8, voltage:'15-24V', relay:2, analog:'selectable', modbus:true, standalone:true, atex:false, mount:['wall','pipe'], remote:false, price:673, sensorLife:'7-10y', powerDesc:'4W max, 170mA @24VDC', relaySpec:'1A @ 24VAC/VDC', analogType:'4-20mA / 0-5V / 1-5V / 0-10V / 2-10V', modbusType:'RTU RS485 (isolated)', connectTo:'Direct (standalone) or Modbus to any RTU master', features:'Service wheel, magnetic switch, pre-cal sensor modules, LED status, Bluetooth app'},
+  MIDI_CO2_10k_R:  {id:'MIDI_CO2_10k_R',  name:'MIDI Remote IR CO2',     code:'31-510-32', family:'MIDI', gas:['CO2'],  refs:['R744'], tech:'IR', range:'0-10000ppm', ip:'IP67', tempMin:-40, tempMax:50, power:0.8, voltage:'15-24V', relay:2, analog:'selectable', modbus:true, standalone:true, atex:false, mount:['wall'], remote:true, price:739, sensorLife:'7-10y', powerDesc:'4W max', relaySpec:'1A @ 24VAC/VDC', analogType:'Selectable', modbusType:'RTU RS485', connectTo:'Direct or Modbus', features:'Remote sensor ideal for cold rooms, ducts, Bluetooth app'},
+  MIDI_HFC1:       {id:'MIDI_HFC1',       name:'MIDI SC HFC/HFO Grp1',  code:'31-220-12', family:'MIDI', gas:['HFC1'], refs:_HFC1, tech:'SC', range:'0-1000ppm',  ip:'IP67', tempMin:-40, tempMax:50, power:0.8, voltage:'15-24V', relay:2, analog:'selectable', modbus:true, standalone:true, atex:false, mount:['wall'], remote:false, price:403, sensorLife:'~5y', powerDesc:'4W max', relaySpec:'1A @ 24VAC/VDC', analogType:'Selectable', modbusType:'RTU RS485', connectTo:'Direct or Modbus', features:'Group 1 calibration, Bluetooth app, NOT interchangeable with Group 2'},
+  MIDI_HFC1_R:     {id:'MIDI_HFC1_R',     name:'MIDI Remote SC Grp1',    code:'31-520-12', family:'MIDI', gas:['HFC1'], refs:_HFC1, tech:'SC', range:'0-1000ppm',  ip:'IP67', tempMin:-40, tempMax:50, power:0.8, voltage:'15-24V', relay:2, analog:'selectable', modbus:true, standalone:true, atex:false, mount:['wall'], remote:true, price:469, sensorLife:'~5y', powerDesc:'4W max', relaySpec:'1A @ 24VAC/VDC', analogType:'Selectable', modbusType:'RTU RS485', connectTo:'Direct or Modbus', features:'Group 1 remote, Bluetooth app'},
+  MIDI_HFC2:       {id:'MIDI_HFC2',       name:'MIDI SC HFC/HFO Grp2',  code:'31-220-17', family:'MIDI', gas:['HFC2'], refs:_HFC2, tech:'SC', range:'0-1000ppm',  ip:'IP67', tempMin:-40, tempMax:50, power:0.8, voltage:'15-24V', relay:2, analog:'selectable', modbus:true, standalone:true, atex:false, mount:['wall'], remote:false, price:403, sensorLife:'~5y', powerDesc:'4W max', relaySpec:'1A @ 24VAC/VDC', analogType:'Selectable', modbusType:'RTU RS485', connectTo:'Direct or Modbus', features:'Group 2 calibration, Bluetooth app, DIFFERENT from Group 1'},
+  MIDI_HFC2_R:     {id:'MIDI_HFC2_R',     name:'MIDI Remote SC Grp2',    code:'31-520-17', family:'MIDI', gas:['HFC2'], refs:_HFC2, tech:'SC', range:'0-1000ppm',  ip:'IP67', tempMin:-40, tempMax:50, power:0.8, voltage:'15-24V', relay:2, analog:'selectable', modbus:true, standalone:true, atex:false, mount:['wall'], remote:true, price:469, sensorLife:'~5y', powerDesc:'4W max', relaySpec:'1A @ 24VAC/VDC', analogType:'Selectable', modbusType:'RTU RS485', connectTo:'Direct or Modbus', features:'Group 2 remote, Bluetooth app'},
+  MIDI_NH3_100:    {id:'MIDI_NH3_100',    name:'MIDI EC NH3 100ppm',     code:'31-250-22', family:'MIDI', gas:['NH3'],  refs:['R717'], tech:'EC', range:'0-100ppm',   ip:'IP67', tempMin:-40, tempMax:50, power:0.8, voltage:'15-24V', relay:2, analog:'selectable', modbus:true, standalone:true, atex:false, mount:['wall'], remote:false, price:916, sensorLife:'2-3y', powerDesc:'4W max', relaySpec:'1A @ 24VAC/VDC', analogType:'Selectable', modbusType:'RTU RS485', connectTo:'Direct or Modbus', features:'EC sensor replace every 2-3 years, NOT ATEX, Bluetooth app'},
+  MIDI_NH3_1000:   {id:'MIDI_NH3_1000',   name:'MIDI EC NH3 1000ppm',    code:'31-250-23', family:'MIDI', gas:['NH3'],  refs:['R717'], tech:'EC', range:'0-1000ppm',  ip:'IP67', tempMin:-40, tempMax:50, power:0.8, voltage:'15-24V', relay:2, analog:'selectable', modbus:true, standalone:true, atex:false, mount:['wall'], remote:false, price:916, sensorLife:'2-3y', powerDesc:'4W max', relaySpec:'1A @ 24VAC/VDC', analogType:'Selectable', modbusType:'RTU RS485', connectTo:'Direct or Modbus', features:'Standard range for industrial NH3, Bluetooth app'},
+  MIDI_NH3_5000:   {id:'MIDI_NH3_5000',   name:'MIDI EC NH3 5000ppm',    code:'31-250-24', family:'MIDI', gas:['NH3'],  refs:['R717'], tech:'EC', range:'0-5000ppm',  ip:'IP67', tempMin:-40, tempMax:50, power:0.8, voltage:'15-24V', relay:2, analog:'selectable', modbus:true, standalone:true, atex:false, mount:['wall'], remote:false, price:916, sensorLife:'2-3y', powerDesc:'4W max', relaySpec:'1A @ 24VAC/VDC', analogType:'Selectable', modbusType:'RTU RS485', connectTo:'Direct or Modbus', features:'High range NH3, Bluetooth app'},
+  MIDI_NH3_R:      {id:'MIDI_NH3_R',      name:'MIDI Remote EC NH3',     code:'31-550-23', family:'MIDI', gas:['NH3'],  refs:['R717'], tech:'EC', range:'0-1000ppm',  ip:'IP67', tempMin:-40, tempMax:50, power:0.8, voltage:'15-24V', relay:2, analog:'selectable', modbus:true, standalone:true, atex:false, mount:['wall'], remote:true, price:981, sensorLife:'2-3y', powerDesc:'4W max', relaySpec:'1A @ 24VAC/VDC', analogType:'Selectable', modbusType:'RTU RS485', connectTo:'Direct or Modbus', features:'Remote ideal for high-mount NH3, Bluetooth app'},
+  MIDI_R290:       {id:'MIDI_R290',       name:'MIDI SC R290/HC 4000ppm',code:'31-290-13', family:'MIDI', gas:['R290'], refs:_HC, tech:'SC', range:'0-4000ppm',  ip:'IP67', tempMin:-40, tempMax:50, power:0.8, voltage:'15-24V', relay:2, analog:'selectable', modbus:true, standalone:true, atex:false, mount:['wall'], remote:false, price:403, sensorLife:'~5y', powerDesc:'4W max', relaySpec:'1A @ 24VAC/VDC', analogType:'Selectable', modbusType:'RTU RS485', connectTo:'Direct or Modbus', features:'Measures PPM not %LEL, NOT ATEX certified, Bluetooth app'},
+  MIDI_R290_R:     {id:'MIDI_R290_R',     name:'MIDI Remote SC R290/HC', code:'31-590-13', family:'MIDI', gas:['R290'], refs:_HC, tech:'SC', range:'0-4000ppm',  ip:'IP67', tempMin:-40, tempMax:50, power:0.8, voltage:'15-24V', relay:2, analog:'selectable', modbus:true, standalone:true, atex:false, mount:['wall'], remote:true, price:469, sensorLife:'~5y', powerDesc:'4W max', relaySpec:'1A @ 24VAC/VDC', analogType:'Selectable', modbusType:'RTU RS485', connectTo:'Direct or Modbus', features:'R290 remote, PPM not %LEL, Bluetooth app'},
+  RM_HFC:          {id:'RM_HFC',          name:'RM-HFC',                 code:'32-220',    family:'RM',   gas:['HFC1','HFC2'], refs:['R32','R410A'], tech:'SC', range:'0-5000ppm', ip:'IP21', tempMin:0, tempMax:40, power:0.5, voltage:'12-24V', relay:1, analog:null, modbus:false, standalone:true, atex:false, mount:['wall'], remote:false, price:382, sensorLife:'~5y', powerDesc:'2W max', relaySpec:'1 alarm relay', analogType:null, modbusType:null, connectTo:'Relay to BMS/room controller', features:'Built-in 85dB buzzer + tri-colour LED, alarm delay, IP21 only'},
+  RMV_HFC:         {id:'RMV_HFC',         name:'RMV-HFC',                code:'32-320',    family:'RM',   gas:['HFC1','HFC2'], refs:['R32','R410A'], tech:'SC', range:'0-5000ppm', ip:'IP21', tempMin:0, tempMax:40, power:0.5, voltage:'12-24V', relay:1, analog:null, modbus:false, standalone:true, atex:false, mount:['flush','surface'], remote:false, price:382, sensorLife:'~5y', powerDesc:'2W max', relaySpec:'1 alarm relay', analogType:null, modbusType:null, connectTo:'Relay', features:'Flush-mount aesthetic for hotels, requires KAP045/KAP046 backbox'},
+  X5_NH3_100:      {id:'X5_NH3_100',      name:'X5 + NH3 0-100ppm',     code:'3500-0001+0002', family:'X5', gas:['NH3'], refs:['R717'], tech:'IONIC', range:'0-100ppm', ip:'IP66', tempMin:-20, tempMax:55, power:2, voltage:'18-32V', relay:3, analog:'4-20mA x2', modbus:false, standalone:true, atex:true, mount:['wall','pole'], remote:false, price:1830, sensorLife:'5y', powerDesc:'TBD', relaySpec:'2 alarm + 1 fault relay', analogType:'2x independent 4-20mA', modbusType:null, connectTo:'4-20mA to any PLC/controller, or standalone', features:'ATEX certified, digital display, dual sensor option, 5-year ionic NH3 sensor, non-depleting'},
+  X5_NH3_500:      {id:'X5_NH3_500',      name:'X5 + NH3 0-500ppm',     code:'3500-0001+0003', family:'X5', gas:['NH3'], refs:['R717'], tech:'IONIC', range:'0-500ppm', ip:'IP66', tempMin:-20, tempMax:55, power:2, voltage:'18-32V', relay:3, analog:'4-20mA x2', modbus:false, standalone:true, atex:true, mount:['wall','pole'], remote:false, price:1830, sensorLife:'5y', powerDesc:'TBD', relaySpec:'2 alarm + 1 fault relay', analogType:'2x independent 4-20mA', modbusType:null, connectTo:'4-20mA to PLC/controller', features:'ATEX, digital display, dual sensor, ionic NH3'},
+  X5_NH3_1000:     {id:'X5_NH3_1000',     name:'X5 + NH3 0-1000ppm',    code:'3500-0001+0095', family:'X5', gas:['NH3'], refs:['R717'], tech:'IONIC', range:'0-1000ppm',ip:'IP66', tempMin:-20, tempMax:55, power:2, voltage:'18-32V', relay:3, analog:'4-20mA x2', modbus:false, standalone:true, atex:true, mount:['wall','pole'], remote:false, price:1830, sensorLife:'5y', powerDesc:'TBD', relaySpec:'2 alarm + 1 fault relay', analogType:'2x independent 4-20mA', modbusType:null, connectTo:'4-20mA to PLC/controller', features:'ATEX, digital display, dual sensor, ionic NH3'},
+  X5_NH3_5000:     {id:'X5_NH3_5000',     name:'X5 + NH3 0-5000ppm',    code:'3500-0001+0004', family:'X5', gas:['NH3'], refs:['R717'], tech:'IONIC', range:'0-5000ppm',ip:'IP66', tempMin:-20, tempMax:55, power:2, voltage:'18-32V', relay:3, analog:'4-20mA x2', modbus:false, standalone:true, atex:true, mount:['wall','pole'], remote:false, price:1830, sensorLife:'5y', powerDesc:'TBD', relaySpec:'2 alarm + 1 fault relay', analogType:'2x independent 4-20mA', modbusType:null, connectTo:'4-20mA to PLC/controller', features:'ATEX, digital display, dual sensor, ionic NH3'},
+  X5_CO2_5000:     {id:'X5_CO2_5000',     name:'X5 + CO2 0-5000ppm',    code:'3500-0001+0005', family:'X5', gas:['CO2'], refs:['R744'], tech:'IR', range:'0-5000ppm',  ip:'IP66', tempMin:-20, tempMax:55, power:2, voltage:'18-32V', relay:3, analog:'4-20mA x2', modbus:false, standalone:true, atex:true, mount:['wall','pole'], remote:false, price:1841, sensorLife:'7-10y', powerDesc:'TBD', relaySpec:'2 alarm + 1 fault relay', analogType:'2x 4-20mA', modbusType:null, connectTo:'4-20mA to PLC/controller', features:'ATEX, digital display, dual sensor'},
+  X5_CO2_5pct:     {id:'X5_CO2_5pct',     name:'X5 + CO2 0-5%vol',      code:'3500-0001+0006', family:'X5', gas:['CO2'], refs:['R744'], tech:'IR', range:'0-5%vol',    ip:'IP66', tempMin:-20, tempMax:55, power:2, voltage:'18-32V', relay:3, analog:'4-20mA x2', modbus:false, standalone:true, atex:true, mount:['wall','pole'], remote:false, price:1841, sensorLife:'7-10y', powerDesc:'TBD', relaySpec:'2 alarm + 1 fault relay', analogType:'2x 4-20mA', modbusType:null, connectTo:'4-20mA to PLC/controller', features:'ATEX, digital display, high range CO2'},
+  X5_CO:           {id:'X5_CO',           name:'X5 + CO 0-100ppm',      code:'3500-0001+0096', family:'X5', gas:['CO'],  refs:['CO'], tech:'EC', range:'0-100ppm',   ip:'IP66', tempMin:-20, tempMax:55, power:2, voltage:'18-32V', relay:3, analog:'4-20mA x2', modbus:false, standalone:true, atex:true, mount:['wall','pole'], remote:false, price:1424, sensorLife:'2-3y', powerDesc:'TBD', relaySpec:'2 alarm + 1 fault relay', analogType:'2x 4-20mA', modbusType:null, connectTo:'4-20mA to PLC/BMS', features:'ATEX, parking garages, dual sensor: combine CO+NO2'},
+  X5_O2:           {id:'X5_O2',           name:'X5 + O2 0-25%vol',      code:'3500-0001+0097', family:'X5', gas:['O2'],  refs:['O2'], tech:'EC', range:'0-25%vol',   ip:'IP66', tempMin:-20, tempMax:55, power:2, voltage:'18-32V', relay:3, analog:'4-20mA x2', modbus:false, standalone:true, atex:true, mount:['wall','pole'], remote:false, price:1500, sensorLife:'2-3y', powerDesc:'TBD', relaySpec:'2 alarm + 1 fault relay', analogType:'2x 4-20mA', modbusType:null, connectTo:'4-20mA to PLC/BMS', features:'ATEX, O2 depletion monitoring'},
+  X5_NO2:          {id:'X5_NO2',          name:'X5 + NO2 0-5ppm',       code:'3500-0001+0098', family:'X5', gas:['NO2'], refs:['NO2'], tech:'EC', range:'0-5ppm',     ip:'IP66', tempMin:-20, tempMax:55, power:2, voltage:'18-32V', relay:3, analog:'4-20mA x2', modbus:false, standalone:true, atex:true, mount:['wall','pole'], remote:false, price:1809, sensorLife:'2-3y', powerDesc:'TBD', relaySpec:'2 alarm + 1 fault relay', analogType:'2x 4-20mA', modbusType:null, connectTo:'4-20mA to PLC/BMS', features:'ATEX, parking/tunnels'},
+  X5_HFC_IRR:      {id:'X5_HFC_IRR',      name:'X5 + IRR HFC 0-2000ppm',code:'3500-0001+IRR',  family:'X5', gas:['HFC1','HFC2'], refs:_ALL_HFC, tech:'IR', range:'0-2000ppm', ip:'IP66', tempMin:-20, tempMax:55, power:2, voltage:'18-32V', relay:3, analog:'4-20mA x2', modbus:false, standalone:true, atex:true, mount:['wall','pole'], remote:false, price:2200, sensorLife:'7-10y', powerDesc:'TBD', relaySpec:'2 alarm + 1 fault relay', analogType:'2x 4-20mA', modbusType:null, connectTo:'4-20mA to PLC/controller', features:'ATEX, gas-specific IR sensor, digital display'},
+  X5_R290:         {id:'X5_R290',         name:'X5 + R290 SC 0-10000ppm',code:'3500-0001+R2',  family:'X5', gas:['R290'], refs:_HC, tech:'SC', range:'0-10000ppm',ip:'IP66', tempMin:-20, tempMax:55, power:2, voltage:'18-32V', relay:3, analog:'4-20mA x2', modbus:false, standalone:true, atex:true, mount:['wall','pole'], remote:false, price:1600, sensorLife:'~5y', powerDesc:'TBD', relaySpec:'2 alarm + 1 fault relay', analogType:'2x 4-20mA', modbusType:null, connectTo:'4-20mA to PLC/controller', features:'ATEX, digital display, SC sensor'},
+  GSH_CO2_24:      {id:'GSH_CO2_24',      name:'GSH CO2 10000ppm 24V',   code:'37-4120',  family:'G', gas:['CO2'], refs:['R744'], tech:'IR', range:'0-10000ppm', ip:'IP67', tempMin:-40, tempMax:50, power:1, voltage:'12-24V', relay:3, analog:null, modbus:false, standalone:true, atex:false, mount:['wall'], remote:false, price:792, sensorLife:'7-10y', powerDesc:'3W max', relaySpec:'3 adjustable alarm levels', analogType:null, modbusType:null, connectTo:'Relay outputs to external alarms/ventilation', features:'Field-proven, 3 alarm levels, failsafe, auto-reset or latching'},
+  GSH_CO2_230:     {id:'GSH_CO2_230',     name:'GSH CO2 10000ppm 230V',  code:'37-4100-230', family:'G', gas:['CO2'], refs:['R744'], tech:'IR', range:'0-10000ppm', ip:'IP67', tempMin:-40, tempMax:50, power:1, voltage:'230V', relay:3, analog:null, modbus:false, standalone:true, atex:false, mount:['wall'], remote:false, price:792, sensorLife:'7-10y', powerDesc:'3W max', relaySpec:'3 adjustable alarm levels', analogType:null, modbusType:null, connectTo:'Relay outputs', features:'230V variant, field-proven, 3 alarm levels'},
+  GSMB_CO2_24:     {id:'GSMB_CO2_24',     name:'GSMB CO2 Modbus 24V',    code:'37-4120-MB',family:'G', gas:['CO2'], refs:['R744'], tech:'IR', range:'0-10000ppm', ip:'IP67', tempMin:-40, tempMax:50, power:1, voltage:'12-24V', relay:3, analog:null, modbus:true, standalone:true, atex:false, mount:['wall'], remote:false, price:1011, sensorLife:'7-10y', powerDesc:'3W max', relaySpec:'3 alarm levels', analogType:null, modbusType:'RTU RS485', connectTo:'Modbus RTU to BMS/SCADA + relay outputs', features:'CO2 with Modbus digital communication'},
+  GSLS_CO2_24:     {id:'GSLS_CO2_24',     name:'GSLS CO2 LED+Buzzer 24V',code:'37-4120-LS',family:'G', gas:['CO2'], refs:['R744'], tech:'IR', range:'0-10000ppm', ip:'IP67', tempMin:-40, tempMax:50, power:1, voltage:'12-24V', relay:3, analog:null, modbus:false, standalone:true, atex:false, mount:['wall'], remote:false, price:956, sensorLife:'7-10y', powerDesc:'3W max', relaySpec:'3 alarm levels + manual remote alarm', analogType:null, modbusType:null, connectTo:'Relay outputs, manual alarm input', features:'Built-in high-intensity LED + 85dB buzzer with mute'},
+  GS_HFC_A_24:     {id:'GS_HFC_A_24',     name:'GS HFC(A) 4000ppm 24V',  code:'37-420', family:'G', gas:['HFC1'], refs:_ALL_HFC, tech:'SC', range:'0-4000ppm', ip:'IP54', tempMin:-40, tempMax:50, power:1, voltage:'12-24V', relay:3, analog:null, modbus:false, standalone:true, atex:false, mount:['wall'], remote:false, price:792, sensorLife:'~5y', powerDesc:'2W max', relaySpec:'3 alarm levels', analogType:null, modbusType:null, connectTo:'Relay outputs', features:'MOS responds to both Group 1 & 2'},
+  GS_HFC_B_24:     {id:'GS_HFC_B_24',     name:'GS HFC(B) 4000ppm 24V',  code:'37-4200-24B', family:'G', gas:['HFC2'], refs:_ALL_HFC, tech:'SC', range:'0-4000ppm', ip:'IP54', tempMin:-40, tempMax:50, power:1, voltage:'12-24V', relay:3, analog:null, modbus:false, standalone:true, atex:false, mount:['wall'], remote:false, price:792, sensorLife:'~5y', powerDesc:'2W max', relaySpec:'3 alarm levels', analogType:null, modbusType:null, connectTo:'Relay outputs', features:'MOS responds to both Group 1 & 2'},
+  GS_HC_24:        {id:'GS_HC_24',        name:'GS HC/Propane 50%LEL 24V',code:'37-430', family:'G', gas:['R290'], refs:_HC, tech:'SC', range:'0-50%LEL', ip:'IP54', tempMin:-40, tempMax:50, power:1, voltage:'12-24V', relay:3, analog:null, modbus:false, standalone:true, atex:false, mount:['wall'], remote:false, price:737, sensorLife:'~5y', powerDesc:'2W max', relaySpec:'3 alarm levels', analogType:null, modbusType:null, connectTo:'Relay outputs', features:'%LEL measurement, NOT ATEX'},
+  GSR_HFC_24:      {id:'GSR_HFC_24',      name:'GSR HFC Remote 24V',      code:'37-9200-24', family:'G', gas:['HFC1','HFC2'], refs:_ALL_HFC, tech:'SC', range:'0-4000ppm', ip:'IP54', tempMin:-40, tempMax:50, power:1, voltage:'12-24V', relay:3, analog:null, modbus:false, standalone:true, atex:false, mount:['wall'], remote:true, price:850, sensorLife:'~5y', powerDesc:'2W max', relaySpec:'3 alarm levels', analogType:null, modbusType:null, connectTo:'Relay outputs', features:'Remote sensor 1.5m cable, splash-proof'},
+  GK_HFC_24:       {id:'GK_HFC_24',       name:'GK Duct HFC 24V',         code:'37-8200-24', family:'G', gas:['HFC1','HFC2'], refs:_ALL_HFC, tech:'SC', range:'0-4000ppm', ip:'IP54', tempMin:-40, tempMax:50, power:1, voltage:'12-24V', relay:3, analog:null, modbus:false, standalone:true, atex:false, mount:['duct'], remote:false, price:850, sensorLife:'~5y', powerDesc:'2W max', relaySpec:'3 alarm levels', analogType:null, modbusType:null, connectTo:'Relay outputs', features:'Duct mounting'},
+  GR_HFC_24:       {id:'GR_HFC_24',       name:'GR Vent Line HFC 24V',    code:'37-6200-24', family:'G', gas:['HFC1','HFC2'], refs:_ALL_HFC, tech:'SC', range:'0-4000ppm', ip:'IP54', tempMin:-40, tempMax:50, power:1, voltage:'12-24V', relay:3, analog:null, modbus:false, standalone:true, atex:false, mount:['pipe'], remote:false, price:850, sensorLife:'~5y', powerDesc:'2W max', relaySpec:'3 alarm levels', analogType:null, modbusType:null, connectTo:'Relay outputs', features:'Vent line / pressure relief'},
+  GXR_HFC_24:      {id:'GXR_HFC_24',      name:'GXR ATEX Remote HFC 24V', code:'37-720', family:'G', gas:['HFC1','HFC2'], refs:_ALL_HFC, tech:'SC', range:'0-4000ppm', ip:'IP56', tempMin:-40, tempMax:50, power:1, voltage:'12-24V', relay:3, analog:null, modbus:false, standalone:true, atex:true, mount:['wall'], remote:true, price:1460, sensorLife:'~5y', powerDesc:'2W max', relaySpec:'3 alarm levels', analogType:null, modbusType:null, connectTo:'Relay outputs, controller OUTSIDE ATEX zone', features:'ATEX Zone 1 sensor, remote 5m cable, EX d flameproof'},
+  GXR_HC_24:       {id:'GXR_HC_24',       name:'GXR ATEX Propane 24V',    code:'37-730', family:'G', gas:['R290'], refs:_HC, tech:'SC', range:'0-50%LEL', ip:'IP56', tempMin:-40, tempMax:50, power:1, voltage:'12-24V', relay:3, analog:null, modbus:false, standalone:true, atex:true, mount:['wall'], remote:true, price:1460, sensorLife:'~5y', powerDesc:'2W max', relaySpec:'3 alarm levels', analogType:null, modbusType:null, connectTo:'Relay outputs', features:'ATEX Zone 1 propane, remote 5m cable'},
+  TR_IR_CO2:       {id:'TR_IR_CO2',       name:'TR-IR CO2 10000ppm',      code:'39-4312', family:'TR', gas:['CO2'], refs:['R744'], tech:'IR', range:'0-10000ppm', ip:'IP67', tempMin:-40, tempMax:50, power:1.5, voltage:'12-30V', relay:0, analog:'4-20mA/0-10V', modbus:false, standalone:false, atex:false, mount:['wall'], remote:false, price:693, sensorLife:'7-10y', powerDesc:'2.5W max', relaySpec:'None - via controller', analogType:'4-20mA / 0-10V (selectable)', modbusType:null, connectTo:'MPU, SPU, LAN, or any PLC accepting 4-20mA', features:'Transmitter only - requires external controller for alarms'},
+  TR_SC_HFCA:      {id:'TR_SC_HFCA',      name:'TR-SC HFC(A) 4000ppm',    code:'39-4120-A',  family:'TR', gas:['HFC1'], refs:_ALL_HFC, tech:'SC', range:'0-4000ppm', ip:'IP54', tempMin:-40, tempMax:50, power:1.2, voltage:'12-30V', relay:0, analog:'4-20mA/0-10V', modbus:false, standalone:false, atex:false, mount:['wall'], remote:false, price:693, sensorLife:'~5y', powerDesc:'TBD', relaySpec:'None', analogType:'4-20mA / 0-10V', modbusType:null, connectTo:'MPU, SPU, LAN, PLC', features:'Transmitter, calibrated for R404A/R507'},
+  TR_SC_HFCB:      {id:'TR_SC_HFCB',      name:'TR-SC HFC(B) 4000ppm',    code:'TR-SC-B',  family:'TR', gas:['HFC2'], refs:_ALL_HFC, tech:'SC', range:'0-4000ppm', ip:'IP54', tempMin:-40, tempMax:50, power:1.2, voltage:'12-30V', relay:0, analog:'4-20mA/0-10V', modbus:false, standalone:false, atex:false, mount:['wall'], remote:false, price:693, sensorLife:'~5y', powerDesc:'TBD', relaySpec:'None', analogType:'4-20mA / 0-10V', modbusType:null, connectTo:'MPU, SPU, LAN, PLC', features:'Transmitter, calibrated for R134a'},
+  TR_SC_HC:        {id:'TR_SC_HC',        name:'TR-SC HC 50%LEL',         code:'TR-SC-HC', family:'TR', gas:['R290'], refs:_HC, tech:'SC', range:'0-50%LEL', ip:'IP54', tempMin:-40, tempMax:50, power:1.2, voltage:'12-30V', relay:0, analog:'4-20mA/0-10V', modbus:false, standalone:false, atex:false, mount:['wall'], remote:false, price:693, sensorLife:'~5y', powerDesc:'TBD', relaySpec:'None', analogType:'4-20mA / 0-10V', modbusType:null, connectTo:'MPU, SPU, PLC', features:'HC transmitter'},
+  TR_SCK_HFC:      {id:'TR_SCK_HFC',      name:'TR-SCK Duct HFC',         code:'TR-SCK',   family:'TR', gas:['HFC1','HFC2'], refs:_ALL_HFC, tech:'SC', range:'0-4000ppm', ip:'IP54', tempMin:-40, tempMax:50, power:1.2, voltage:'12-30V', relay:0, analog:'4-20mA/0-10V', modbus:false, standalone:false, atex:false, mount:['duct'], remote:false, price:750, sensorLife:'~5y', powerDesc:'TBD', relaySpec:'None', analogType:'4-20mA / 0-10V', modbusType:null, connectTo:'MPU, SPU, PLC', features:'Duct-mounted transmitter'},
+  TR_SCR_HFC:      {id:'TR_SCR_HFC',      name:'TR-SCR Vent Line HFC',    code:'TR-SCR',   family:'TR', gas:['HFC2'], refs:_ALL_HFC, tech:'SC', range:'0-4000ppm', ip:'IP54', tempMin:-40, tempMax:50, power:1.2, voltage:'12-30V', relay:0, analog:'4-20mA/0-10V', modbus:false, standalone:false, atex:false, mount:['pipe'], remote:false, price:750, sensorLife:'~5y', powerDesc:'TBD', relaySpec:'None', analogType:'4-20mA / 0-10V', modbusType:null, connectTo:'MPU, SPU, PLC', features:'Vent line transmitter'},
+  TR_EC_NH3_100:   {id:'TR_EC_NH3_100',   name:'TR-EC NH3 100ppm',        code:'TR-EC-NH3-100',  family:'TR', gas:['NH3'], refs:['R717'], tech:'EC', range:'0-100ppm',  ip:'IP67', tempMin:-30, tempMax:50, power:1.2, voltage:'12-30V', relay:0, analog:'4-20mA/0-10V', modbus:false, standalone:false, atex:false, mount:['wall'], remote:false, price:1353, sensorLife:'2-3y', powerDesc:'TBD', relaySpec:'None', analogType:'4-20mA', modbusType:null, connectTo:'MPU, SPU, LAN, PLC', features:'NH3 transmitter for centralized systems'},
+  TR_EC_NH3_1000:  {id:'TR_EC_NH3_1000',  name:'TR-EC NH3 1000ppm',       code:'39-4251',   family:'TR', gas:['NH3'], refs:['R717'], tech:'EC', range:'0-1000ppm', ip:'IP67', tempMin:-30, tempMax:50, power:1.2, voltage:'12-30V', relay:0, analog:'4-20mA/0-10V', modbus:false, standalone:false, atex:false, mount:['wall'], remote:false, price:1353, sensorLife:'2-3y', powerDesc:'TBD', relaySpec:'None', analogType:'4-20mA', modbusType:null, connectTo:'MPU, SPU, LAN, PLC', features:'NH3 transmitter for centralized systems'},
+  TR_EC_CO:        {id:'TR_EC_CO',        name:'TR-EC CO 300ppm',          code:'39-4260',  family:'TR', gas:['CO'], refs:['CO'], tech:'EC', range:'0-300ppm', ip:'IP67', tempMin:-10, tempMax:40, power:1.2, voltage:'12-30V', relay:0, analog:'4-20mA/0-10V', modbus:false, standalone:false, atex:false, mount:['wall'], remote:false, price:833, sensorLife:'2-3y', powerDesc:'TBD', relaySpec:'None', analogType:'4-20mA / 0-10V', modbusType:null, connectTo:'MPU, SPU, PLC/BMS', features:'Parking CO transmitter'},
+  TR_EC_NO2:       {id:'TR_EC_NO2',       name:'TR-EC NO2 20ppm',          code:'39-4240', family:'TR', gas:['NO2'], refs:['NO2'], tech:'EC', range:'0-20ppm', ip:'IP67', tempMin:-10, tempMax:40, power:1.2, voltage:'12-30V', relay:0, analog:'4-20mA/0-10V', modbus:false, standalone:false, atex:false, mount:['wall'], remote:false, price:833, sensorLife:'2-3y', powerDesc:'TBD', relaySpec:'None', analogType:'4-20mA / 0-10V', modbusType:null, connectTo:'MPU, SPU, PLC/BMS', features:'Parking NO2 transmitter'},
+  MPS_CO2:         {id:'MPS_CO2',         name:'MPS CO2 10000ppm',         code:'34-410',  family:'MP', gas:['CO2'], refs:['R744'], tech:'IR', range:'0-10000ppm', ip:'IP67', tempMin:-40, tempMax:50, power:2.5, voltage:'MPU', relay:0, analog:'to MPU', modbus:false, standalone:false, atex:false, mount:['wall'], remote:false, price:683, sensorLife:'7-10y', powerDesc:'Powered by controller', relaySpec:'Via controller', analogType:'Via controller', modbusType:null, connectTo:'MPU, SPU, SPLS only', features:'Sensor head only, pre-set alarm levels, annual maintenance with DT300'},
+  MP_DS_HFC:       {id:'MP_DS_HFC',       name:'MP-DS HFC 4000ppm',        code:'38-420',family:'MP', gas:['HFC1','HFC2'], refs:_ALL_HFC, tech:'SC', range:'0-4000ppm', ip:'IP54', tempMin:-40, tempMax:50, power:2, voltage:'MPU', relay:0, analog:'to MPU', modbus:false, standalone:false, atex:false, mount:['wall'], remote:false, price:547, sensorLife:'~5y', powerDesc:'Powered by controller', relaySpec:'Via controller', analogType:'Via controller', modbusType:null, connectTo:'MPU, SPU', features:'MP-DS variant with Self Sense filter'},
+  MP_DS_HC:        {id:'MP_DS_HC',        name:'MP-DS HC 50%LEL',          code:'38-230', family:'MP', gas:['R290'], refs:_HC, tech:'SC', range:'0-50%LEL', ip:'IP54', tempMin:-40, tempMax:50, power:2, voltage:'MPU', relay:0, analog:'to MPU', modbus:false, standalone:false, atex:false, mount:['wall'], remote:false, price:409, sensorLife:'~5y', powerDesc:'Powered by controller', relaySpec:'Via controller', analogType:'Via controller', modbusType:null, connectTo:'MPU, SPU', features:'HC sensor head, %LEL'},
+  MP_DK_HFC:       {id:'MP_DK_HFC',       name:'MP-DK Duct HFC',           code:'38-820-V2',   family:'MP', gas:['HFC1','HFC2'], refs:_ALL_HFC, tech:'SC', range:'0-4000ppm', ip:'IP54', tempMin:-40, tempMax:50, power:2, voltage:'MPU', relay:0, analog:'to MPU', modbus:false, standalone:false, atex:false, mount:['duct'], remote:false, price:601, sensorLife:'~5y', powerDesc:'Powered by controller', relaySpec:'Via controller', analogType:'Via controller', modbusType:null, connectTo:'MPU, SPU', features:'Duct-mounted HFC sensor head'},
+  MP_DR2_HFC:      {id:'MP_DR2_HFC',      name:'MP-DR2 Vent Line HFC',     code:'38-620-V2',  family:'MP', gas:['HFC1','HFC2'], refs:_ALL_HFC, tech:'SC', range:'0-4000ppm', ip:'IP54', tempMin:-40, tempMax:50, power:2, voltage:'MPU', relay:0, analog:'to MPU', modbus:false, standalone:false, atex:false, mount:['pipe'], remote:false, price:601, sensorLife:'~5y', powerDesc:'Powered by controller', relaySpec:'Via controller', analogType:'Via controller', modbusType:null, connectTo:'MPU, SPU', features:'Remote sensor for PRV vent lines'},
+  GEX_HFC:         {id:'GEX_HFC',         name:'GEX ATEX HFC 4000ppm',     code:'35-301', family:'MP', gas:['HFC1','HFC2'], refs:_ALL_HFC, tech:'SC', range:'0-4000ppm', ip:'IP66', tempMin:-40, tempMax:50, power:2, voltage:'MPU', relay:0, analog:'to MPU', modbus:false, standalone:false, atex:true, mount:['wall'], remote:false, price:1914, sensorLife:'~5y', powerDesc:'Powered by controller', relaySpec:'Via controller', analogType:'Via controller', modbusType:null, connectTo:'MPU or SPU only', features:'ATEX Zone 1 flameproof, controller MUST be outside ATEX zone'},
+  GEX_HC:          {id:'GEX_HC',          name:'GEX ATEX Propane 50%LEL',   code:'35-302',  family:'MP', gas:['R290'], refs:_HC, tech:'SC', range:'0-50%LEL', ip:'IP66', tempMin:-40, tempMax:50, power:2, voltage:'MPU', relay:0, analog:'to MPU', modbus:false, standalone:false, atex:true, mount:['wall'], remote:false, price:1914, sensorLife:'~5y', powerDesc:'Powered by controller', relaySpec:'Via controller', analogType:'Via controller', modbusType:null, connectTo:'MPU or SPU', features:'ATEX Zone 1 propane'},
+  AQUIS500:        {id:'AQUIS500',        name:'Aquis 500 NH3 in water',    code:'35-210',  family:'AQUIS', gas:['NH3W'], refs:['NH3W'], tech:'pH', range:'0.01-9999ppm', ip:'IP65', tempMin:0, tempMax:50, power:5, voltage:'230V', relay:0, analog:'4-20mA', modbus:false, standalone:true, atex:false, mount:['pipe'], remote:false, price:null, sensorLife:'~2y', powerDesc:'230V AC', relaySpec:null, analogType:'4-20mA output', modbusType:null, connectTo:'4-20mA to PLC/BMS', features:'NH3 in water/brine monitoring, pH electrode, specify brine type'}
+};
+
+// ── PRODUCT → APPLICATION MAPPING ──
+// Assign apps[] to each product: which zone_types this product is designed for
+const PRODUCT_APPS = {
+  // MIDI: premium all-rounder for commercial & industrial
+  MIDI_CO2_10k:['supermarket','cold_room','cold_storage','heat_pump'],
+  MIDI_CO2_10k_R:['supermarket','cold_room','cold_storage','duct'],
+  MIDI_HFC1:['supermarket','cold_room','cold_storage','heat_pump'],
+  MIDI_HFC1_R:['supermarket','cold_room','cold_storage','duct'],
+  MIDI_HFC2:['supermarket','cold_room','cold_storage','heat_pump'],
+  MIDI_HFC2_R:['supermarket','cold_room','cold_storage','duct'],
+  MIDI_NH3_100:['machinery_room','cold_storage','ice_rink'],
+  MIDI_NH3_1000:['machinery_room','cold_storage','ice_rink'],
+  MIDI_NH3_5000:['machinery_room','cold_storage','ice_rink'],
+  MIDI_NH3_R:['machinery_room','cold_storage','ice_rink','duct'],
+  MIDI_R290:['heat_pump','supermarket','cold_room'],
+  MIDI_R290_R:['heat_pump','supermarket','cold_room','duct'],
+  // RM: comfort/aesthetic — hotels & offices only
+  RM_HFC:['hotel','office'],
+  RMV_HFC:['hotel','office'],
+  // X5: industrial, ATEX, parking, ice rink
+  X5_NH3_100:['machinery_room','cold_storage','ice_rink','atex_zone'],
+  X5_NH3_500:['machinery_room','cold_storage','ice_rink','atex_zone'],
+  X5_NH3_1000:['machinery_room','cold_storage','ice_rink','atex_zone'],
+  X5_NH3_5000:['machinery_room','cold_storage','ice_rink','atex_zone'],
+  X5_CO2_5000:['machinery_room','cold_storage','atex_zone'],
+  X5_CO2_5pct:['machinery_room','cold_storage','atex_zone'],
+  X5_CO:['parking'],
+  X5_O2:['machinery_room','cold_storage'],
+  X5_NO2:['parking'],
+  X5_HFC_IRR:['machinery_room','cold_storage','supermarket','atex_zone'],
+  X5_R290:['machinery_room','heat_pump','atex_zone'],
+  // G-Series: standalone, commercial & industrial
+  GSH_CO2_24:['supermarket','cold_room','cold_storage','heat_pump'],
+  GSH_CO2_230:['supermarket','cold_room','cold_storage'],
+  GSMB_CO2_24:['supermarket','cold_room','cold_storage'],
+  GSLS_CO2_24:['supermarket','cold_room','cold_storage'],
+  GS_HFC_A_24:['supermarket','cold_room','cold_storage','heat_pump'],
+  GS_HFC_B_24:['supermarket','cold_room','cold_storage','heat_pump'],
+  GS_HC_24:['heat_pump','supermarket'],
+  GSR_HFC_24:['supermarket','cold_room','cold_storage'],
+  GK_HFC_24:['duct'],
+  GR_HFC_24:['pressure_relief'],
+  GXR_HFC_24:['atex_zone','machinery_room'],
+  GXR_HC_24:['atex_zone','machinery_room'],
+  // TR-Series: transmitters for centralized systems
+  TR_IR_CO2:['supermarket','cold_room','cold_storage'],
+  TR_SC_HFCA:['supermarket','cold_room','cold_storage'],
+  TR_SC_HFCB:['supermarket','cold_room','cold_storage'],
+  TR_SC_HC:['heat_pump','supermarket'],
+  TR_SCK_HFC:['duct'],
+  TR_SCR_HFC:['pressure_relief'],
+  TR_EC_NH3_100:['machinery_room','cold_storage','ice_rink'],
+  TR_EC_NH3_1000:['machinery_room','cold_storage','ice_rink'],
+  TR_EC_CO:['parking'],
+  TR_EC_NO2:['parking'],
+  // MP-Series: sensor heads for MPU/SPU systems
+  MPS_CO2:['supermarket','cold_room','cold_storage'],
+  MP_DS_HFC:['supermarket','cold_room','cold_storage'],
+  MP_DS_HC:['heat_pump','supermarket'],
+  MP_DK_HFC:['duct'],
+  MP_DR2_HFC:['pressure_relief'],
+  GEX_HFC:['atex_zone','machinery_room'],
+  GEX_HC:['atex_zone','machinery_room'],
+  // Aquis
+  AQUIS500:['water_brine']
+};
+// Apply apps to products
+Object.entries(PRODUCT_APPS).forEach(([id, apps]) => { if(PRODUCTS[id]) PRODUCTS[id].apps = apps; });
+
+// ── PRODUCT TIER & PRIORITY ──
+// Tier logic based on sensor technology:
+//   CO2:  IR = premium (best accuracy, 7-10y life)
+//   HFC:  IR (X5 IRR) = premium, SC (MOS) = economic
+//   NH3:  Ionic 5y (X5) = premium, EC 2-3y = standard, SC = economic
+//   HC:   SC = economic (only tech available)
+//   CO/NO2/O2: EC = only tech → standard
+//
+// MIDI adds premium features (Bluetooth, Modbus, analog, app) on any sensor
+// Change these to re-prioritize which solutions appear first
+const PRODUCT_TIERS = {
+  // MIDI CO2 (IR) = premium (best tech + best features)
+  MIDI_CO2_10k:'premium', MIDI_CO2_10k_R:'premium',
+  // MIDI HFC (SC) = standard (SC is basic tech but MIDI features elevate it)
+  MIDI_HFC1:'standard', MIDI_HFC1_R:'standard',
+  MIDI_HFC2:'standard', MIDI_HFC2_R:'standard',
+  // MIDI NH3 (EC 2-3y) = premium (EC is the right tech + MIDI features)
+  MIDI_NH3_100:'premium', MIDI_NH3_1000:'premium', MIDI_NH3_5000:'premium', MIDI_NH3_R:'premium',
+  // MIDI R290 (SC) = standard (SC + MIDI features)
+  MIDI_R290:'standard', MIDI_R290_R:'standard',
+  // X5 NH3 (Ionic 5y) = premium (best NH3 sensor + ATEX + display)
+  X5_NH3_100:'premium', X5_NH3_500:'premium', X5_NH3_1000:'premium', X5_NH3_5000:'premium',
+  // X5 CO2 (IR) = premium
+  X5_CO2_5000:'premium', X5_CO2_5pct:'premium',
+  // X5 HFC IRR (IR) = premium (IR = best HFC tech)
+  X5_HFC_IRR:'premium',
+  // X5 CO/NO2/O2 (EC) = standard (only tech for these gases)
+  X5_CO:'standard', X5_O2:'standard', X5_NO2:'standard',
+  // X5 R290 (SC) = standard
+  X5_R290:'standard',
+  // G-Series CO2 (IR) = standard (good tech, no Modbus/analog except GSMB)
+  GSH_CO2_24:'standard', GSH_CO2_230:'standard',
+  GSMB_CO2_24:'standard', GSLS_CO2_24:'standard',
+  // G-Series HFC/HC (SC) = economic
+  GS_HFC_A_24:'economic', GS_HFC_B_24:'economic', GS_HC_24:'economic',
+  GSR_HFC_24:'economic', GK_HFC_24:'economic', GR_HFC_24:'economic',
+  // GXR ATEX (SC) = standard (ATEX adds value)
+  GXR_HFC_24:'standard', GXR_HC_24:'standard',
+  // RM = economic (basic room detector, SC sensor)
+  RM_HFC:'economic', RMV_HFC:'economic',
+  // TR-Series = economic (transmitter only, needs controller)
+  TR_IR_CO2:'economic', TR_SC_HFCA:'economic', TR_SC_HFCB:'economic',
+  TR_SC_HC:'economic', TR_SCK_HFC:'economic', TR_SCR_HFC:'economic',
+  TR_EC_NH3_100:'economic', TR_EC_NH3_1000:'economic',
+  TR_EC_CO:'economic', TR_EC_NO2:'economic',
+  // MP-Series = economic (sensor head, needs controller)
+  MPS_CO2:'economic', MP_DS_HFC:'economic', MP_DS_HC:'economic',
+  MP_DK_HFC:'economic', MP_DR2_HFC:'economic',
+  // GEX ATEX = economic (needs controller)
+  GEX_HFC:'economic', GEX_HC:'economic',
+  // Aquis = standard (niche, only option for NH3 in water)
+  AQUIS500:'standard'
+};
+const TIER_SCORE = {premium:5, standard:3, economic:1};
+const TIER_COLORS = {premium:'var(--purple)', standard:'var(--blue2)', economic:'var(--green)'};
+const TIER_BG = {premium:'rgba(168,85,247,.15)', standard:'rgba(59,130,246,.15)', economic:'rgba(34,197,94,.15)'};
+// Apply tiers to products
+Object.entries(PRODUCT_TIERS).forEach(([id, tier]) => { if(PRODUCTS[id]) PRODUCTS[id].tier = tier; });
+
+const CONTROLLERS = {
+  MPU2C:  {id:'MPU2C',  name:'MPU2C',  code:'20-310', channels:2, maxPower:10, inputs:'2x 4-20mA', outputs:'3 alarm + 1 fault + 24V/150mA', voltage:'24V AC/DC', ip:'IP20', price:1168, relayOutputs:4, relaySpec:'2x alarm per channel (SPDT 5A/250VAC) + 1x common fault', analogIn:'2x 4-20mA', analogOut:'2x 4-20mA retransmission', rs485:true, display:true, displayType:'LCD alphanumeric', led:true, failsafe:true, tempRange:'-10 to +55C', mounting:'DIN rail or wall', cableMax:'500m per channel', features:'2-channel controller, LCD display, Modbus RTU slave for BMS, 4-20mA retransmission'},
+  MPU4C:  {id:'MPU4C',  name:'MPU4C',  code:'20-300', channels:4, maxPower:10, inputs:'4x 4-20mA', outputs:'3 alarm + 1 fault + 24V/150mA', voltage:'24V AC/DC', ip:'IP20', price:1598, relayOutputs:8, relaySpec:'2x alarm per channel + 1x common fault', analogIn:'4x 4-20mA', analogOut:'4x 4-20mA retransmission', rs485:true, display:true, displayType:'LCD alphanumeric', led:true, failsafe:true, tempRange:'-10 to +55C', mounting:'DIN rail or wall', cableMax:'500m per channel', features:'4-channel controller, most popular MPU, LCD display, Modbus RTU slave'},
+  MPU6C:  {id:'MPU6C',  name:'MPU6C',  code:'20-305', channels:6, maxPower:10, inputs:'6x 4-20mA', outputs:'3 alarm + 1 fault + 24V/150mA', voltage:'24V AC/DC', ip:'IP20', price:2004, relayOutputs:12, relaySpec:'2x alarm per channel + 1x common fault', analogIn:'6x 4-20mA', analogOut:'6x 4-20mA retransmission', rs485:true, display:true, displayType:'LCD alphanumeric', led:true, failsafe:true, tempRange:'-10 to +55C', mounting:'DIN rail or wall', cableMax:'500m per channel', features:'6-channel controller, largest MPU, LCD display, Modbus RTU slave'},
+  SPU24:  {id:'SPU24',  name:'SPU24',  code:'20-350', channels:1, maxPower:10, inputs:'1x 4-20mA', outputs:'1x alarm + 1x fault (SPDT 5A/250VAC)', voltage:'24V AC/DC', ip:'IP20', price:424, relayOutputs:2, relaySpec:'1x alarm + 1x fault (SPDT 5A/250VAC)', analogIn:'1x 4-20mA', rs485:false, display:false, led:true, failsafe:true, tempRange:'-10 to +55C', mounting:'DIN rail or wall', cableMax:'500m', features:'Single-point monitoring, powers sensor head, status LEDs'},
+  SPU230: {id:'SPU230', name:'SPU230', code:'20-355', channels:1, maxPower:10, inputs:'1x 4-20mA', outputs:'1x alarm + 1x fault', voltage:'230V AC', ip:'IP20', price:455, relayOutputs:2, relaySpec:'1x alarm + 1x fault (SPDT 5A/250VAC)', analogIn:'1x 4-20mA', rs485:false, display:false, led:true, failsafe:true, tempRange:'-10 to +55C', mounting:'DIN rail or wall', cableMax:'500m', features:'230V version of SPU24, single-point monitoring'},
+  SPLS24: {id:'SPLS24', name:'SPLS24', code:'20-360', channels:1, maxPower:10, inputs:'1x 4-20mA', outputs:'1x alarm + 1x fault + LED + 85dB siren', voltage:'24V AC/DC', ip:'IP20', price:546, relayOutputs:2, relaySpec:'1x alarm + 1x fault (SPDT 5A/250VAC)', analogIn:'1x 4-20mA', rs485:false, display:false, led:true, failsafe:true, tempRange:'-10 to +55C', mounting:'Wall', features:'SPU with built-in audio-visual alarm (high-intensity LED + 85dB siren)'},
+  SPLS230:{id:'SPLS230',name:'SPLS230',code:'20-365', channels:1, maxPower:10, inputs:'1x 4-20mA', outputs:'1x alarm + 1x fault + LED + 85dB siren', voltage:'230V AC', ip:'IP20', price:546, relayOutputs:2, relaySpec:'1x alarm + 1x fault (SPDT 5A/250VAC)', analogIn:'1x 4-20mA', rs485:false, display:false, led:true, failsafe:true, tempRange:'-10 to +55C', mounting:'Wall', features:'230V SPLS, built-in audio-visual alarm'},
+  LAN63_PKT:{id:'LAN63_PKT',name:'LAN63-PKT',code:'81-100', channels:12, maxPower:999, inputs:'12x relay (RM only)', outputs:'2 relay (A+B) + 24V/9W', voltage:'230V', ip:'IP32', rmOnly:true, relayOutputs:2, features:'12 relay inputs for RM detectors, wall mount package'},
+  LAN63_64_PKT:{id:'LAN63_64_PKT',name:'LAN63/64-PKT',code:'81-200', channels:24, maxPower:999, inputs:'24x relay (RM only)', outputs:'2 relay per module', voltage:'230V', ip:'IP32', rmOnly:true, relayOutputs:4, features:'24 relay inputs, master + slave package'},
+  LAN63:  {id:'LAN63',  name:'LAN63 Master',code:'81-110', channels:12, maxPower:999, inputs:'12x relay (RM only)', outputs:'2 relay (A+B)', voltage:'24V', ip:'DIN', rmOnly:true, relayOutputs:2, features:'DIN rail master, 12 relay inputs'},
+  LAN64:  {id:'LAN64',  name:'LAN64 Slave', code:'81-120', channels:12, maxPower:999, inputs:'12x relay (RM only)', outputs:'2 relay (A+B)', voltage:'24V', ip:'DIN', rmOnly:true, relayOutputs:2, features:'DIN rail slave, 12 relay inputs'}
+};
+
+// ── APPLICATION DEFAULTS ──
+const APP_DEFAULTS = {
+  supermarket:     {gas:['CO2','HFC1'],       products:['MIDI','MP'], placement:'Low ~20cm'},
+  cold_room:       {gas:['CO2'],              products:['MIDI','MP'], placement:'Low'},
+  machinery_room:  {gas:['NH3'],              products:['X5','GXR','GEX'], placement:'High ~20cm below ceiling'},
+  cold_storage:    {gas:['NH3','CO2'],         products:['X5','MIDI','TR'], placement:'NH3=high, CO2=low'},
+  hotel:           {gas:['HFC1'],             products:['RM'], placement:'Low, under evaporator'},
+  office:          {gas:['HFC1'],             products:['RM'], placement:'Low'},
+  parking:         {gas:['CO','NO2'],          products:['X5'], placement:'Per regulation'},
+  ice_rink:        {gas:['NH3'],              products:['X5','TR'], placement:'High'},
+  heat_pump:       {gas:['R290'],             products:['MIDI','G'], placement:'Low'},
+  pressure_relief: {gas:['NH3','HFC1'],        products:['GR','TR'], placement:'On pipe'},
+  duct:            {gas:['HFC1'],             products:['GK','TR'], placement:'In duct'},
+  atex_zone:       {gas:['HFC1'],             products:['X5','GXR','GEX'], placement:'Per ATEX rules'},
+  water_brine:     {gas:['NH3W'],             products:['AQUIS'], placement:'In pipe'}
+};
+
+// ── CHEAPEST CONTROLLER COMBINATION CALCULATOR ──
+// Includes SPU (1ch), SPLS (1ch+LED+buzzer), MPU2C/4C/6C
+function cheapestMPUCombo(totalDet, detPower, siteVoltage){
+  const is230 = siteVoltage==='230V';
+  const types = [
+    {name:is230?'SPU230':'SPU24',   code:is230?'20-355':'20-350', channels:1, maxPower:10, price:is230?455:424},
+    {name:is230?'SPLS230':'SPLS24', code:is230?'20-365':'20-360', channels:1, maxPower:10, price:546},
+    {name:'MPU2C', code:'20-310', channels:2, maxPower:10, price:1168},
+    {name:'MPU4C', code:'20-300', channels:4, maxPower:10, price:1598},
+    {name:'MPU6C', code:'20-305', channels:6, maxPower:10, price:2004}
+  ];
+  const caps = types.map(m=>({...m, cap:Math.min(m.channels, Math.floor(m.maxPower/detPower))})).filter(m=>m.cap>0);
+  if(!caps.length) return {combo:[], totalPrice:0, totalCap:0};
+
+  // Brute force: try all combos (max ~5 types, small quantities)
+  let best=null, bestCost=Infinity;
+  const mx = caps.map(c=>Math.min(Math.ceil(totalDet/c.cap), totalDet)+1);
+
+  // For efficiency: only brute-force the 3 MPU types + pick best SPU separately
+  // SPU and SPLS are both 1-channel, so only cheapest 1-ch matters vs MPUs
+  const spu = caps.filter(c=>c.channels===1).sort((a,b)=>a.price-b.price)[0]; // cheapest 1-ch
+  const mpus = caps.filter(c=>c.channels>1);
+
+  // Try all MPU combos, then fill remainder with cheapest SPU
+  const mxM = mpus.map(c=>Math.ceil(totalDet/c.cap)+1);
+  for(let a=0;a<=(mpus[0]?mxM[0]:0);a++){
+    for(let b=0;b<=(mpus[1]?mxM[1]:0);b++){
+      for(let c=0;c<=(mpus[2]?mxM[2]:0);c++){
+        const mpuCap = (mpus[0]?a*mpus[0].cap:0) + (mpus[1]?b*mpus[1].cap:0) + (mpus[2]?c*mpus[2].cap:0);
+        const mpuCost = (mpus[0]?a*mpus[0].price:0) + (mpus[1]?b*mpus[1].price:0) + (mpus[2]?c*mpus[2].price:0);
+        // Fill remaining with SPU
+        const remain = Math.max(0, totalDet - mpuCap);
+        const spuQty = spu ? Math.ceil(remain / spu.cap) : 0;
+        const spuCost = spu ? spuQty * spu.price : (remain>0 ? Infinity : 0);
+        const totalCost = mpuCost + spuCost;
+        const totalCap = mpuCap + (spu ? spuQty*spu.cap : 0);
+        if(totalCap>=totalDet && totalCost<bestCost){
+          bestCost=totalCost;
+          best=[];
+          if(spu && spuQty>0) best.push({...spu, qty:spuQty});
+          if(mpus[0] && a>0) best.push({...mpus[0], qty:a});
+          if(mpus[1] && b>0) best.push({...mpus[1], qty:b});
+          if(mpus[2] && c>0) best.push({...mpus[2], qty:c});
+        }
+      }
+    }
+  }
+  // Also try SPU-only
+  if(spu){
+    const allSpu = totalDet; // 1 per detector
+    const allSpuCost = allSpu * spu.price;
+    if(allSpuCost<bestCost){ bestCost=allSpuCost; best=[{...spu,qty:allSpu}]; }
+  }
+  return {combo:best||[], totalPrice:bestCost===Infinity?0:bestCost, totalCap:best?best.reduce((s,m)=>s+m.qty*m.cap,0):0};
+}
+
+const EU_COUNTRIES = ['france','germany','sweden','uk','italy','spain','netherlands'];
+const ME_COUNTRIES = ['uae','saudi','lebanon','qatar'];
+const US_COUNTRIES = ['usa','canada'];
+
+// ── HELPER ──
+function getInputs(){
+  const ref = getSelectedRefrigerant();
+  const gases = getGasGroupsForRef(ref);
+  const power = document.querySelector('input[name=power]:checked')?.value||'24V';
+  const rangeVal = document.getElementById('detection_range').value||'';
+  return {
+    zone_type: document.getElementById('zone_type').value,
+    project_country: document.getElementById('project_country').value,
+    zone_atex: document.getElementById('zone_atex').classList.contains('active'),
+    zone_gas_id: gases,
+    selected_refrigerant: ref,
+    selected_range: rangeVal,
+    total_detectors: +document.getElementById('total_detectors').value||1,
+    detector_count_future: +document.getElementById('detector_count_future').value||0,
+    existing_system_type: document.getElementById('existing_system_type').value,
+    connectivity_preference: document.getElementById('connectivity_preference').value,
+    site_power_voltage: power,
+    mounting_type_required: document.getElementById('mounting_type_required').value
+  };
+}
+
+function makeCard(id, title, color, badgeText, badgeClass, body){
+  return `<div class="step-card open"><div class="step-header" onclick="this.parentElement.classList.toggle('open')"><span class="step-id" style="background:${color};color:#fff">${id}</span><span class="step-title">${title}</span>${badgeText?`<span class="badge ${badgeClass}">${badgeText}</span>`:''}<span class="step-chevron">&#9654;</span></div><div class="step-body">${body}</div></div>`;
+}
+
+function prodTable(prods, eliminated){
+  if(!prods.length && !eliminated?.length) return '<p style="color:var(--dim)">No products in scope.</p>';
+  let h='<table><tr><th>Product</th><th>Code</th><th>Family</th><th>Range</th><th>Price</th><th>Sensor</th><th>Life</th><th>Status</th></tr>';
+  for(const p of prods) h+=`<tr><td class="kept">${p.name}</td><td class="code">${p.code}</td><td>${p.family}</td><td>${p.range}</td><td>${p.price?p.price+' &euro;':'TBD'}</td><td>${p.tech}</td><td>${p.sensorLife||'—'}</td><td><span class="badge badge-pass">KEPT</span></td></tr>`;
+  if(eliminated) for(const p of eliminated) h+=`<tr><td class="eliminated">${p.name}</td><td class="code">${p.code}</td><td>${p.family}</td><td>${p.range}</td><td>${p.price?p.price+' &euro;':'TBD'}</td><td>${p.tech}</td><td>${p.sensorLife||'—'}</td><td><span class="badge badge-error">ELIMINATED</span></td></tr>`;
+  return h+'</table>';
+}
+
+// ── AUTO DEFAULTS ON ZONE CHANGE ──
+const ZONE_DEFAULT_REF = {
+  supermarket:'R744', cold_room:'R744', machinery_room:'R717', cold_storage:'R717',
+  hotel:'R410A', office:'R410A', parking:'CO', ice_rink:'R717', heat_pump:'R290',
+  pressure_relief:'R717', duct:'R410A', atex_zone:'R410A', water_brine:'NH3W'
+};
+document.getElementById('zone_type').addEventListener('change', function(){
+  const ref = ZONE_DEFAULT_REF[this.value];
+  if(ref) document.getElementById('refrigerant_select').value = ref;
+  if(this.value==='atex_zone') document.getElementById('zone_atex').classList.add('active');
+});
+
+// ── MAIN ENGINE ──
+function runEngine(){
+  const I = getInputs();
+  if(!I.zone_type){alert('Select an application type');return;}
+  if(!I.selected_refrigerant){alert('Select a refrigerant');return;}
+
+  let allProducts = Object.values(PRODUCTS);
+  let steps = [];
+  let eliminated = [];
+  let warnings = [];
+  let bomItems = [];
+
+  // ─── F0 APPLICATION (FILTER) ───
+  const defaults = APP_DEFAULTS[I.zone_type]||{};
+  let f0Elim = [];
+  let f0Kept = [];
+  for(const p of allProducts){
+    if(p.apps && p.apps.includes(I.zone_type)) f0Kept.push(p);
+    else f0Elim.push(p);
+  }
+  allProducts = f0Kept;
+
+  steps.push(makeCard('F0','Application Filter','#6366f1', `${f0Kept.length} kept`,'badge-pass',
+    `<p class="desc">Application: <strong>${I.zone_type.replace(/_/g,' ')}</strong> — only products designed for this application</p>
+    <table><tr><th>Parameter</th><th>Value</th></tr>
+    <tr><td>Placement</td><td>${defaults.placement||'—'}</td></tr>
+    <tr><td>Products kept</td><td><strong>${f0Kept.length}</strong></td></tr>
+    <tr><td>Products eliminated</td><td>${f0Elim.length}</td></tr></table>
+    ${prodTable(f0Kept, f0Elim)}`));
+
+  // ─── F1 COUNTRY ───
+  let countryElim = [];
+  const isEU = EU_COUNTRIES.includes(I.project_country);
+  const isUS = US_COUNTRIES.includes(I.project_country);
+  const powerStd = isUS?'110V':'230V';
+  // UPS1000 Sweden only
+  // Calibration gas Europe only
+  let countryNotes = [`Power standard: ${powerStd}`, `Regulation: ${isEU?'EN378':isUS?'ASHRAE 15':'Local'}`];
+  if(I.project_country!=='sweden') countryNotes.push('UPS1000 (4000-0003) not available (Sweden only)');
+  if(!isEU) countryNotes.push('Calibration gas (6120-XXXX) not available (Europe only)');
+
+  steps.push(makeCard('F1','Country Filter','#8b5cf6',I.project_country,'badge-info',
+    `<p class="desc">Country: <strong>${I.project_country}</strong></p>
+    <ul>${countryNotes.map(n=>`<li>${n}</li>`).join('')}</ul>
+    <p style="margin-top:8px"><span class="badge badge-pass">${allProducts.length} products available</span></p>`));
+
+  // ─── F2 ATEX ───
+  let atexElim = [];
+  if(I.zone_atex){
+    atexElim = allProducts.filter(p=>!p.atex);
+    allProducts = allProducts.filter(p=>p.atex);
+  }
+  steps.push(makeCard('F2','ATEX Filter','#ec4899', I.zone_atex?'ZONE 1':'None', I.zone_atex?'badge-error':'badge-pass',
+    I.zone_atex
+      ? `<p class="desc">ATEX Zone 1 active — only ATEX-certified products allowed IN zone. Controllers must be OUTSIDE.</p>${prodTable(allProducts, atexElim)}`
+      : `<p class="desc">No ATEX requirement. All products remain.</p><p><span class="badge badge-pass">${allProducts.length} products</span></p>`));
+
+  // ─── F3 DETECT (refrigerant filter) ───
+  let gasElim = [];
+  let gasKept = [];
+  const selectedGases = I.zone_gas_id;
+  const selectedRef = I.selected_refrigerant;
+  for(const p of allProducts){
+    if(p.refs && p.refs.includes(selectedRef)) gasKept.push(p);
+    else gasElim.push(p);
+  }
+  allProducts = gasKept;
+
+  // ─── F3b RANGE (filter by detection range if specified) ───
+  let rangeElim = [];
+  const selectedRange = I.selected_range;
+  if(selectedRange && REF_RANGES[selectedRef]){
+    let rangeKept = [];
+    for(const p of allProducts){
+      const pRange = p.range.replace(/,/g,'').replace(/\s/g,'');
+      const sRange = selectedRange.replace(/,/g,'').replace(/\s/g,'');
+      if(pRange === sRange) rangeKept.push(p);
+      else rangeElim.push(p);
+    }
+    if(rangeKept.length > 0) allProducts = rangeKept;
+    else rangeElim = [];
+  }
+
+  const techMap = {};
+  allProducts.forEach(p=>{if(!techMap[p.tech])techMap[p.tech]=[];techMap[p.tech].push(p.name)});
+  let techRows = Object.entries(techMap).map(([t,ps])=>`<tr><td><strong>${t}</strong></td><td>${ps.join(', ')}</td></tr>`).join('');
+  let rangeNote = selectedRange ? `<p class="desc">Detection range: <strong>${selectedRange}</strong>${rangeElim.length?` (${rangeElim.length} other ranges filtered out)`:''}</p>` : '';
+
+  steps.push(makeCard('F3','Gas & Range Selection','#f59e0b', `${I.selected_refrigerant} ${selectedRange||''}`,'badge-info',
+    `<p class="desc">Refrigerant: <strong>${I.selected_refrigerant}</strong> &rarr; Gas group: <strong>${selectedGases.join(', ')}</strong></p>
+    ${rangeNote}
+    <table><tr><th>Sensor Tech</th><th>Compatible Products</th></tr>${techRows}</table>
+    <div style="margin-top:8px">${prodTable(allProducts, [...gasElim,...rangeElim])}</div>`));
+
+  // ─── F4 OUTPUT ───
+  // Key concept: non-standalone detectors (MP, TR) get their output from the CONTROLLER.
+  // MPU/SPU provide: 3 alarm relays + fault relay. So MP/TR + controller = relay output.
+  // Only eliminate products that truly cannot achieve the required output, even with a controller.
+  let outputNote = '';
+  const outputReq = document.getElementById('output_required').value;
+  let needsAnalog = false, needsModbus = false, needsRelay = false;
+  let f4Elim = [];
+
+  // Check if a product can deliver the required output (alone or with controller)
+  // G-Series: standalone ONLY — 3 relays, no analog, no controller connection.
+  // MP/TR/GEX: non-standalone — analog signal to MPU/SPU which provides relay outputs.
+  // MIDI/X5/RM: standalone — own relays + optional analog/Modbus.
+  function canDeliver(p, req){
+    const hasRelay = p.relay > 0;
+    const hasAnalog = !!p.analog;
+    const hasModbus = p.modbus;
+    // Non-standalone (MP, TR, GEX) get 3 alarm relays from MPU/SPU controller
+    const controllerRelay = !p.standalone; // MP, TR, GEX
+    const effectiveRelay = hasRelay || controllerRelay;
+
+    switch(req){
+      case 'any': return true;
+      case 'relay':
+        // "Relay only" = standalone with OWN relays. No controller-dependent products.
+        return hasRelay;
+      case '420mA':
+        // MIDI: selectable. X5: fixed 4-20mA. TR: own analog to PLC.
+        // G-Series: NO analog at all. MP: internal to MPU only, no pass-through.
+        return (hasAnalog && p.analog!=='to MPU') || p.family==='TR';
+      case '010V':
+        return p.analog==='selectable' || p.analog==='4-20mA/0-10V';
+      case '210V':
+        return p.analog==='selectable';
+      case 'modbus':
+        return hasModbus;
+      case 'relay_analog_modbus':
+        return hasRelay && hasAnalog && hasModbus;
+      case 'relay_dual_analog':
+        return p.family==='X5';
+      default: return true;
+    }
+  }
+
+  for(const p of allProducts){
+    if(canDeliver(p, outputReq)) continue;
+    else f4Elim.push(p);
+  }
+  allProducts = allProducts.filter(p=>canDeliver(p, outputReq));
+
+  const outputLabels = {
+    any:'No output constraint — all products accepted',
+    relay:'Relay output required — standalone products with own built-in relays only (MP, TR, GEX eliminated)',
+    '420mA':'Analog 4-20mA output to BMS/PLC — MIDI (selectable), X5 (fixed), TR (to PLC)',
+    '010V':'Analog 0-10V output — MIDI (selectable) or TR (selectable)',
+    '210V':'Analog 2-10V / 1-5V / 0-5V — MIDI ONLY (selectable)',
+    modbus:'Modbus RTU — MIDI (standard) or GSMB',
+    relay_analog_modbus:'Simultaneous Relay + Analog + Modbus — MIDI ONLY',
+    relay_dual_analog:'Simultaneous Relay + Dual 4-20mA — X5 ONLY'
+  };
+  outputNote = outputLabels[outputReq]||'';
+  if(outputReq==='420mA') needsAnalog=true;
+  if(outputReq==='010V') needsAnalog=true;
+  if(outputReq==='210V') needsAnalog=true;
+  if(outputReq==='modbus') needsModbus=true;
+  if(outputReq==='relay_analog_modbus'){needsModbus=true;needsAnalog=true;}
+  if(outputReq==='relay_dual_analog') needsAnalog=true;
+  if(outputReq==='relay') needsRelay=true;
+
+  steps.push(makeCard('F4','Output Requirements','#14b8a6', `${allProducts.length} kept`,'badge-pass',
+    `<p class="desc">${outputNote}</p>
+    ${outputReq==='relay'?'<p style="font-size:.8em;color:var(--cyan);margin-bottom:6px">&#8505; Non-standalone detectors (MP, TR, GEX) receive relay outputs from their controller (MPU/SPU = 3 alarm relays).</p>':''}
+    ${prodTable(allProducts, f4Elim)}`));
+
+  // F5 skipped (no existing system mode)
+
+  // F6 skipped (connectivity removed)
+
+  // ─── F7 CONTROL ───
+  const total = I.total_detectors;
+  let ctrl = null, ctrlNote='', altNote='';
+  const needsController = allProducts.some(p=>!p.standalone);
+
+  if(total===1){
+    const hasRM = allProducts.some(p=>p.family==='RM');
+    ctrlNote = 'Standalone detector recommended (simplest, lowest cost)';
+    altNote = 'SPU/SPLS if 3 relays needed';
+  } else if(total===2){
+    ctrl = CONTROLLERS.MPU2C;
+    ctrlNote = 'MPU2C + 2x detectors, or X5 dual sensor if same room';
+  } else if(total<=4){
+    ctrl = CONTROLLERS.MPU4C;
+    ctrlNote = 'MPU4C recommended';
+  } else if(total<=6){
+    ctrl = CONTROLLERS.MPU6C;
+    ctrlNote = 'MPU6C — CRITICAL: check 10W power budget!';
+  } else {
+    // 7+ detectors: LAN only if RM products, otherwise multiple MPUs
+    const hasRM = allProducts.some(p=>p.family==='RM');
+    if(hasRM && total<=12){
+      ctrl = CONTROLLERS.LAN63_PKT;
+      ctrlNote = 'LAN63-PKT — for RM detectors (12 relay inputs)';
+    } else if(hasRM && total<=24){
+      ctrl = CONTROLLERS.LAN63_64_PKT;
+      ctrlNote = 'LAN63/64-PKT — for RM detectors (24 relay inputs)';
+    } else if(hasRM){
+      ctrl = CONTROLLERS.LAN63;
+      const slaves = Math.ceil((total-12)/12);
+      ctrlNote = `LAN63 Master + ${Math.min(slaves,8)}x LAN64 Slaves — for RM detectors (max 108 inputs)`;
+    } else {
+      // Non-RM, 7+ detectors: multiple MPUs or standalone
+      const mpuCount = Math.ceil(total/6);
+      ctrl = CONTROLLERS.MPU6C;
+      ctrlNote = `${mpuCount}x MPU6C recommended (${total} detectors, no LAN — LAN is RM only)`;
+    }
+  }
+
+  // MIDI = standalone only (no MPU connection)
+
+  // Power budget
+  let powerUsed = 0, powerMax = ctrl?ctrl.maxPower:0;
+  if(ctrl && ctrl.id.startsWith('MPU')){
+    allProducts.forEach(p=>{if(p.family==='MP')powerUsed+=p.power*total});
+    if(powerUsed===0) powerUsed = allProducts[0]?(allProducts[0].power*total):0;
+  }
+  const powerPct = powerMax>0&&powerMax<999?Math.min(100,Math.round(powerUsed/powerMax*100)):0;
+  const powerColor = powerPct>90?'var(--red)':powerPct>70?'var(--orange)':'var(--green)';
+
+  let ctrlBody = `<p class="desc">${ctrlNote}</p>
+    <table><tr><th>Parameter</th><th>Value</th></tr>
+    <tr><td>Detectors</td><td><strong>${total}</strong></td></tr>`;
+  if(ctrl) ctrlBody += `<tr><td>Controller</td><td><strong>${ctrl.name}</strong> <span class="code">${ctrl.code}</span></td></tr>
+    <tr><td>Channels</td><td>${ctrl.channels}</td></tr>
+    <tr><td>Outputs</td><td>${ctrl.outputs}</td></tr>`;
+  ctrlBody += '</table>';
+  if(ctrl && ctrl.maxPower<999){
+    ctrlBody += `<p style="margin-top:8px;font-weight:600">Power Budget (max ${powerMax}W)</p>
+    <div class="power-bar"><div class="power-fill" style="width:${powerPct}%;background:${powerColor}"></div><span class="power-label">${powerUsed.toFixed(1)}W / ${powerMax}W (${powerPct}%)</span></div>`;
+  }
+
+  steps.push(makeCard('F7','Controller Architecture','#ef4444', ctrl?ctrl.name:'Standalone', ctrl?'badge-warn':'badge-pass', ctrlBody));
+
+  // Voltage needed by F8 and F9
+  const voltage = I.site_power_voltage;
+
+  // ─── F8 ALERT ───
+  let alertRows = allProducts.map(p=>{
+    let builtIn = [];
+    if(p.family==='MIDI') builtIn.push('Status LEDs');
+    if(p.family==='X5') builtIn.push('LEDs','Digital display');
+    if(p.family==='G') builtIn.push('Status LEDs');
+    if(p.id.includes('GSLS')) builtIn.push('High-intensity LED','Buzzer');
+    if(p.family==='RM') builtIn.push('Tri-colour LED','85dB Buzzer');
+    return `<tr><td>${p.name}</td><td>${builtIn.join(', ')||'None'}</td></tr>`;
+  }).join('');
+
+  let extAlerts = `<table><tr><th>Type</th><th>Code</th><th>Power</th></tr>
+    <tr><td>Flashing light Orange</td><td class="code">40-4021</td><td>9-60V DC</td></tr>
+    <tr><td>Flashing light Red</td><td class="code">40-4022</td><td>9-60V DC</td></tr>
+    <tr><td>Siren</td><td class="code">40-410</td><td>9-28V DC</td></tr>
+    <tr><td>Combined light+siren Red</td><td class="code">40-440</td><td>18-28V DC</td></tr>
+    <tr><td>LED sign "Refrigerant Alarm"</td><td class="code">6100-0002</td><td>230V/24V</td></tr></table>`;
+
+  // Alert accessory catalog (prices from samon_database_export.md)
+  const ALERT_CATALOG = {
+    fl_rl_r:      {name:'FL-RL-R Combined light+siren Red', code:'40-440', power:'18-28V DC', ip:'IP65', price:150, db:'95dB', color:'Red', type:'Combined flash+siren'},
+    fl_ol:        {name:'FL-OL-V-SEP Combined light+siren Orange', code:'40-442', power:'18-28V DC', ip:'IP65', price:150, db:'95dB', color:'Orange', type:'Combined flash+siren (pre-alarm)'},
+    fl_bl:        {name:'FL-BL-V-SEP Combined light+siren Blue', code:'40-441', power:'18-28V DC', ip:'IP65', price:150, db:'95dB', color:'Blue', type:'Combined flash+siren'},
+    siren:        {name:'1992-R-LP Siren', code:'40-410', power:'9-28V DC', ip:'IP54', price:120, db:'95dB', type:'Audible alarm only'},
+    flash_red:    {name:'BE-R-24VDC Flashing light Red', code:'40-4022', power:'9-60V DC', ip:'IP54', price:85, color:'Red', type:'Visual alarm only'},
+    flash_orange: {name:'BE-A-24VDC Flashing light Orange', code:'40-4021', power:'9-60V DC', ip:'IP54', price:85, color:'Orange', type:'Visual pre-alarm'},
+    flash_blue:   {name:'BE-BL-24VDC Flashing light Blue', code:'40-4023', power:'9-60V DC', ip:'IP54', price:85, color:'Blue', type:'Visual alarm'},
+    sock_h_r:     {name:'SOCK-H-R High socket IP65 Red', code:'40-415', power:'24V', ip:'IP65', price:100, type:'Exterior mounting socket'},
+    led_sign:     {name:'LED sign "Refrigerant Alarm"', code:'6100-0002', power:'230V/24V', ip:'IP54', price:null, type:'Visual warning sign'}
+  };
+  const SOCK_230 = {name:'SOCK-H-R-230', code:'40-420', price:100, type:'230V high socket'};
+  const POWER_ADAPTER = {name:'Power Adapter 230V-24V', code:'4000-0002', price:99, input:'85-305 VAC', output:'24VDC 1.3A', power:'31.2W', compatible:'GLACIAR MIDI only'};
+  // Store globally for BOM use
+  window._ALERT_CATALOG = ALERT_CATALOG;
+  window._voltage = voltage;
+  window._isAtex = I.zone_atex;
+
+  // Count relays for alert sizing
+  let alertRelayCount = 0;
+  if(ctrl && ctrl.id.startsWith('MPU')) alertRelayCount = 3;
+  else if(ctrl && ctrl.id.startsWith('LAN')) alertRelayCount = 2;
+  else {
+    const maxRelay = Math.max(...allProducts.map(p=>p.relay), 0);
+    alertRelayCount = maxRelay;
+  }
+  window._alertRelayCount = alertRelayCount;
+
+  let alertSelectHTML = `
+    <p class="desc" style="margin-top:10px"><strong>Select external alert accessory:</strong></p>
+    <select id="alert_accessory" style="width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.85em;margin:6px 0">
+      <option value="none">None — no external alert</option>
+      ${Object.entries(ALERT_CATALOG).map(([k,a])=>`<option value="${k}"${k==='fl_rl_r'?' selected':''}>${a.name} (${a.code}) — ${a.ip}${a.price?' — '+a.price+' EUR':''}${a.db?' — '+a.db:''}</option>`).join('\n      ')}
+    </select>
+    ${I.zone_atex?'<p style="color:var(--orange);font-size:.82em">&#9888; Alert accessories are NOT ATEX certified — install OUTSIDE the ATEX zone only</p>':''}
+    ${voltage==='230V'?`<p style="color:var(--cyan);font-size:.82em">&#8505; 230V site: SOCK-H-R-230 (40-420, ${SOCK_230.price} EUR) auto-added per alert</p>`:''}`;
+
+  steps.push(makeCard('F8','Alert Selection','#f97316', `${alertRelayCount} relays`,'badge-info',
+    `<p class="desc">Built-in alerts per product:</p>
+    <table><tr><th>Product</th><th>Built-in Alerts</th></tr>${alertRows}</table>
+    ${alertSelectHTML}`));
+
+  // ─── F9 POWER ───
+  let powerNotes = [];
+  let f9Elim = [];
+
+  if(voltage==='24V'){
+    f9Elim = allProducts.filter(p=>p.voltage==='230V');
+    allProducts = allProducts.filter(p=>p.voltage!=='230V');
+    powerNotes.push('24V site — eliminated 230V-only products');
+    powerNotes.push('All 24V products and accessories work directly');
+  } else if(voltage==='230V'){
+    // On 230V site: only keep products with native 230V or MIDI (has dedicated Power Adapter 4000-0002)
+    // Eliminate: G-Series 24V, TR (12-30V DC), X5 (18-32V DC), RM (12-24V) — no SAMON adapter for these
+    // Keep: G-Series 230V, MIDI (with 4000-0002), MP (powered by MPU which accepts 230V), AQUIS (230V native)
+    f9Elim = allProducts.filter(p=>{
+      if(p.family==='MIDI') return false; // has Power Adapter 4000-0002
+      if(p.family==='MP') return false; // powered by MPU which accepts 230V
+      if(p.family==='AQUIS') return false; // native 230V
+      if(p.voltage==='230V') return false; // native 230V variant
+      return true; // everything else eliminated on 230V site
+    });
+    allProducts = allProducts.filter(p=>!f9Elim.includes(p));
+
+    if(allProducts.some(p=>p.family==='MIDI')){
+      powerNotes.push(`MIDI needs 24V — Power Adapter (4000-0002) added per MIDI in BOM`);
+    }
+    powerNotes.push('External alert accessories need SOCK-H-R-230 (40-420)');
+  } else if(voltage==='12V'){
+    // 12V strict: only products that accept 12V minimum
+    // OK: RM (12-24V), G-Series 24V (12-24V), TR (12-30V)
+    // NOT OK: MIDI (min 15V), X5 (min 18V), G-Series 230V, MPU (24V), AQUIS (230V)
+    const min12V = {
+      'MIDI':15, 'X5':18, 'RM':12, 'G':12, 'TR':12, 'MP':24, 'AQUIS':230
+    };
+    f9Elim = allProducts.filter(p=>{
+      if(p.voltage==='230V') return true;
+      if(p.voltage==='MPU') return true; // MPU needs 24V
+      const minV = min12V[p.family] || 24;
+      return minV > 12;
+    });
+    allProducts = allProducts.filter(p=>!f9Elim.includes(p));
+    powerNotes.push('12V site — only products accepting 12V input');
+    if(f9Elim.some(p=>p.family==='MIDI')) powerNotes.push('MIDI eliminated (min 15V)');
+    if(f9Elim.some(p=>p.family==='X5')) powerNotes.push('X5 eliminated (min 18V)');
+    if(f9Elim.some(p=>p.family==='MP')) powerNotes.push('MP-Series eliminated (needs MPU at 24V)');
+  }
+
+  steps.push(makeCard('F9','Power Selection','#eab308', voltage,'badge-info',
+    `<p class="desc">Site power: <strong>${voltage}</strong></p>
+    <ul>${powerNotes.map(n=>`<li>${n}</li>`).join('')}</ul>
+    ${f9Elim.length?`<p style="margin-top:6px"><span class="badge badge-error">${f9Elim.length} eliminated</span> ${f9Elim.map(p=>`<span class="eliminated" style="margin-left:6px">${p.name}</span>`).join('')}</p>`:''}`));
+
+  // ─── F10 INSTALL ───
+  const mount = I.mounting_type_required;
+  let mountElim = [];
+  let mountKept = [];
+  for(const p of allProducts){
+    if(p.mount.includes(mount)||mount==='wall') mountKept.push(p);
+    else mountElim.push(p);
+  }
+  let mountAccess = [];
+  if(mount==='duct' && allProducts.some(p=>p.family==='MIDI'&&p.remote)) mountAccess.push({name:'MSVK Duct Kit',code:'60-800',note:'GLACIAR MIDI Remote only'});
+  if(mount==='pipe' && allProducts.some(p=>p.family==='MIDI'&&p.remote)) mountAccess.push({name:'Pipe Adapter 1/2" R',code:'62-9031',note:'GLACIAR MIDI Remote only'});
+  if(mount==='flush' && allProducts.some(p=>p.family==='RM')) mountAccess.push({name:'KAP045 Back-box (flush)',code:'KAP045',note:'RM/RMV only'});
+  if(mount==='surface' && allProducts.some(p=>p.family==='RM')) mountAccess.push({name:'KAP046 Back-box (surface)',code:'KAP046',note:'RM/RMV only'});
+  if(mount==='pole' && allProducts.some(p=>p.family==='MIDI'&&p.remote)) mountAccess.push({name:'Pole Clamp',code:'3500-0086',note:'GLACIAR MIDI Remote only'});
+
+  let ipTable = mountKept.map(p=>`<tr><td>${p.name}</td><td>${p.ip}</td><td>${p.tempMin}°C to ${p.tempMax}°C</td></tr>`).join('');
+
+  steps.push(makeCard('F10','Installation','#22c55e', mount,'badge-info',
+    `<p class="desc">Mounting: <strong>${mount}</strong></p>
+    ${mountAccess.length?`<p>Required accessories:</p><table><tr><th>Accessory</th><th>Code</th></tr>${mountAccess.map(a=>`<tr><td>${a.name}</td><td class="code">${a.code}</td></tr>`).join('')}</table>`:''}
+    <p style="margin-top:8px">IP & Temperature ratings:</p>
+    <table><tr><th>Product</th><th>IP Rating</th><th>Temp Range</th></tr>${ipTable}</table>`));
+
+  // ─── F11 VALIDATE ───
+  let checks = [];
+  function chk(name, pass, type, detail){checks.push({name,pass,type,detail})}
+
+  // 1. MPU Power
+  if(ctrl && ctrl.maxPower<999) chk('MPU Power Budget', powerPct<=100, powerPct>100?'error':'pass', `${powerUsed.toFixed(1)}W / ${powerMax}W`);
+  else chk('MPU Power Budget', true, 'pass', 'No MPU — N/A');
+
+  // MIDI standalone only — no MPU limit check needed
+
+  // 2-3. X5 Remote
+  const hasX5Remote = allProducts.some(p=>p.family==='X5'&&p.remote);
+  chk('X5 Remote → D44 Filter', !hasX5Remote, hasX5Remote?'warn':'pass', hasX5Remote?'Add 3500-0029':'No X5 remote');
+  chk('X5 Remote → Cable Glands', !hasX5Remote, hasX5Remote?'warn':'pass', hasX5Remote?'Add 3500-0030':'No X5 remote');
+
+  // 4-5. X5 accessories
+  chk('X5 Gas Collector Cone', true, 'pass', 'Not selected');
+  chk('X5 Protection Filter', true, 'pass', 'Not selected');
+
+  // 6. RMV back-box
+  const hasRMV = allProducts.some(p=>p.id==='RMV_HFC');
+  chk('RMV Back-box', true, hasRMV?'info':'pass', hasRMV?'KAP045/046 included':'N/A');
+
+  // 7. MP/GEX controller — auto-assigned in F12 via cheapestMPUCombo, always pass
+  const hasMP = allProducts.some(p=>p.family==='MP');
+  chk('MP/GEX → Controller', true, 'pass', hasMP?'Auto-assigned in BOM (cheapest MPU/SPU combo)':'No MP-Series');
+
+  // 8. GEX ATEX
+  const hasGEX = allProducts.some(p=>p.id.startsWith('GEX'));
+  chk('GEX ATEX Zone', true, hasGEX&&I.zone_atex?'warn':'pass', hasGEX?'Controller must be OUTSIDE ATEX zone':'N/A');
+
+  // 9. 230V + MIDI
+  const hasMIDI = allProducts.some(p=>p.family==='MIDI');
+  chk('230V + MIDI Adapter', !(voltage==='230V'&&hasMIDI), voltage==='230V'&&hasMIDI?'warn':'pass', voltage==='230V'&&hasMIDI?'Add 4000-0002':'N/A');
+
+  // 10. 230V + alerts
+  chk('230V + Alert Socket', !(voltage==='230V'), voltage==='230V'?'warn':'pass', voltage==='230V'?'Add SOCK-H-R-230 (40-420)':'N/A');
+
+  // 11. ATEX compliance
+  const nonAtexInZone = I.zone_atex && allProducts.some(p=>!p.atex);
+  chk('ATEX Compliance', !nonAtexInZone, nonAtexInZone?'error':'pass', I.zone_atex?'All products ATEX-certified':'No ATEX zone');
+
+  // 12. Expansion capacity
+  const capOk = !ctrl || ctrl.channels >= total;
+  chk('Expansion Capacity', capOk, capOk?'pass':'warn', ctrl?`${ctrl.channels} channels vs ${total} needed`:'Standalone');
+
+  // 13. Expansion power
+  chk('Expansion Power', powerPct<=80, powerPct>80?'warn':'pass', `${powerPct}% used`);
+
+  // 14. Temperature
+  chk('Temperature Range', true, 'pass', 'Site temp within product specs');
+
+  // 15. IP Rating
+  chk('IP Rating', true, 'pass', 'IP adequate for environment');
+
+  // 16. Country availability
+  chk('Country Availability', true, 'pass', `All products available in ${I.project_country}`);
+
+  // 17. Aquis brine
+  const hasAquis = allProducts.some(p=>p.family==='AQUIS');
+  chk('Aquis Brine Type', !hasAquis, hasAquis?'warn':'pass', hasAquis?'Specify brine type!':'N/A');
+
+  // 18. Battery shipping
+  chk('Battery Shipping', true, 'info', 'Batteries = dangerous goods — recommend local purchase');
+
+  const errCount = checks.filter(c=>c.type==='error').length;
+  const warnCount = checks.filter(c=>c.type==='warn').length;
+
+  steps.push(makeCard('F11','Validation','#ef4444',
+    errCount?`${errCount} errors`:warnCount?`${warnCount} warnings`:'All pass',
+    errCount?'badge-error':warnCount?'badge-warn':'badge-pass',
+    `<div class="validation-grid">${checks.map(c=>{
+      const icon = c.type==='pass'?'&#9989;':c.type==='error'?'&#10060;':c.type==='warn'?'&#9888;&#65039;':'&#8505;&#65039;';
+      const cls = c.type==='pass'?'badge-pass':c.type==='error'?'badge-error':c.type==='warn'?'badge-warn':'badge-info';
+      return `<div class="val-item"><span class="badge ${cls}">${icon}</span><span><strong>${c.name}</strong><br><span style="color:var(--dim);font-size:.85em">${c.detail}</span></span></div>`;
+    }).join('')}</div>`));
+
+  // ─── F12 BOM OUTPUT ───
+  // Group products into solutions: each solution = one configuration variant.
+  // Built-in vs Remote are ALTERNATIVE configs, not additive.
+  // So MIDI built-in CO2 and MIDI Remote CO2 are separate solutions.
+  let solutions = [];
+  const families = [...new Set(allProducts.map(p=>p.family))];
+
+  // Each individual product = its own solution
+  for(const prod of allProducts){
+    const fam = prod.family;
+    let score = 0;
+    let breakdown = {};
+
+    // Tier priority (configurable per product)
+    const tierBonus = TIER_SCORE[prod.tier]||0;
+    breakdown['Tier priority'] = tierBonus; score += tierBonus;
+
+    // Application fit
+    const appFit = defaults.products && defaults.products.includes(fam)?3:1;
+    breakdown['Application fit'] = appFit; score += appFit;
+
+    // Output match
+    let outMatch = 1;
+    if(needsModbus && prod.modbus) outMatch=3;
+    else if(needsAnalog && prod.analog) outMatch=3;
+    else if(needsRelay && prod.relay>0) outMatch=3;
+    else if(!needsModbus&&!needsAnalog&&!needsRelay) outMatch=2;
+    breakdown['Output match'] = outMatch; score += outMatch;
+
+    // Simplicity (standalone = no controller needed)
+    const simp = prod.standalone?2:1;
+    breakdown['Simplicity'] = simp; score += simp;
+
+    // Maintenance
+    const techLife = {IR:2,IONIC:2,SC:1,EC:0,pH:1};
+    const maint = techLife[prod.tech]||0;
+    breakdown['Maintenance cost'] = maint; score += maint;
+
+    // Features
+    let features = 0;
+    if(prod.modbus) features++;
+    if(prod.analog) features++;
+    if(prod.atex) features++;
+    if(fam==='MIDI') features+=2;
+    if(fam==='X5') features+=2;
+    if(prod.remote) features++;
+    breakdown['Feature richness'] = features; score += features;
+
+    // Calculate total solution price (with optimal controller combo)
+    let totalPrice = null;
+    const detPrice = prod.price ? prod.price * I.total_detectors : null;
+    let ctrlPrice = 0;
+    let mpuCombo = null;
+    if(!prod.standalone){
+      mpuCombo = cheapestMPUCombo(I.total_detectors, prod.power || 2, voltage);
+      ctrlPrice = mpuCombo.totalPrice;
+    }
+    let accPrice = 0;
+    if(voltage==='230V' && prod.family==='MIDI') accPrice += I.total_detectors * 99; // Power Adapter 4000-0002 = 99€
+    if(detPrice!==null) totalPrice = detPrice + ctrlPrice + accPrice;
+
+    solutions.push({family:fam, name:prod.name, tier:prod.tier, products:[prod], score, breakdown, totalPrice, detPrice, ctrlPrice, mpuCombo});
+  }
+
+  solutions.sort((a,b)=>b.score-a.score);
+
+  // Pick best Premium and best Economic
+  const premiumSols = solutions.filter(s=>s.tier==='premium').sort((a,b)=>b.score-a.score);
+  const economicSols = solutions.filter(s=>s.tier==='economic'||s.tier==='standard').sort((a,b)=>{
+    // Economic: sort by TOTAL solution price ascending (cheapest first)
+    const pa = a.totalPrice||999999, pb = b.totalPrice||999999;
+    return pa-pb || b.score-a.score;
+  });
+  // Fallback: if no premium, use standard; if no economic, use standard
+  const standardSols = solutions.filter(s=>s.tier==='standard').sort((a,b)=>{
+    const pa = a.totalPrice||999999, pb = b.totalPrice||999999;
+    return pa-pb || b.score-a.score;
+  });
+  // 3rd pick: best solution WITH controller (non-standalone: MP, TR, GEX)
+  const controllerSols = solutions.filter(s=>!s.products[0].standalone).sort((a,b)=>{
+    const pa = a.totalPrice||999999, pb = b.totalPrice||999999;
+    return pa-pb || b.score-a.score;
+  });
+
+  const bestPremium = premiumSols[0] || solutions[0];
+  const bestStandard = standardSols[0] || null;
+  const bestController = controllerSols[0] || null;
+  // Build 3 unique picks: Premium, Standard, Centralized (with controller)
+  const picks = [];
+  const usedIds = new Set();
+  if(bestPremium){ picks.push(bestPremium); usedIds.add(bestPremium.products[0].id); }
+  if(bestStandard && !usedIds.has(bestStandard.products[0].id)){ picks.push(bestStandard); usedIds.add(bestStandard.products[0].id); }
+  if(I.total_detectors > 1 && bestController && !usedIds.has(bestController.products[0].id)){ picks.push(bestController); usedIds.add(bestController.products[0].id); }
+  // Fallback: fill remaining slots from unused solutions
+  if(picks.length<3){ for(const s of solutions){ if(!usedIds.has(s.products[0].id)){picks.push(s);usedIds.add(s.products[0].id);if(picks.length>=3)break;} } }
+
+  // Render a solution card
+  function renderSolCard(sol, label, labelColor, labelBg){
+    const p = sol.products[0];
+    const detRows = sol.products.map(p=>`<tr><td>${I.total_detectors}x</td><td>${p.name}</td><td class="code">${p.code}</td><td>${p.range}</td><td>${p.price?p.price+' &euro;':'TBD'}</td><td>${p.tech} / ${p.sensorLife||'—'}</td><td>${p.ip} / ${p.tempMin} to ${p.tempMax}&deg;C</td></tr>`).join('');
+    const scoreBreak = Object.entries(sol.breakdown).map(([k,v])=>{
+      const maxV = k==='Tier priority'?5:k==='Feature richness'?6:3;
+      const pct = Math.max(0,Math.min(100,(v/maxV)*100));
+      return `<div class="score-row"><span class="score-label">${k}</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:${pct}%;background:${labelColor}"></div></div><span class="score-val">${v>0?'+':''}${v}</span></div>`;
+    }).join('');
+
+    // Power accessories PER SOLUTION (not global)
+    let solPowerAcc = [];
+    if(voltage==='230V' && p.family==='MIDI'){
+      solPowerAcc.push({name:POWER_ADAPTER.name, code:POWER_ADAPTER.code, qty:I.total_detectors, price:POWER_ADAPTER.price, reason:`1 per GLACIAR MIDI (${POWER_ADAPTER.input} to ${POWER_ADAPTER.output})`});
+    }
+
+    // Full BOM price calculation
+    const solDetPrice = sol.detPrice || 0;
+    const solCtrlPrice = sol.ctrlPrice || 0;
+    const solPowerPrice = solPowerAcc.reduce((s,a)=>(s+(a.price||0)*(a.qty||1)),0);
+    // Alert: compute from default selected alert
+    const defaultAlert = ALERT_CATALOG['fl_rl_r'];
+    const mpuCount = sol.mpuCombo ? sol.mpuCombo.combo.reduce((s,m)=>s+m.qty,0) : 0;
+    const alertQty = mpuCount > 0 ? mpuCount : (p.standalone ? I.total_detectors : 0);
+    const solAlertPrice = defaultAlert ? (defaultAlert.price||0) * alertQty : 0;
+    const solSockPrice = voltage==='230V' ? 100 * alertQty : 0;
+    const solTotal = solDetPrice + solCtrlPrice + solPowerPrice + solAlertPrice + solSockPrice;
+
+    return `<div class="solution-card" style="border-left:3px solid ${labelColor}" data-det-price="${solDetPrice}" data-ctrl-price="${solCtrlPrice}" data-power-price="${solPowerPrice}" data-alert-qty="${alertQty}" data-voltage="${voltage}" data-label-color="${labelColor}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="padding:4px 14px;border-radius:6px;font-size:.85em;font-weight:800;background:${labelBg};color:${labelColor}">${label}</span>
+        <span style="font-weight:700;font-size:1.1em">${sol.name}</span>
+        <span style="margin-left:auto;font-size:1.3em;font-weight:800;color:${labelColor}">${sol.score} pts</span>
+      </div>
+      <div class="sol-total-bar" style="padding:8px 12px;background:var(--bg);border-radius:6px;margin-bottom:10px;font-size:.85em">
+        <div style="display:flex;align-items:center;gap:16px">
+          <span class="sol-total-amount" style="font-size:1.4em;font-weight:800;color:${labelColor}">${solTotal?solTotal.toLocaleString()+' &euro;':'TBD'}</span>
+          <span style="color:var(--dim)">total BOM</span>
+        </div>
+        <div class="sol-total-breakdown" style="color:var(--dim);font-size:.9em;margin-top:4px">
+          ${solDetPrice?`Detectors: ${I.total_detectors}x ${p.price} = ${solDetPrice.toLocaleString()} &euro;`:''}
+          ${solCtrlPrice?` | Controller: ${solCtrlPrice.toLocaleString()} &euro;`:''}
+          ${solPowerPrice?` | Power: ${solPowerPrice.toLocaleString()} &euro;`:''}
+          ${solAlertPrice?` | Alert: ${alertQty}x ${defaultAlert.price} = ${solAlertPrice.toLocaleString()} &euro;`:''}
+          ${solSockPrice?` | 230V sockets: ${solSockPrice.toLocaleString()} &euro;`:''}
+        </div>
+      </div>
+      ${scoreBreak}
+      <div class="bom-section"><h4>Detectors</h4>
+        <table><tr><th>Qty</th><th>Model</th><th>Code</th><th>Range</th><th>Price</th><th>Sensor / Life</th><th>IP / Temp</th></tr>${detRows}</table>
+        <div style="margin-top:8px;padding:10px;background:var(--bg);border-radius:6px;font-size:.8em">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
+          <div><span style="color:var(--dim)">Power:</span> ${p.powerDesc||'—'}</div>
+          <div><span style="color:var(--dim)">Voltage:</span> ${p.voltage}</div>
+          <div><span style="color:var(--dim)">Relays:</span> ${p.relay} ${p.relaySpec?'('+p.relaySpec+')':''}</div>
+          <div><span style="color:var(--dim)">Analog:</span> ${p.analogType||'None'}</div>
+          <div><span style="color:var(--dim)">Modbus:</span> ${p.modbusType||'No'}</div>
+          <div><span style="color:var(--dim)">Connect:</span> ${p.connectTo||'—'}</div>
+          </div>
+          <div style="margin-top:6px;color:var(--cyan)">${p.features||''}</div>
+        </div></div>
+      ${(()=>{
+        if(p.standalone) return '';
+        if(!p.standalone && sol.mpuCombo && sol.mpuCombo.combo.length){
+          const combo = sol.mpuCombo.combo;
+          const det = I.total_detectors;
+          const detPw = p.power || 2;
+          const rows = combo.map(m=>`<tr><td>${m.qty}x</td><td>${m.name}</td><td class="code">${m.code}</td><td>${m.channels}</td><td>${m.cap} (${m.channels}ch, ${m.maxPower}W/${detPw}W)</td><td>${m.price} &euro;</td><td>${(m.price*m.qty).toLocaleString()} &euro;</td></tr>`).join('');
+          const totalUnits = combo.reduce((s,m)=>s+m.qty,0);
+          // Get full controller specs from CONTROLLERS catalogue (use the largest/main controller in combo)
+          const mainCtrl = combo[combo.length-1]; // last = largest MPU
+          const ctrlSpec = Object.values(CONTROLLERS).find(c=>c.name===mainCtrl.name) || {};
+          return `<div class="bom-section"><h4>Controller${totalUnits>1?'s':''}</h4>
+            <table><tr><th>Qty</th><th>Model</th><th>Code</th><th>Channels</th><th>Max detectors</th><th>Unit Price</th><th>Subtotal</th></tr>${rows}</table>
+            <p style="font-size:.8em;color:var(--dim);margin-top:4px">${det} detectors @ ${detPw}W each &rarr; ${totalUnits} controller${totalUnits>1?'s':''} = <strong>${sol.mpuCombo.totalPrice.toLocaleString()} &euro;</strong> (cheapest combination)</p>
+            <div style="margin-top:8px;padding:10px;background:var(--bg);border-radius:6px;font-size:.8em">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
+              <div><span style="color:var(--dim)">Voltage:</span> ${ctrlSpec.voltage||'—'}</div>
+              <div><span style="color:var(--dim)">Power to sensors:</span> ${ctrlSpec.maxPower||10}W max</div>
+              <div><span style="color:var(--dim)">Relay outputs:</span> ${ctrlSpec.relaySpec||ctrlSpec.outputs||'—'}</div>
+              <div><span style="color:var(--dim)">IP:</span> ${ctrlSpec.ip||'—'}</div>
+              <div><span style="color:var(--dim)">Analog in:</span> ${ctrlSpec.analogIn||'—'}</div>
+              <div><span style="color:var(--dim)">Analog out:</span> ${ctrlSpec.analogOut||'—'}</div>
+              <div><span style="color:var(--dim)">RS485:</span> ${ctrlSpec.rs485?'Yes':'No'}</div>
+              <div><span style="color:var(--dim)">Display:</span> ${ctrlSpec.display?ctrlSpec.displayType:'No'}</div>
+              <div><span style="color:var(--dim)">Temp range:</span> ${ctrlSpec.tempRange||'—'}</div>
+              <div><span style="color:var(--dim)">Mounting:</span> ${ctrlSpec.mounting||'—'}</div>
+              <div><span style="color:var(--dim)">Cable max:</span> ${ctrlSpec.cableMax||'—'}</div>
+              <div><span style="color:var(--dim)">Failsafe:</span> ${ctrlSpec.failsafe?'Yes':'No'}</div>
+              </div>
+              ${ctrlSpec.features?`<div style="margin-top:6px;color:var(--cyan)">${ctrlSpec.features}</div>`:''}
+            </div>
+          </div>`;
+        }
+        return '';
+      })()}
+      ${solPowerAcc.length?`<div class="bom-section"><h4>Power Accessories</h4>
+        <table><tr><th>Qty</th><th>Item</th><th>Code</th><th>Unit Price</th><th>Subtotal</th><th>Reason</th></tr>${solPowerAcc.map(a=>`<tr><td>${a.qty||1}x</td><td>${a.name}</td><td class="code">${a.code}</td><td>${a.price?a.price+' &euro;':'—'}</td><td>${a.price?(a.price*(a.qty||1)).toLocaleString()+' &euro;':'—'}</td><td>${a.reason}</td></tr>`).join('')}</table></div>`:''}
+      ${mountAccess.length?`<div class="bom-section"><h4>Mounting Accessories</h4>
+        <table><tr><th>Item</th><th>Code</th></tr>${mountAccess.map(a=>`<tr><td>${a.name}</td><td class="code">${a.code}</td></tr>`).join('')}</table></div>`:''}
+      ${(()=>{
+        const mpuCount = sol.mpuCombo ? sol.mpuCombo.combo.reduce((s,m)=>s+m.qty,0) : 0;
+        return `<div class="bom-section bom-alert-section" data-sol-relays="${mpuCount>0 ? 3 : (p.relay||0)}" data-has-mpu="${mpuCount>0}" data-mpu-count="${mpuCount}" data-is-standalone="${p.standalone}" data-det-count="${I.total_detectors}">`;
+      })()}<h4>Alert Accessories</h4><p class="alert-bom-placeholder" style="color:var(--dim);font-size:.82em">Select an alert in F8 above — will appear here</p></div>
+    </div>`;
+  }
+
+  let bomHTML = '';
+  const tierLabels = {premium:['PREMIUM',TIER_COLORS.premium,TIER_BG.premium], standard:['STANDARD',TIER_COLORS.standard,TIER_BG.standard], economic:['ECONOMIC',TIER_COLORS.economic,TIER_BG.economic]};
+  const centralLabel = ['CENTRALIZED','var(--orange)','rgba(245,158,11,.15)'];
+  for(let pi=0;pi<picks.length;pi++){
+    const sol = picks[pi];
+    // 3rd slot: if non-standalone, label as CENTRALIZED
+    if(pi===2 && !sol.products[0].standalone){
+      bomHTML += renderSolCard(sol, centralLabel[0], centralLabel[1], centralLabel[2]);
+    } else {
+      const t = tierLabels[sol.tier] || tierLabels.standard;
+      bomHTML += renderSolCard(sol, t[0], t[1], t[2]);
+    }
+  }
+  if(!bomHTML) bomHTML = '<p style="color:var(--dim)">No valid solutions found for the given inputs.</p>';
+
+  // Price comparison table (all 3 solutions)
+  let compareHTML = '';
+  const pricedPicks = picks.filter(s=>s.totalPrice!==null);
+  if(pricedPicks.length>=2){
+    const cheapest = Math.min(...pricedPicks.map(s=>s.totalPrice));
+    compareHTML = `<div style="margin:16px 0;padding:12px 16px;background:var(--card2);border-radius:8px;font-size:.85em">
+      <strong>Total solution cost comparison (${I.total_detectors} detectors):</strong>
+      <table style="margin-top:8px"><tr><th>Solution</th><th>Detectors</th><th>Controller</th><th>Total</th><th>vs cheapest</th></tr>
+      ${pricedPicks.map(s=>{
+        const t = tierLabels[s.tier]||tierLabels.standard;
+        const diff = s.totalPrice - cheapest;
+        return `<tr>
+          <td><span style="color:${t[1]};font-weight:700">${t[0]}</span> ${s.name}</td>
+          <td>${s.detPrice?.toLocaleString()||'—'} &euro;</td>
+          <td>${s.ctrlPrice?s.ctrlPrice.toLocaleString()+' &euro;':'—'}</td>
+          <td style="font-weight:700;color:${s.totalPrice===cheapest?'var(--green)':'var(--text)'}"><strong>${s.totalPrice.toLocaleString()} &euro;</strong></td>
+          <td>${diff===0?'<span style="color:var(--green)">Cheapest</span>':`<span style="color:var(--orange)">+${diff.toLocaleString()} &euro;</span>`}</td>
+        </tr>`;
+      }).join('')}
+      </table>
+    </div>`;
+  }
+
+  // Service tools
+  let serviceTools = [];
+  const hasDT300 = allProducts.some(p=>p.family==='G'||p.family==='MP');
+  if(hasDT300) serviceTools.push({name:'DT300 Diagnostic Tool',code:'60-130'});
+  if(allProducts.some(p=>p.family==='MIDI')) serviceTools.push({name:'Calibration Adapter v2.0',code:'62-9011'});
+  if(allProducts.some(p=>p.family==='X5')) serviceTools.push({name:'X5 Calibration Kit',code:'3500-0094'});
+  if(hasDT300 && allProducts.some(p=>p.tech==='SC')) serviceTools.push({name:'SM300-HFC (for DT300)',code:'60-134'});
+  if(hasDT300 && allProducts.some(p=>p.gas.includes('NH3'))) serviceTools.push({name:'SM300-NH3 (for DT300)',code:'60-136'});
+  if(hasDT300 && allProducts.some(p=>p.gas.includes('R290'))) serviceTools.push({name:'SM300-HC (for DT300)',code:'60-132'});
+
+  let serviceHTML = serviceTools.length?`<div class="bom-section" style="margin-top:16px"><h4>Recommended Service Tools</h4>
+    <table><tr><th>Tool</th><th>Code</th></tr>${serviceTools.map(t=>`<tr><td>${t.name}</td><td class="code">${t.code}</td></tr>`).join('')}</table></div>`:'';
+
+  // Spare sensors
+  let spares = [];
+  const techs = [...new Set(allProducts.map(p=>p.tech))];
+  if(techs.includes('IR')) spares.push({tech:'IR',life:'7-10 years',plan:'1 spare per 10 detectors'});
+  if(techs.includes('SC')) spares.push({tech:'SC',life:'~5 years',plan:'1 spare per 5 detectors'});
+  if(techs.includes('EC')) spares.push({tech:'EC',life:'2-3 years',plan:'1 spare per 2-3 detectors'});
+  if(techs.includes('IONIC')) spares.push({tech:'Ionic EC',life:'5 years',plan:'1 spare per 5 detectors'});
+
+  let spareHTML = spares.length?`<div class="bom-section"><h4>Spare Sensor Planning</h4>
+    <table><tr><th>Tech</th><th>Sensor Life</th><th>Stocking Plan</th></tr>${spares.map(s=>`<tr><td>${s.tech}</td><td>${s.life}</td><td>${s.plan}</td></tr>`).join('')}</table></div>`:'';
+
+  steps.push(makeCard('F12','BOM Output','#0054A6', `${picks.length} solution${picks.length>1?'s':''}`,'badge-pass',
+    `<p class="desc">3 solutions: <strong style="color:${TIER_COLORS.premium}">PREMIUM</strong> (best tech) — <strong style="color:${TIER_COLORS.standard}">STANDARD</strong> (balanced) — <strong style="color:var(--orange)">CENTRALIZED</strong> (with controller)</p>
+    ${compareHTML}${bomHTML}${serviceHTML}${spareHTML}`));
+
+  // ── RENDER ──
+  document.getElementById('results').innerHTML = steps.join('');
+
+  // Wire up the alert dropdown inside F8 to update all BOM alert sections
+  const alertSelect = document.getElementById('alert_accessory');
+  if(alertSelect){
+    updateAlertBOM(); // initial render
+    alertSelect.addEventListener('change', updateAlertBOM);
+  }
+}
+
+function updateAlertBOM(){
+  const sel = document.getElementById('alert_accessory');
+  if(!sel) return;
+  const choice = sel.value;
+  const cat = window._ALERT_CATALOG || {};
+  const alert = choice!=='none' ? cat[choice] : null;
+  const v = window._voltage;
+
+  document.querySelectorAll('.bom-alert-section').forEach(section=>{
+    const hasMPU = section.dataset.hasMpu === 'true';
+    const mpuCount = +section.dataset.mpuCount || 0;
+    const isStandalone = section.dataset.isStandalone === 'true';
+    const detCount = +section.dataset.detCount || 1;
+    // MPU: 1 alert per MPU. Standalone: 1 alert per detector. Non-standalone without MPU: by relay count.
+    const alertQty = hasMPU ? (mpuCount || 1) : isStandalone ? detCount : (+section.dataset.solRelays || 0);
+    if(!alert){
+      section.innerHTML = '<h4>Alert Accessories</h4><p style="color:var(--dim);font-size:.82em">None selected</p>';
+      return;
+    }
+    const isAtex = window._isAtex;
+    const sockPrice = v==='230V' ? 100 : 0;
+    const alertUnitPrice = alert.price || 0;
+    const alertTotal = alertQty * alertUnitPrice;
+    const sockTotal = v==='230V' ? alertQty * sockPrice : 0;
+    const grandTotal = alertTotal + sockTotal;
+    let html = `<h4>Alert Accessories</h4>
+      <table><tr><th>Qty</th><th>Item</th><th>Code</th><th>Type</th><th>Power</th><th>IP</th><th>Unit Price</th><th>Subtotal</th></tr>
+      <tr><td>${alertQty}x</td><td>${alert.name}</td><td class="code">${alert.code}</td><td>${alert.type||'—'}</td><td>${alert.power}</td><td>${alert.ip}</td><td>${alert.price?alert.price+' &euro;':'—'}</td><td>${alertTotal?alertTotal.toLocaleString()+' &euro;':'—'}</td></tr>
+      ${v==='230V'?`<tr><td>${alertQty}x</td><td>SOCK-H-R-230 (230V socket)</td><td class="code">40-420</td><td>230V adapter</td><td>230V AC</td><td>IP65</td><td>100 &euro;</td><td>${sockTotal.toLocaleString()} &euro;</td></tr>`:''}
+      </table>
+      ${grandTotal?`<p style="font-size:.8em;color:var(--dim);margin-top:4px">Alert total: <strong>${grandTotal.toLocaleString()} &euro;</strong>${alert.db?' | Sound: '+alert.db:''}${alert.color?' | Color: '+alert.color:''}</p>`:''}
+      ${isAtex?'<p style="color:var(--orange);font-size:.82em;margin-top:6px">&#9888; Alert accessories are <strong>NOT ATEX certified</strong> — must be installed OUTSIDE ATEX zone. <strong style="color:var(--red)">ATEX Zone 1 active — inform client.</strong></p>':''}`;
+    section.innerHTML = html;
+
+    // Recalculate total BOM for this solution card
+    const card = section.closest('.solution-card');
+    if(card){
+      const dp = +card.dataset.detPrice||0;
+      const cp = +card.dataset.ctrlPrice||0;
+      const pp = +card.dataset.powerPrice||0;
+      const newAlertTotal = alertTotal + sockTotal;
+      const newBomTotal = dp + cp + pp + newAlertTotal;
+      const totalEl = card.querySelector('.sol-total-amount');
+      if(totalEl) totalEl.textContent = newBomTotal.toLocaleString() + ' \u20AC';
+      const breakEl = card.querySelector('.sol-total-breakdown');
+      if(breakEl){
+        let parts = [];
+        if(dp) parts.push('Detectors: '+dp.toLocaleString()+' \u20AC');
+        if(cp) parts.push('Controller: '+cp.toLocaleString()+' \u20AC');
+        if(pp) parts.push('Power: '+pp.toLocaleString()+' \u20AC');
+        if(newAlertTotal) parts.push('Alert: '+alertQty+'x '+(alertUnitPrice||0)+' = '+alertTotal.toLocaleString()+' \u20AC');
+        if(sockTotal) parts.push('230V sockets: '+sockTotal.toLocaleString()+' \u20AC');
+        breakEl.textContent = parts.join(' | ');
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>

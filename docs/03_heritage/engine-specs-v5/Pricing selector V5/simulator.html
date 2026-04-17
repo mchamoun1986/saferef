@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAMON Pricing Engine Simulator V5 — Moteur 3</title>
+<style>
+:root {
+  --bg:#0f1117;--card:#1a1d28;--card2:#222633;--border:#2a2e3d;
+  --text:#e0e0e0;--dim:#888;--blue:#0054A6;--blue2:#3b82f6;
+  --green:#22c55e;--red:#ef4444;--orange:#f59e0b;--cyan:#06b6d4;--purple:#a855f7;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+a{color:var(--blue2);text-decoration:none}
+
+/* Header */
+.header{background:linear-gradient(135deg,#0054A6 0%,#1e3a5f 100%);padding:16px 28px;display:flex;align-items:center;gap:16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.header .logo{font-size:22px;font-weight:700;letter-spacing:-.5px}
+.header .logo span{color:#60a5fa}
+.header .pipe{color:rgba(255,255,255,.25);font-size:24px;font-weight:200}
+.header .subtitle{font-size:13px;color:rgba(255,255,255,.7);font-weight:400}
+.header .version{margin-left:auto;background:rgba(255,255,255,.12);padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;letter-spacing:.5px}
+
+/* Layout */
+.layout{display:flex;flex:1;overflow:hidden}
+.sidebar{width:370px;min-width:370px;background:var(--card);border-right:1px solid var(--border);overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.main{flex:1;overflow-y:auto;padding:28px}
+
+/* Sidebar elements */
+.sb-title{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--dim);margin-bottom:4px}
+.sb-group{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px}
+.sb-group label{display:block;font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.sb-group select,.sb-group input[type=text]{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:7px;font-size:13px;font-family:inherit;outline:none;transition:border .2s}
+.sb-group select:focus,.sb-group input:focus{border-color:var(--blue2)}
+.sb-group select option{background:var(--bg);color:var(--text)}
+
+/* Toggle switch */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0}
+.toggle-row span{font-size:13px;color:var(--text)}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:24px;transition:.3s}
+.toggle .slider:before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#555;border-radius:50%;transition:.3s}
+.toggle input:checked+.slider{background:var(--green)}
+.toggle input:checked+.slider:before{transform:translateX(20px);background:#fff}
+
+/* Run button */
+.btn-run{width:100%;padding:14px;border:none;border-radius:10px;background:linear-gradient(135deg,#0054A6,#3b82f6);color:#fff;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;cursor:pointer;transition:all .2s;margin-top:4px}
+.btn-run:hover{filter:brightness(1.15);transform:translateY(-1px);box-shadow:0 4px 20px rgba(59,130,246,.3)}
+.btn-run:active{transform:translateY(0)}
+
+/* Main area */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--dim);gap:12px}
+.empty-state .icon{font-size:56px;opacity:.3}
+.empty-state p{font-size:14px}
+
+/* Meta bar */
+.meta-bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.meta-pill{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12px;display:flex;align-items:center;gap:6px}
+.meta-pill .lbl{color:var(--dim)}
+.meta-pill .val{font-weight:600}
+
+/* Step card */
+.step-card{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.step-header{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none;transition:background .15s}
+.step-header:hover{background:var(--card2)}
+.step-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.step-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--dim)}
+.step-title{font-size:14px;font-weight:600;flex:1}
+.step-badge{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600}
+.step-chevron{color:var(--dim);transition:transform .2s;font-size:16px}
+.step-card.open .step-chevron{transform:rotate(180deg)}
+.step-body{display:none;padding:0 18px 16px;border-top:1px solid var(--border)}
+.step-card.open .step-body{display:block;padding-top:14px}
+
+/* Tables */
+.tbl-wrap{overflow-x:auto;margin:10px 0}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--card2);color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;text-align:left;font-size:11px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:hover{background:rgba(59,130,246,.04)}
+.num{text-align:right;font-variant-numeric:tabular-nums;font-family:'Cascadia Code','Fira Code',monospace,system-ui}
+.mono{font-family:'Cascadia Code','Fira Code',monospace,system-ui;font-size:11px}
+
+/* Badges */
+.badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.badge-green{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-red{background:rgba(239,68,68,.15);color:var(--red)}
+.badge-orange{background:rgba(245,158,11,.15);color:var(--orange)}
+.badge-blue{background:rgba(59,130,246,.15);color:var(--blue2)}
+.badge-purple{background:rgba(168,85,247,.15);color:var(--purple)}
+.badge-cyan{background:rgba(6,182,212,.15);color:var(--cyan)}
+
+/* Info blocks */
+.info-block{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:8px 0;font-size:12px}
+.info-block .label{color:var(--dim);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.formula{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:'Cascadia Code','Fira Code',monospace;font-size:11px;color:var(--cyan);margin:6px 0}
+
+/* Tier tabs */
+.tier-tabs{display:flex;gap:6px;margin:10px 0}
+.tier-tab{padding:6px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card2);color:var(--dim);transition:all .15s}
+.tier-tab.active{color:#fff;border-color:var(--blue2)}
+.tier-tab.eco.active{background:rgba(34,197,94,.15);border-color:var(--green);color:var(--green)}
+.tier-tab.std.active{background:rgba(59,130,246,.15);border-color:var(--blue2);color:var(--blue2)}
+.tier-tab.prm.active{background:rgba(168,85,247,.15);border-color:var(--purple);color:var(--purple)}
+
+/* Tier compare */
+.tier-compare{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}
+.tier-col{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border .2s}
+.tier-col.recommended{border:2px solid var(--blue2);box-shadow:0 0 20px rgba(59,130,246,.12)}
+.tier-col-header{padding:14px 16px;text-align:center;border-bottom:1px solid var(--border)}
+.tier-col-header h3{font-size:16px;margin-bottom:2px}
+.tier-col-header .rec-badge{display:inline-block;background:var(--blue2);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.tier-row{display:flex;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--border);font-size:12px}
+.tier-row .lbl{color:var(--dim)}
+.tier-row .val{font-weight:600;font-variant-numeric:tabular-nums}
+.tier-total{padding:14px 16px;text-align:center}
+.tier-total .ht{font-size:22px;font-weight:700}
+.tier-total .ttc{font-size:13px;color:var(--dim);margin-top:2px}
+.tier-total .savings{margin-top:6px;font-size:11px;font-weight:600}
+
+/* Progress bars */
+.bar-wrap{margin:6px 0}
+.bar-label{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px}
+.bar-track{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .5s ease}
+
+/* Section title */
+.section-title{font-size:18px;font-weight:700;margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.section-title:first-child{margin-top:0}
+
+/* Responsive */
+@media(max-width:900px){
+  .layout{flex-direction:column}
+  .sidebar{width:100%;min-width:0;max-height:none;border-right:none;border-bottom:1px solid var(--border)}
+  .tier-compare{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">SAMON <span>Pricing Engine</span></div>
+  <div class="pipe">|</div>
+  <div class="subtitle">Moteur 3 — Simulator V5</div>
+  <div class="version">V5.0</div>
+</div>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sb-title">Engine Inputs</div>
+
+    <div class="sb-group">
+      <label>Customer Group</label>
+      <select id="customerGroup">
+        <option value="EDC">Central Warehouse / EDC — 67/25/30/0/50</option>
+        <option value="OEM">OEM Manufacturer — 65/25/30/0/50</option>
+        <option value="1 Fö">Global Large Distributor (1 Fö) — 60/25/30/0/50</option>
+        <option value="2 Fö" selected>Distributor (2 Fö) — 56/25/30/0/50</option>
+        <option value="3 Fö">Small Distributor (3 Fö) — 50/25/25/0/30</option>
+        <option value="1 Contractor">Global Contractor (1 Contractor) — 47.5/25/25/0/30</option>
+        <option value="2 Contractor">Large Contractor (2 Contractor) — 45/25/25/0/30</option>
+        <option value="3 Contractor">Contractor (3 Contractor) — 40/25/25/0/12.5</option>
+        <option value="A Kund">Mid-size Contractor / A-customer — 30/10/20/0/12.5</option>
+        <option value="B Kund">Small Contractor / B-customer — 20/0/10/0/12.5</option>
+        <option value="NO">End Customer / Other — 0/0/0/0/0</option>
+      </select>
+    </div>
+
+    <div class="sb-group" style="display:none">
+      <label>Currency</label>
+      <select id="currency">
+        <option value="EUR" selected>EUR (Euro)</option>
+      </select>
+    </div>
+
+    <div class="sb-group" style="display:none">
+      <label>Country (VAT)</label>
+      <select id="country">
+        <option value="FR" selected>France — 20%</option>
+        <option value="SE">Sweden — 25%</option>
+        <option value="NO">Norway — 25%</option>
+        <option value="UK">United Kingdom — 20%</option>
+        <option value="DE">Germany — 19%</option>
+        <option value="BE">Belgium — 21%</option>
+      </select>
+    </div>
+
+    <div class="sb-group" style="display:none">
+      <div class="toggle-row">
+        <span>Include Installation</span>
+        <label class="toggle"><input type="checkbox" id="inclInstall"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row" style="margin-top:8px">
+        <span>Include Commissioning</span>
+        <label class="toggle"><input type="checkbox" id="inclCommission"><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div class="sb-group">
+      <label>Demo BOM Scenario</label>
+      <select id="scenario">
+        <option value="1">Scenario 1: Small Cold Room (2 zones)</option>
+        <option value="2">Scenario 2: Supermarket (4 zones)</option>
+        <option value="3">Scenario 3: Industrial NH3 Plant</option>
+      </select>
+    </div>
+
+    <button class="btn-run" id="btnRun">&#9654; Run Engine</button>
+
+    <div style="margin-top:auto;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--dim)">
+      Pricing Engine Simulator V5<br>
+      Price List 2026-R2 &middot; SAMON Detection AB
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main" id="mainArea">
+    <div class="empty-state" id="emptyState">
+      <div class="icon">&#128176;</div>
+      <p>Select a scenario and click <strong>Run Engine</strong> to simulate pricing</p>
+      <p style="font-size:12px">Moteur 3 receives BOMs from Moteur 2, applies discounts, and produces priced quotes</p>
+    </div>
+    <div id="results" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+// ─── Price Database ───
+const PRICE_DB = {
+  '31-210-32': {name:'MIDI IR CO2 10000ppm', group:'G', price:403, family:'MIDI'},
+  '31-220-12': {name:'MIDI SC HFC Grp1', group:'G', price:403, family:'MIDI'},
+  '31-220-17': {name:'MIDI SC HFC Grp2', group:'G', price:403, family:'MIDI'},
+  '31-250-22': {name:'MIDI EC NH3 100ppm', group:'G', price:518, family:'MIDI'},
+  '31-290-13': {name:'MIDI SC R290/HC', group:'G', price:403, family:'MIDI'},
+  '31-510-32': {name:'MIDI Remote CO2', group:'G', price:286, family:'MIDI'},
+  '31-520-12': {name:'MIDI Remote HFC Grp1', group:'G', price:286, family:'MIDI'},
+  '3500-0001': {name:'X5 Transmitter Base', group:'G', price:580, family:'X5'},
+  '3500-0002': {name:'X5 NH3 0-100ppm Module', group:'G', price:345, family:'X5'},
+  '3500-0003': {name:'X5 NH3 0-500ppm Module', group:'G', price:345, family:'X5'},
+  '3500-0005': {name:'X5 CO2 0-5000ppm Module', group:'G', price:420, family:'X5'},
+  '20-300': {name:'MPU4C Controller', group:'A', price:1598, family:'Controller'},
+  '20-310': {name:'MPU2C Controller', group:'A', price:1298, family:'Controller'},
+  '20-350': {name:'SPU24 1-ch Controller', group:'A', price:498, family:'Controller'},
+  '20-355': {name:'SPU230 1-ch Controller', group:'A', price:498, family:'Controller'},
+  '20-360': {name:'SPLS24 LED+Buzzer', group:'A', price:598, family:'Controller'},
+  '3510-0001': {name:'Controller 10', group:'G', price:1890, family:'Controller'},
+  '40-100': {name:'Beacon Amber', group:'A', price:189, family:'Alert'},
+  '40-110': {name:'Beacon Red', group:'A', price:189, family:'Alert'},
+  '40-200': {name:'Siren 105dB', group:'A', price:215, family:'Alert'},
+  '40-300': {name:'Horn+Siren Combo', group:'A', price:285, family:'Alert'},
+  '50-100': {name:'DT300 Service Tool', group:'A', price:895, family:'Service'},
+  '6100-0001': {name:'SEN-CO2 IR Sensor', group:'D', price:195, family:'Spare'},
+  '6100-0002': {name:'SEN-HFC SC Sensor', group:'D', price:165, family:'Spare'},
+  '6100-0003': {name:'SEN-NH3 EC Sensor', group:'D', price:245, family:'Spare'},
+  '6120-0001': {name:'Test Gas CO2 58L', group:'D', price:89, family:'TestGas'},
+  '6120-0002': {name:'Test Gas HFC 58L', group:'D', price:125, family:'TestGas'},
+  '6120-0003': {name:'Test Gas NH3 58L', group:'D', price:95, family:'TestGas'},
+  '4000-0001': {name:'UPS 500VA', group:'A', price:395, family:'Accessory'},
+  '7000-0001': {name:'Wall Mount Kit', group:'D', price:35, family:'Accessory'},
+  '7000-0002': {name:'Duct Adapter Kit', group:'D', price:65, family:'Accessory'},
+  'SA200': {name:'SA200 Service Tool', group:'F', price:0, family:'Service'},
+  'SPC-001': {name:'Sensor Protection Cap', group:'F', price:0, family:'Accessory'},
+};
+
+// ─── Discount Matrix ───
+const DISCOUNT_MATRIX = {
+  'EDC':          {A:67, C:25, D:30, F:0, G:50},
+  'OEM':          {A:65, C:25, D:30, F:0, G:50},
+  '1 Fö':         {A:60, C:25, D:30, F:0, G:50},
+  '2 Fö':         {A:56, C:25, D:30, F:0, G:50},
+  '3 Fö':         {A:50, C:25, D:25, F:0, G:30},
+  '1 Contractor': {A:47.5, C:25, D:25, F:0, G:30},
+  '2 Contractor': {A:45, C:25, D:25, F:0, G:30},
+  '3 Contractor': {A:40, C:25, D:25, F:0, G:12.5},
+  'A Kund':       {A:30, C:10, D:20, F:0, G:12.5},
+  'B Kund':       {A:20, C:0, D:10, F:0, G:12.5},
+  'NO':           {A:0, C:0, D:0, F:0, G:0}
+};
+
+const EXCHANGE_RATES = {EUR:1, SEK:11.49, NOK:11.72, GBP:0.86};
+const VAT_RATES = {FR:20, SE:25, NO:25, UK:20, DE:19, BE:21};
+const COUNTRY_NAMES = {FR:'France',SE:'Sweden',NO:'Norway',UK:'United Kingdom',DE:'Germany',BE:'Belgium'};
+const CURRENCY_SYMBOLS = {EUR:'\u20AC',SEK:'kr',NOK:'kr',GBP:'\u00A3'};
+
+// ─── Scenarios ───
+const SCENARIOS = {
+  '1': {
+    name: 'Small Cold Room',
+    zones: 2,
+    tiers: {
+      Economique: [
+        {code:'31-210-32',qty:2},{code:'20-350',qty:1},{code:'40-100',qty:1},{code:'7000-0001',qty:1}
+      ],
+      Standard: [
+        {code:'31-210-32',qty:2},{code:'20-360',qty:1},{code:'40-110',qty:1},{code:'50-100',qty:1},{code:'7000-0001',qty:1},{code:'6100-0001',qty:1}
+      ],
+      Premium: [
+        {code:'31-210-32',qty:2},{code:'20-310',qty:1},{code:'40-110',qty:1},{code:'40-300',qty:1},{code:'50-100',qty:1},{code:'4000-0001',qty:1},{code:'6100-0001',qty:2},{code:'6120-0001',qty:1}
+      ]
+    }
+  },
+  '2': {
+    name: 'Supermarket',
+    zones: 4,
+    tiers: {
+      Economique: [
+        {code:'31-220-12',qty:4},{code:'31-210-32',qty:2},{code:'20-300',qty:1},{code:'40-100',qty:2},{code:'7000-0001',qty:2}
+      ],
+      Standard: [
+        {code:'31-220-12',qty:4},{code:'31-210-32',qty:2},{code:'20-300',qty:1},{code:'40-110',qty:2},{code:'40-200',qty:1},{code:'50-100',qty:1},{code:'7000-0001',qty:2},{code:'6100-0002',qty:2},{code:'6100-0001',qty:1}
+      ],
+      Premium: [
+        {code:'31-220-12',qty:4},{code:'31-210-32',qty:2},{code:'31-520-12',qty:2},{code:'20-300',qty:1},{code:'40-110',qty:2},{code:'40-300',qty:2},{code:'50-100',qty:1},{code:'4000-0001',qty:1},{code:'7000-0001',qty:4},{code:'6100-0002',qty:2},{code:'6100-0001',qty:2},{code:'6120-0002',qty:1},{code:'6120-0001',qty:1}
+      ]
+    }
+  },
+  '3': {
+    name: 'Industrial NH3 Plant',
+    zones: 3,
+    tiers: {
+      Economique: [
+        {code:'3500-0001',qty:3},{code:'3500-0002',qty:3},{code:'3510-0001',qty:1},{code:'40-200',qty:1}
+      ],
+      Standard: [
+        {code:'3500-0001',qty:3},{code:'3500-0002',qty:3},{code:'3510-0001',qty:1},{code:'40-200',qty:2},{code:'50-100',qty:1},{code:'6100-0003',qty:2},{code:'6120-0003',qty:1}
+      ],
+      Premium: [
+        {code:'3500-0001',qty:3},{code:'3500-0003',qty:3},{code:'3510-0001',qty:1},{code:'40-300',qty:2},{code:'50-100',qty:1},{code:'4000-0001',qty:1},{code:'6100-0003',qty:3},{code:'6120-0003',qty:2}
+      ]
+    }
+  }
+};
+
+// ─── Category mapping ───
+function getCategory(family) {
+  const map = {
+    MIDI:'Detectors', X5:'Detectors', Controller:'Controllers', Alert:'Alerts',
+    Accessory:'Accessories', Service:'Service Tools', Spare:'Spare Sensors', TestGas:'Test Gas'
+  };
+  return map[family] || 'Other';
+}
+
+// ─── Helpers ───
+const R = (n) => Math.round(n * 100) / 100;
+const fmt = (n, cur) => {
+  const s = CURRENCY_SYMBOLS[cur];
+  const v = R(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return cur === 'GBP' ? s + v : v + ' ' + s;
+};
+const pct = (n) => n.toFixed(1) + '%';
+
+function genQuoteRef() {
+  return 'DET-2026-' + String(Math.floor(1000 + Math.random()*9000));
+}
+
+function todayStr() {
+  const d = new Date(); return d.toISOString().slice(0,10);
+}
+function plus30() {
+  const d = new Date(); d.setDate(d.getDate()+30); return d.toISOString().slice(0,10);
+}
+
+// ─── ENGINE ───
+function runEngine() {
+  const t0 = performance.now();
+  const custGroup = document.getElementById('customerGroup').value;
+  const currency = document.getElementById('currency').value;
+  const country = document.getElementById('country').value;
+  const inclInstall = document.getElementById('inclInstall').checked;
+  const inclCommission = document.getElementById('inclCommission').checked;
+  const scenarioId = document.getElementById('scenario').value;
+  const scenario = SCENARIOS[scenarioId];
+  const discounts = DISCOUNT_MATRIX[custGroup];
+  const vatRate = VAT_RATES[country];
+  const xRate = EXCHANGE_RATES[currency];
+  const quoteRef = genQuoteRef();
+
+  const tierNames = ['Economique','Standard','Premium'];
+  const tierResults = {};
+
+  // Process each tier
+  tierNames.forEach(tier => {
+    const bom = scenario.tiers[tier];
+    const lines = bom.map((item, i) => {
+      const db = PRICE_DB[item.code];
+      const found = !!db;
+      return {
+        line: i+1,
+        code: item.code,
+        name: found ? db.name : 'UNKNOWN',
+        group: found ? db.group : '?',
+        family: found ? db.family : '?',
+        qty: item.qty,
+        listPrice: found ? db.price : 0,
+        lineTotal: found ? R(db.price * item.qty) : 0,
+        found,
+        discountPct: found ? (discounts[db.group] || 0) : 0,
+      };
+    });
+
+    // Calculate net
+    lines.forEach(l => {
+      l.discountAmt = R(l.lineTotal * l.discountPct / 100);
+      l.netTotal = R(l.lineTotal - l.discountAmt);
+    });
+
+    // Categories
+    const categories = {};
+    lines.forEach(l => {
+      const cat = getCategory(l.family);
+      if (!categories[cat]) categories[cat] = {list:0, net:0, items:[]};
+      categories[cat].list += l.lineTotal;
+      categories[cat].net += l.netTotal;
+      categories[cat].items.push(l);
+    });
+    // Round
+    Object.keys(categories).forEach(k => {
+      categories[k].list = R(categories[k].list);
+      categories[k].net = R(categories[k].net);
+    });
+
+    const equipCats = ['Detectors','Controllers','Alerts','Accessories'];
+    const serviceCats = ['Service Tools','Spare Sensors','Test Gas'];
+    let subtotalEquip = 0, subtotalService = 0;
+    equipCats.forEach(c => { if(categories[c]) subtotalEquip += categories[c].net; });
+    serviceCats.forEach(c => { if(categories[c]) subtotalService += categories[c].net; });
+    subtotalEquip = R(subtotalEquip);
+    subtotalService = R(subtotalService);
+
+    // Count detectors and controllers for installation
+    let nDetectors = 0, nControllers = 0;
+    lines.forEach(l => {
+      if (['MIDI','X5'].includes(l.family)) nDetectors += l.qty;
+      if (l.family === 'Controller') nControllers += l.qty;
+    });
+
+    let installCost = 0, commissionCost = 0;
+    if (inclInstall) installCost = R(nDetectors * 150 + nControllers * 250);
+    if (inclCommission) commissionCost = 350;
+
+    const totalBefore = R(lines.reduce((s,l) => s + l.lineTotal, 0));
+    const totalDiscount = R(lines.reduce((s,l) => s + l.discountAmt, 0));
+    const totalAfter = R(totalBefore - totalDiscount);
+    const totalServices = R(installCost + commissionCost);
+    const totalExclVat = R(totalAfter + totalServices);
+    const vatAmt = R(totalExclVat * vatRate / 100);
+    const totalInclVat = R(totalExclVat + vatAmt);
+
+    // Currency conversion
+    const conv = (v) => R(v * xRate);
+
+    tierResults[tier] = {
+      lines, categories, subtotalEquip, subtotalService,
+      nDetectors, nControllers, installCost, commissionCost,
+      totalBefore, totalDiscount, totalAfter, totalServices,
+      totalExclVat, vatAmt, totalInclVat, vatRate,
+      // Converted
+      totalExclVatConv: conv(totalExclVat),
+      totalInclVatConv: conv(totalInclVat),
+      totalBeforeConv: conv(totalBefore),
+      totalDiscountConv: conv(totalDiscount),
+      totalAfterConv: conv(totalAfter),
+      totalServicesConv: conv(totalServices),
+      vatAmtConv: conv(vatAmt),
+    };
+  });
+
+  const execTime = Math.floor(80 + Math.random()*170);
+
+  // ─── RENDER ───
+  let html = '';
+
+  // Meta bar
+  html += `<div class="meta-bar">
+    <div class="meta-pill"><span class="lbl">Quote</span><span class="val">${quoteRef}</span></div>
+    <div class="meta-pill"><span class="lbl">Date</span><span class="val">${todayStr()}</span></div>
+    <div class="meta-pill"><span class="lbl">Valid Until</span><span class="val">${plus30()}</span></div>
+    <div class="meta-pill"><span class="lbl">Scenario</span><span class="val">${scenario.name} (${scenario.zones} zones)</span></div>
+    <div class="meta-pill"><span class="lbl">Customer</span><span class="val">${custGroup}</span></div>
+    <div class="meta-pill"><span class="lbl">Currency</span><span class="val">${currency}</span></div>
+    <div class="meta-pill"><span class="lbl">Exec</span><span class="val">${execTime}ms</span></div>
+  </div>`;
+
+  // ── Step P1 ──
+  html += stepCard('P1','BOM Price Lookup','#6366f1', true, () => {
+    let s = `<div class="info-block"><div class="label">Price List</div>2026-R2 &mdash; All prices in EUR (list)</div>`;
+    tierNames.forEach(tier => {
+      const tr = tierResults[tier];
+      s += `<h4 style="margin:14px 0 6px;font-size:13px;color:var(--dim)">${tier} Tier</h4>`;
+      s += `<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Product Code</th><th>Name</th><th>Grp</th><th class="num">Qty</th><th class="num">List EUR</th><th>Status</th></tr></thead><tbody>`;
+      tr.lines.forEach(l => {
+        const st = l.found ? '<span class="badge badge-green">OK</span>' : '<span class="badge badge-red">NOT FOUND</span>';
+        s += `<tr><td>${l.line}</td><td class="mono">${l.code}</td><td>${l.name}</td><td><span class="badge badge-blue">${l.group}</span></td><td class="num">${l.qty}</td><td class="num">${fmt(l.listPrice,'EUR')}</td><td>${st}</td></tr>`;
+      });
+      s += `</tbody></table></div>`;
+    });
+    return s;
+  });
+
+  // ── Step P2 ──
+  html += stepCard('P2','Discount Resolution','#8b5cf6', true, () => {
+    let s = `<div class="info-block"><div class="label">Customer Group</div><strong>${custGroup}</strong></div>`;
+    s += `<div class="info-block"><div class="label">Discount Matrix Lookup</div>`;
+    s += `<table style="margin-top:6px"><thead><tr><th>Product Group</th><th class="num">Discount %</th></tr></thead><tbody>`;
+    ['A','C','D','F','G'].forEach(g => {
+      s += `<tr><td>Group ${g}</td><td class="num">${pct(discounts[g])}</td></tr>`;
+    });
+    s += `</tbody></table></div>`;
+
+    tierNames.forEach(tier => {
+      const tr = tierResults[tier];
+      s += `<h4 style="margin:14px 0 6px;font-size:13px;color:var(--dim)">${tier} — Line Discount Mapping</h4>`;
+      s += `<div class="tbl-wrap"><table><thead><tr><th>Product Code</th><th>Name</th><th>Grp</th><th>Matrix Cell</th><th class="num">Discount %</th></tr></thead><tbody>`;
+      tr.lines.forEach(l => {
+        s += `<tr><td class="mono">${l.code}</td><td>${l.name}</td><td><span class="badge badge-blue">${l.group}</span></td><td class="mono">${custGroup}[${l.group}]</td><td class="num">${pct(l.discountPct)}</td></tr>`;
+      });
+      s += `</tbody></table></div>`;
+    });
+    return s;
+  });
+
+  // ── Step P3 ──
+  html += stepCard('P3','Line Item Calculation','#ec4899', true, () => {
+    let s = `<div class="formula">net_total = (list_price &times; qty) &minus; ((list_price &times; qty) &times; discount% / 100)</div>`;
+    // tier tabs
+    s += `<div class="tier-tabs" id="p3tabs">`;
+    tierNames.forEach((t,i) => {
+      const cls = i===0?'eco':i===1?'std':'prm';
+      s += `<div class="tier-tab ${cls} ${i===0?'active':''}" data-tier="${t}" onclick="switchP3Tab(this)">${t}</div>`;
+    });
+    s += `</div>`;
+    tierNames.forEach((tier,i) => {
+      const tr = tierResults[tier];
+      s += `<div class="p3-panel" data-tier="${tier}" style="${i>0?'display:none':''}">`;
+      s += `<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Product</th><th class="num">Qty</th><th class="num">List EUR</th><th class="num">Line Total</th><th class="num">Disc %</th><th class="num">Disc Amt</th><th class="num">Net Total</th></tr></thead><tbody>`;
+      tr.lines.forEach(l => {
+        s += `<tr><td>${l.line}</td><td class="mono">${l.code}</td><td class="num">${l.qty}</td><td class="num">${fmt(l.listPrice,'EUR')}</td><td class="num">${fmt(l.lineTotal,'EUR')}</td><td class="num">${pct(l.discountPct)}</td><td class="num">${fmt(l.discountAmt,'EUR')}</td><td class="num" style="font-weight:600">${fmt(l.netTotal,'EUR')}</td></tr>`;
+      });
+      const tot = tr;
+      s += `</tbody><tfoot><tr style="font-weight:700;border-top:2px solid var(--border)"><td colspan="4"></td><td class="num">${fmt(tot.totalBefore,'EUR')}</td><td></td><td class="num">${fmt(tot.totalDiscount,'EUR')}</td><td class="num">${fmt(tot.totalAfter,'EUR')}</td></tr></tfoot></table></div>`;
+      s += `</div>`;
+    });
+    return s;
+  });
+
+  // ── Step P4 ──
+  html += stepCard('P4','Category Subtotals','#f59e0b', false, () => {
+    const catOrder = ['Detectors','Controllers','Alerts','Accessories','Service Tools','Spare Sensors','Test Gas'];
+    let s = '';
+    tierNames.forEach(tier => {
+      const tr = tierResults[tier];
+      s += `<h4 style="margin:14px 0 6px;font-size:13px;color:var(--dim)">${tier}</h4>`;
+      s += `<div class="tbl-wrap"><table><thead><tr><th>Category</th><th class="num">List Total</th><th class="num">Net Total</th><th class="num">Items</th></tr></thead><tbody>`;
+      catOrder.forEach(cat => {
+        if (tr.categories[cat]) {
+          const c = tr.categories[cat];
+          s += `<tr><td>${cat}</td><td class="num">${fmt(c.list,'EUR')}</td><td class="num">${fmt(c.net,'EUR')}</td><td class="num">${c.items.reduce((s,i)=>s+i.qty,0)}</td></tr>`;
+        }
+      });
+      s += `</tbody></table></div>`;
+      s += `<div style="display:flex;gap:12px;margin:6px 0">
+        <div class="info-block" style="flex:1"><div class="label">Equipment Subtotal</div><strong>${fmt(tr.subtotalEquip,'EUR')}</strong></div>
+        <div class="info-block" style="flex:1"><div class="label">Services Subtotal</div><strong>${fmt(tr.subtotalService,'EUR')}</strong></div>
+      </div>`;
+    });
+    return s;
+  });
+
+  // ── Step P5 ──
+  html += stepCard('P5','Optional Services','#22c55e', false, () => {
+    let s = '';
+    if (!inclInstall && !inclCommission) {
+      s += `<div class="info-block">No optional services selected.</div>`;
+      return s;
+    }
+    tierNames.forEach(tier => {
+      const tr = tierResults[tier];
+      s += `<h4 style="margin:14px 0 6px;font-size:13px;color:var(--dim)">${tier}</h4>`;
+      if (inclInstall) {
+        s += `<div class="formula">installation = (${tr.nDetectors} detectors &times; 150 &euro;) + (${tr.nControllers} controllers &times; 250 &euro;) = ${fmt(tr.installCost,'EUR')}</div>`;
+      }
+      if (inclCommission) {
+        s += `<div class="formula">commissioning = 350 &euro; / system = ${fmt(tr.commissionCost,'EUR')}</div>`;
+      }
+      s += `<div class="info-block"><div class="label">Total Optional Services</div><strong>${fmt(R(tr.installCost + tr.commissionCost),'EUR')}</strong></div>`;
+    });
+    return s;
+  });
+
+  // ── Step P6 ──
+  html += stepCard('P6','Currency Conversion','#06b6d4', false, () => {
+    if (currency === 'EUR') {
+      return `<div class="info-block">Currency is EUR — no conversion needed. All amounts remain in EUR.</div>`;
+    }
+    let s = `<div class="info-block"><div class="label">Exchange Rate</div>1 EUR = ${xRate} ${currency}</div>`;
+    s += `<div class="tbl-wrap"><table><thead><tr><th>Tier</th><th class="num">Total HT (EUR)</th><th class="num">Total HT (${currency})</th></tr></thead><tbody>`;
+    tierNames.forEach(tier => {
+      const tr = tierResults[tier];
+      s += `<tr><td>${tier}</td><td class="num">${fmt(tr.totalExclVat,'EUR')}</td><td class="num">${fmt(tr.totalExclVatConv,currency)}</td></tr>`;
+    });
+    s += `</tbody></table></div>`;
+    return s;
+  });
+
+  // ── Step P7 ──
+  const dispCur = currency;
+  const usConv = currency !== 'EUR';
+  html += stepCard('P7','Final Totals','#a855f7', true, () => {
+    let s = '';
+    tierNames.forEach(tier => {
+      const tr = tierResults[tier];
+      const v = usConv ? 'Conv' : '';
+      const tb = usConv ? tr.totalBeforeConv : tr.totalBefore;
+      const td = usConv ? tr.totalDiscountConv : tr.totalDiscount;
+      const ta = usConv ? tr.totalAfterConv : tr.totalAfter;
+      const ts = usConv ? tr.totalServicesConv : tr.totalServices;
+      const te = usConv ? tr.totalExclVatConv : tr.totalExclVat;
+      const tv = usConv ? tr.vatAmtConv : tr.vatAmt;
+      const ti = usConv ? tr.totalInclVatConv : tr.totalInclVat;
+
+      s += `<h4 style="margin:14px 0 6px;font-size:13px;color:var(--dim)">${tier} ${tier==='Standard'?'<span class="badge badge-blue">RECOMMENDED</span>':''}</h4>`;
+      s += `<div class="tbl-wrap"><table><tbody>`;
+      s += `<tr><td style="color:var(--dim)">Total Before Discount</td><td class="num">${fmt(tb,dispCur)}</td></tr>`;
+      s += `<tr><td style="color:var(--dim)">Total Discount</td><td class="num" style="color:var(--green)">-${fmt(td,dispCur)}</td></tr>`;
+      s += `<tr style="font-weight:600"><td>Total After Discount</td><td class="num">${fmt(ta,dispCur)}</td></tr>`;
+      s += `<tr><td style="color:var(--dim)">Optional Services</td><td class="num">${fmt(ts,dispCur)}</td></tr>`;
+      s += `<tr style="font-weight:700;font-size:14px;border-top:2px solid var(--blue2)"><td>Total HT</td><td class="num" style="color:var(--blue2)">${fmt(te,dispCur)}</td></tr>`;
+      s += `</tbody></table></div>`;
+    });
+
+    // Relative bars
+    const maxVal = Math.max(...tierNames.map(t => usConv ? tierResults[t].totalExclVatConv : tierResults[t].totalExclVat));
+    s += `<h4 style="margin:18px 0 8px;font-size:13px;color:var(--dim)">Relative Cost</h4>`;
+    const barColors = {Economique:'var(--green)',Standard:'var(--blue2)',Premium:'var(--purple)'};
+    tierNames.forEach(tier => {
+      const val = usConv ? tierResults[tier].totalExclVatConv : tierResults[tier].totalExclVat;
+      const w = maxVal > 0 ? (val/maxVal*100) : 0;
+      s += `<div class="bar-wrap"><div class="bar-label"><span>${tier}</span><span>${fmt(val,dispCur)}</span></div><div class="bar-track"><div class="bar-fill" style="width:${w.toFixed(1)}%;background:${barColors[tier]}"></div></div></div>`;
+    });
+    return s;
+  });
+
+  // ── Tier Comparison ──
+  html += `<div class="section-title">Tier Comparison</div>`;
+  html += `<div class="tier-compare">`;
+  const premHT = usConv ? tierResults.Premium.totalExclVatConv : tierResults.Premium.totalExclVat;
+  tierNames.forEach(tier => {
+    const tr = tierResults[tier];
+    const isRec = tier === 'Standard';
+    const ht = usConv ? tr.totalExclVatConv : tr.totalExclVat;
+    const savings = premHT > 0 ? R((1 - ht/premHT) * 100) : 0;
+
+    // Count items by type
+    let detCount = 0, ctrlCount = 0, alertCount = 0, accCount = 0, svcCount = 0;
+    tr.lines.forEach(l => {
+      const cat = getCategory(l.family);
+      if (cat==='Detectors') detCount += l.qty;
+      else if (cat==='Controllers') ctrlCount += l.qty;
+      else if (cat==='Alerts') alertCount += l.qty;
+      else if (cat==='Accessories') accCount += l.qty;
+      else svcCount += l.qty;
+    });
+    const techScore = Math.min(100, Math.round(30 + detCount*5 + ctrlCount*10 + alertCount*5 + accCount*3 + svcCount*4));
+
+    html += `<div class="tier-col ${isRec?'recommended':''}">
+      <div class="tier-col-header" style="background:${tier==='Economique'?'rgba(34,197,94,.06)':tier==='Standard'?'rgba(59,130,246,.06)':'rgba(168,85,247,.06)'}">
+        <h3>${tier}</h3>
+        ${isRec ? '<div class="rec-badge">Recommended</div>' : ''}
+      </div>
+      <div class="tier-row"><span class="lbl">Detectors</span><span class="val">${detCount}</span></div>
+      <div class="tier-row"><span class="lbl">Controllers</span><span class="val">${ctrlCount}</span></div>
+      <div class="tier-row"><span class="lbl">Alerts</span><span class="val">${alertCount}</span></div>
+      <div class="tier-row"><span class="lbl">Accessories</span><span class="val">${accCount}</span></div>
+      <div class="tier-row"><span class="lbl">Services</span><span class="val">${svcCount}</span></div>
+      <div class="tier-row"><span class="lbl">Technical Score</span><span class="val">${techScore}/100</span></div>
+      <div class="tier-total">
+        <div class="ht" style="color:${tier==='Economique'?'var(--green)':tier==='Standard'?'var(--blue2)':'var(--purple)'}">${fmt(ht,dispCur)} HT</div>
+        ${tier!=='Premium' ? `<div class="savings" style="color:var(--green)">${savings.toFixed(1)}% savings vs Premium</div>` : '<div class="savings" style="color:var(--dim)">Reference tier</div>'}
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Show results
+  document.getElementById('emptyState').style.display = 'none';
+  const resultsEl = document.getElementById('results');
+  resultsEl.style.display = 'block';
+  resultsEl.innerHTML = html;
+}
+
+// ─── Step card builder ───
+function stepCard(id, title, color, openByDefault, contentFn) {
+  const content = contentFn();
+  return `<div class="step-card ${openByDefault?'open':''}" id="step-${id}">
+    <div class="step-header" onclick="this.parentElement.classList.toggle('open')">
+      <div class="step-dot" style="background:${color}"></div>
+      <span class="step-label">${id}</span>
+      <span class="step-title">${title}</span>
+      <span class="step-badge" style="background:${color}22;color:${color}">DONE</span>
+      <span class="step-chevron">&#9660;</span>
+    </div>
+    <div class="step-body">${content}</div>
+  </div>`;
+}
+
+// ─── P3 tab switching ───
+function switchP3Tab(el) {
+  const tier = el.dataset.tier;
+  const parent = el.closest('.step-body');
+  parent.querySelectorAll('.tier-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  parent.querySelectorAll('.p3-panel').forEach(p => {
+    p.style.display = p.dataset.tier === tier ? '' : 'none';
+  });
+}
+
+// ─── Init ───
+document.getElementById('btnRun').addEventListener('click', runEngine);
+</script>
+</body>
+</html>

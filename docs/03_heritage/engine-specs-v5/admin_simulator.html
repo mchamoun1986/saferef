@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAMON DetectBuilder — Admin Simulator V5</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--card:#1a1d28;--card2:#222633;--border:#2a2e3d;--text:#e0e0e0;--dim:#888;--blue:#0054A6;--blue2:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f59e0b;--cyan:#06b6d4;--purple:#a855f7;--m1:#6366f1;--m2:#f59e0b;--m3:#22c55e}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+.top-bar{display:flex;align-items:center;gap:16px;padding:10px 20px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.top-bar h1{font-size:1.1em;color:var(--blue2);white-space:nowrap}
+.pipeline-status{display:flex;align-items:center;gap:6px;font-size:.8em;margin-left:12px}
+.pipe-step{padding:3px 10px;border-radius:12px;font-weight:700;font-size:.75em;border:1px solid var(--border);color:var(--dim)}
+.pipe-step.done{border-color:var(--green);color:var(--green);background:rgba(34,197,94,.1)}
+.pipe-step.active{border-color:var(--blue2);color:var(--blue2);background:rgba(59,130,246,.15);animation:pulse 1s infinite}
+.pipe-step.error{border-color:var(--red);color:var(--red);background:rgba(239,68,68,.1)}
+.pipe-arrow{color:var(--dim);font-size:.7em}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.top-controls{display:flex;align-items:center;gap:10px;margin-left:auto;font-size:.8em}
+.top-controls select,.top-controls button{padding:4px 10px;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.85em;cursor:pointer}
+.top-controls button:hover{border-color:var(--blue2)}
+.top-controls button.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.exec-time{color:var(--cyan);font-weight:700;font-size:.85em;min-width:80px;text-align:right}
+.layout{display:flex;min-height:calc(100vh - 48px)}
+.sidebar{width:340px;min-width:340px;background:var(--card);border-right:1px solid var(--border);padding:16px;overflow-y:auto;height:calc(100vh - 48px);position:sticky;top:48px}
+.main{flex:1;display:flex;flex-direction:column;min-height:calc(100vh - 48px)}
+.tab-bar{display:flex;border-bottom:1px solid var(--border);background:var(--card);position:sticky;top:48px;z-index:50}
+.tab{padding:10px 20px;font-size:.85em;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--dim);transition:.2s;display:flex;align-items:center;gap:6px}
+.tab:hover{color:var(--text);background:var(--card2)}
+.tab.active{color:var(--blue2);border-bottom-color:var(--blue2)}
+.tab .dot{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+.tab.active .dot{background:var(--blue2)}
+.tab-content{flex:1;padding:20px;overflow-y:auto}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.section-title{font-size:.7em;font-weight:700;color:var(--blue2);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.form-group{margin-bottom:10px}
+.form-group label{display:block;font-size:.72em;font-weight:600;color:var(--cyan);margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+select,input[type=number],input[type=text]{width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:.82em}
+select:focus,input:focus{outline:none;border-color:var(--blue2)}
+.radio-group{display:flex;gap:4px;flex-wrap:wrap}
+.radio-group label{font-size:.78em;display:flex;align-items:center;gap:3px;cursor:pointer;padding:4px 8px;border:1px solid var(--border);border-radius:5px}
+.radio-group input:checked+span{color:var(--blue2);font-weight:600}
+.radio-group label:has(input:checked){border-color:var(--blue2);background:rgba(0,84,166,.1)}
+.toggle{display:flex;align-items:center;gap:8px}
+.toggle-switch{width:38px;height:20px;background:var(--border);border-radius:10px;cursor:pointer;position:relative;transition:.3s}
+.toggle-switch.active{background:var(--red)}
+.toggle-switch::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.3s}
+.toggle-switch.active::after{left:20px}
+.toggle span{font-size:.78em}
+.num-input{display:flex;align-items:center;gap:4px}
+.num-input button{width:28px;height:28px;border:1px solid var(--border);background:var(--card2);color:var(--text);border-radius:5px;cursor:pointer;font-size:1em}
+.num-input button:hover{background:var(--blue);border-color:var(--blue)}
+.num-input input{width:50px;text-align:center}
+.run-btn{width:100%;padding:10px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:7px;font-size:.95em;font-weight:700;cursor:pointer;margin-top:12px;transition:.2s;text-transform:uppercase;letter-spacing:1px}
+.run-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,84,166,.4)}
+.gas-section{margin-bottom:4px}
+.gas-group-header{display:flex;align-items:center;gap:5px;padding:4px 6px;background:var(--card2);border-radius:5px;cursor:pointer;user-select:none;font-size:.76em;font-weight:600;border:1px solid var(--border)}
+.gas-group-header:hover{border-color:var(--blue2)}
+.gas-group-header input{accent-color:var(--blue2)}
+.gas-group-header .chevron{margin-left:auto;font-size:.65em;color:var(--dim);transition:.2s}
+.gas-group-header.open .chevron{transform:rotate(90deg)}
+.gas-refs{display:none;padding:2px 0 2px 18px;max-height:120px;overflow-y:auto}
+.gas-group-header.open+.gas-refs{display:block}
+.gas-refs label{font-size:.72em;display:flex;align-items:center;gap:4px;cursor:pointer;padding:1px 4px;border-radius:3px;color:var(--dim)}
+.gas-refs label:hover{background:var(--card2);color:var(--text)}
+.gas-refs input{accent-color:var(--cyan);width:12px;height:12px}
+.gas-other{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-top:3px}
+.gas-other label{font-size:.76em;display:flex;align-items:center;gap:4px;cursor:pointer;padding:3px 5px;border-radius:4px}
+.gas-other label:hover{background:var(--card2)}
+.gas-other input{accent-color:var(--blue2)}
+.step-card{background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden}
+.step-header{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;user-select:none}
+.step-header:hover{background:var(--card2)}
+.step-id{font-size:.65em;font-weight:700;padding:2px 7px;border-radius:4px;color:#fff;min-width:26px;text-align:center}
+.step-title{flex:1;font-weight:600;font-size:.85em}
+.badge{display:inline-block;font-size:.7em;padding:2px 7px;border-radius:10px;font-weight:600}
+.badge-pass{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-error{background:rgba(239,68,68,.15);color:var(--red)}
+.badge-warn{background:rgba(245,158,11,.15);color:var(--orange)}
+.badge-info{background:rgba(6,182,212,.15);color:var(--cyan)}
+.badge-m1{background:rgba(99,102,241,.15);color:var(--m1)}
+.badge-m2{background:rgba(245,158,11,.15);color:var(--m2)}
+.badge-m3{background:rgba(34,197,94,.15);color:var(--m3)}
+.step-chevron{color:var(--dim);transition:.2s;font-size:.7em}
+.step-card.open .step-chevron{transform:rotate(90deg)}
+.step-body{padding:0 14px 12px;display:none;font-size:.82em}
+.step-card.open .step-body{display:block}
+table{width:100%;border-collapse:collapse;margin:6px 0;font-size:.84em}
+th{background:var(--card2);padding:5px 8px;text-align:left;font-size:.72em;text-transform:uppercase;color:var(--dim);letter-spacing:.4px}
+td{padding:5px 8px;border-top:1px solid var(--border)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.eliminated{color:var(--red);text-decoration:line-through;opacity:.6}
+.kept{color:var(--green)}
+.code{font-family:'Cascadia Code',Consolas,monospace;font-size:.84em;background:var(--bg);padding:1px 4px;border-radius:3px}
+.desc{color:var(--dim);font-size:.82em;margin:4px 0}
+.empty-state{text-align:center;padding:50px 20px;color:var(--dim)}
+.empty-state .icon{font-size:2.5em;margin-bottom:12px;opacity:.3}
+.validation-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.val-item{display:flex;align-items:center;gap:5px;padding:5px 7px;background:var(--bg);border-radius:5px;font-size:.78em}
+.tier-compare{display:grid;grid-template-columns:200px 1fr 1fr 1fr;gap:0;margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:.82em}
+.tier-compare .tc-head{background:var(--card2);padding:8px 10px;font-weight:700;font-size:.75em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--border)}
+.tier-compare .tc-cell{padding:6px 10px;border-bottom:1px solid var(--border);border-left:1px solid var(--border)}
+.tier-compare .tc-label{padding:6px 10px;border-bottom:1px solid var(--border);font-weight:600;color:var(--dim);font-size:.82em}
+.tier-compare .tc-rec{background:rgba(59,130,246,.08)}
+.tier-compare .tc-total{font-weight:800;font-size:1.05em;color:var(--green)}
+.solution-card{background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:12px;margin:8px 0}
+.tier-label{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.72em;font-weight:700}
+.tier-eco{background:rgba(34,197,94,.2);color:var(--green)}
+.tier-std{background:rgba(59,130,246,.2);color:var(--blue2)}
+.tier-prem{background:rgba(168,85,247,.2);color:var(--purple)}
+.m1-output{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:10px 0}
+.m1-out-card{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px}
+.m1-out-card .val{font-size:1.3em;font-weight:800;color:var(--blue2)}
+.m1-out-card .lbl{font-size:.7em;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+.trace-panel{border-top:2px solid var(--border);background:var(--card)}
+.trace-header{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;user-select:none}
+.trace-header:hover{background:var(--card2)}
+.trace-header h3{font-size:.9em;color:var(--cyan)}
+.trace-body{max-height:400px;overflow-y:auto;padding:0 20px 16px;display:none}
+.trace-panel.open .trace-body{display:block}
+.trace-summary{display:flex;gap:16px;padding:8px 12px;background:var(--bg);border-radius:6px;margin-bottom:10px;font-size:.78em;flex-wrap:wrap}
+.trace-summary .ts-item{display:flex;align-items:center;gap:4px}
+.trace-step{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-bottom:1px solid var(--border);font-size:.78em}
+.trace-step:hover{background:var(--card2)}
+.trace-step .ts-id{font-weight:700;min-width:50px;font-family:monospace;font-size:.85em}
+.trace-step .ts-engine{padding:1px 6px;border-radius:3px;font-weight:700;font-size:.7em;min-width:24px;text-align:center}
+.trace-step .ts-fn{color:var(--cyan);min-width:100px;font-family:monospace;font-size:.85em}
+.trace-step .ts-rule{color:var(--dim);min-width:120px}
+.trace-step .ts-decision{min-width:50px}
+.trace-step .ts-expl{flex:1;color:var(--text)}
+.trace-step .ts-dur{color:var(--dim);min-width:50px;text-align:right;font-family:monospace}
+.trace-filter{display:flex;gap:6px;margin-bottom:8px}
+.trace-filter button{padding:3px 10px;border:1px solid var(--border);background:var(--card2);color:var(--text);border-radius:4px;font-size:.75em;cursor:pointer}
+.trace-filter button.active{border-color:var(--cyan);color:var(--cyan);background:rgba(6,182,212,.1)}
+.outcome-badge{padding:4px 12px;border-radius:6px;font-weight:700;font-size:.8em}
+.outcome-success{background:rgba(34,197,94,.2);color:var(--green)}
+.outcome-warnings{background:rgba(245,158,11,.2);color:var(--orange)}
+.outcome-failed{background:rgba(239,68,68,.3);color:var(--red)}
+@media(max-width:1000px){.layout{flex-direction:column}.sidebar{width:100%;min-width:auto;height:auto;position:relative}.validation-grid{grid-template-columns:1fr}.tier-compare{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+<h1>SAMON DetectBuilder — Admin Simulator V5</h1>
+<div class="pipeline-status">
+<span class="pipe-step" id="ps-m1">M1</span><span class="pipe-arrow">&#9654;</span>
+<span class="pipe-step" id="ps-m2">M2</span><span class="pipe-arrow">&#9654;</span>
+<span class="pipe-step" id="ps-m3">M3</span>
+</div>
+<div class="top-controls">
+<select id="traceLevel"><option value="full">Trace: Full</option><option value="summary">Summary</option><option value="errors_only">Errors Only</option></select>
+<button id="langToggle" onclick="toggleLang()">EN</button>
+</div>
+<span class="exec-time" id="execTime">—</span>
+</div>
+
+<div class="layout">
+<div class="sidebar">
+<div class="section-title">Project</div>
+<div class="form-group"><label>Project Name</label><input type="text" id="project_name" value="New Project"></div>
+<div class="form-group"><label>Country</label><select id="project_country"><option value="FR">France</option><option value="DE">Germany</option><option value="SE">Sweden</option><option value="GB">United Kingdom</option><option value="NO">Norway</option><option value="BE">Belgium</option><option value="AE">UAE</option><option value="SA">Saudi Arabia</option><option value="LB">Lebanon</option><option value="QA">Qatar</option><option value="US">USA</option><option value="CA">Canada</option></select></div>
+<div class="form-group"><label>Currency</label><select id="currency"><option value="EUR">EUR</option><option value="SEK">SEK</option><option value="NOK">NOK</option><option value="GBP">GBP</option></select></div>
+
+<div class="section-title">Refrigerant / Gas</div>
+<div id="gasSelector">
+<div class="gas-section"><div class="gas-group-header" onclick="toggleGG(this)"><input type="checkbox" name="gas" value="CO2" onclick="event.stopPropagation();syncGrp(this)"> CO2 — IR (R744)<span class="chevron">&#9654;</span></div><div class="gas-refs"><label><input type="checkbox" data-group="CO2" value="R744" onclick="syncRef(this)"> R744</label></div></div>
+<div class="gas-section"><div class="gas-group-header" onclick="toggleGG(this)"><input type="checkbox" name="gas" value="HFC1" onclick="event.stopPropagation();syncGrp(this)"> HFC/HFO Grp1 — SC<span class="chevron">&#9654;</span></div><div class="gas-refs"><label><input type="checkbox" data-group="HFC1" value="R32" onclick="syncRef(this)"> R32</label><label><input type="checkbox" data-group="HFC1" value="R407A" onclick="syncRef(this)"> R407A</label><label><input type="checkbox" data-group="HFC1" value="R407C" onclick="syncRef(this)"> R407C</label><label><input type="checkbox" data-group="HFC1" value="R407F" onclick="syncRef(this)"> R407F</label><label><input type="checkbox" data-group="HFC1" value="R410A" onclick="syncRef(this)"> R410A</label><label><input type="checkbox" data-group="HFC1" value="R448A" onclick="syncRef(this)"> R448A</label><label><input type="checkbox" data-group="HFC1" value="R449A" onclick="syncRef(this)"> R449A</label><label><input type="checkbox" data-group="HFC1" value="R452A" onclick="syncRef(this)"> R452A</label><label><input type="checkbox" data-group="HFC1" value="R452B" onclick="syncRef(this)"> R452B</label><label><input type="checkbox" data-group="HFC1" value="R454A" onclick="syncRef(this)"> R454A</label><label><input type="checkbox" data-group="HFC1" value="R454B" onclick="syncRef(this)"> R454B</label><label><input type="checkbox" data-group="HFC1" value="R454C" onclick="syncRef(this)"> R454C</label><label><input type="checkbox" data-group="HFC1" value="R455A" onclick="syncRef(this)"> R455A</label><label><input type="checkbox" data-group="HFC1" value="R507A" onclick="syncRef(this)"> R507A</label></div></div>
+<div class="gas-section"><div class="gas-group-header" onclick="toggleGG(this)"><input type="checkbox" name="gas" value="HFC2" onclick="event.stopPropagation();syncGrp(this)"> HFC/HFO Grp2 — SC<span class="chevron">&#9654;</span></div><div class="gas-refs"><label><input type="checkbox" data-group="HFC2" value="R134a" onclick="syncRef(this)"> R134a</label><label><input type="checkbox" data-group="HFC2" value="R404A" onclick="syncRef(this)"> R404A</label><label><input type="checkbox" data-group="HFC2" value="R450A" onclick="syncRef(this)"> R450A</label><label><input type="checkbox" data-group="HFC2" value="R513A" onclick="syncRef(this)"> R513A</label><label><input type="checkbox" data-group="HFC2" value="R1234yf" onclick="syncRef(this)"> R1234yf</label><label><input type="checkbox" data-group="HFC2" value="R1234ze" onclick="syncRef(this)"> R1234ze</label><label><input type="checkbox" data-group="HFC2" value="R1233zd(E)" onclick="syncRef(this)"> R1233zd(E)</label></div></div>
+<div class="gas-section"><div class="gas-group-header" onclick="toggleGG(this)"><input type="checkbox" name="gas" value="NH3" onclick="event.stopPropagation();syncGrp(this)"> NH3 — EC (R717)<span class="chevron">&#9654;</span></div><div class="gas-refs"><label><input type="checkbox" data-group="NH3" value="R717" onclick="syncRef(this)"> R717</label></div></div>
+<div class="gas-section"><div class="gas-group-header" onclick="toggleGG(this)"><input type="checkbox" name="gas" value="R290" onclick="event.stopPropagation();syncGrp(this)"> HC Grp3 — SC<span class="chevron">&#9654;</span></div><div class="gas-refs"><label><input type="checkbox" data-group="R290" value="R290" onclick="syncRef(this)"> R290</label><label><input type="checkbox" data-group="R290" value="R600a" onclick="syncRef(this)"> R600a</label><label><input type="checkbox" data-group="R290" value="R50" onclick="syncRef(this)"> R50</label><label><input type="checkbox" data-group="R290" value="R1150" onclick="syncRef(this)"> R1150</label><label><input type="checkbox" data-group="R290" value="R1270" onclick="syncRef(this)"> R1270</label></div></div>
+<div class="gas-other"><label><input type="checkbox" name="gas" value="CO"> CO</label><label><input type="checkbox" name="gas" value="NO2"> NO2</label><label><input type="checkbox" name="gas" value="O2"> O2</label><label><input type="checkbox" name="gas" value="NH3W"> NH3 water</label></div>
+</div>
+
+<div class="section-title">M1 — Installation Context</div>
+<div class="form-group"><label>Refrigerant Charge (kg)</label><input type="number" id="refrigerant_charge" value="45" min="0" step="0.1"></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+<div class="form-group"><label>Room Area (m²)</label><input type="number" id="room_area" value="60" min="1"></div>
+<div class="form-group"><label>Room Height (m)</label><input type="number" id="room_height" value="3" min="1" step="0.1"></div>
+</div>
+<div class="form-group"><label>Access Category</label><div class="radio-group"><label><input type="radio" name="access" value="a"><span>a</span></label><label><input type="radio" name="access" value="b" checked><span>b</span></label><label><input type="radio" name="access" value="c"><span>c</span></label></div></div>
+<div class="form-group"><label>Location Class</label><div class="radio-group"><label><input type="radio" name="location" value="I"><span>I</span></label><label><input type="radio" name="location" value="II" checked><span>II</span></label><label><input type="radio" name="location" value="III"><span>III</span></label><label><input type="radio" name="location" value="IV"><span>IV</span></label></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+<div class="form-group"><label>Below Ground</label><div class="toggle"><div class="toggle-switch" id="below_ground" onclick="this.classList.toggle('active')"></div><span>No</span></div></div>
+<div class="form-group"><label>Machinery Room</label><div class="toggle"><div class="toggle-switch active" id="is_machinery_room" onclick="this.classList.toggle('active')"></div><span>Yes</span></div></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+<div class="form-group"><label>Occupied Space</label><div class="toggle"><div class="toggle-switch active" id="is_occupied" onclick="this.classList.toggle('active')"></div><span>Yes</span></div></div>
+<div class="form-group"><label>C3 Applicable</label><div class="toggle"><div class="toggle-switch" id="c3_applicable" onclick="this.classList.toggle('active')"></div><span>No</span></div></div>
+</div>
+<div class="form-group"><label>Mech. Ventilation</label><div class="toggle"><div class="toggle-switch active" id="mech_vent" onclick="this.classList.toggle('active')"></div><span>Yes</span></div></div>
+
+<div class="section-title">M2 — Product Selection</div>
+<div class="form-group"><label>Application Type</label><select id="zone_type"><option value="">— Select —</option><option value="supermarket">Supermarket</option><option value="cold_room">Cold room</option><option value="machinery_room" selected>Machinery room</option><option value="cold_storage">Cold storage</option><option value="hotel">Hotel (VRF)</option><option value="office">Office (VRF)</option><option value="parking">Parking</option><option value="ice_rink">Ice rink</option><option value="heat_pump">Heat pump</option><option value="pressure_relief">Pressure relief</option><option value="duct">Vent duct</option><option value="atex_zone">ATEX Zone 1</option><option value="water_brine">Water/brine</option></select></div>
+<div class="form-group"><label>ATEX Zone</label><div class="toggle"><span>None</span><div class="toggle-switch" id="zone_atex" onclick="this.classList.toggle('active')"></div><span>Zone 1</span></div></div>
+<div class="form-group"><label>Detectors</label><div class="num-input"><button onclick="adj('total_detectors',-1)">-</button><input type="number" id="total_detectors" value="2" min="1" max="108"><button onclick="adj('total_detectors',1)">+</button></div></div>
+<div class="form-group"><label>Output Required</label><select id="output_required"><option value="any">Any</option><option value="relay">Relay only</option><option value="420mA">4-20mA</option><option value="010V">0-10V</option><option value="210V">2-10V</option><option value="modbus">Modbus</option><option value="relay_analog_modbus">Relay+Analog+Modbus</option><option value="relay_dual_analog">Relay+Dual 4-20mA</option></select></div>
+<div class="form-group"><label>Site Power</label><div class="radio-group"><label><input type="radio" name="power" value="24V" checked><span>24V</span></label><label><input type="radio" name="power" value="230V"><span>230V</span></label><label><input type="radio" name="power" value="both"><span>Both</span></label></div></div>
+<div class="form-group"><label>Mounting</label><select id="mounting"><option value="wall">Wall</option><option value="flush">Flush</option><option value="surface">Surface</option><option value="duct">Duct</option><option value="pipe">Pipe</option><option value="pole">Pole</option><option value="din">DIN</option></select></div>
+
+<div class="section-title">M3 — Pricing</div>
+<div class="form-group"><label>Customer Group</label><select id="customer_group"><option value="NO">End Customer (0%)</option><option value="BKund">B Kund (20%)</option><option value="AKund">A Kund (30%)</option><option value="3Contractor">3 Contractor (40%)</option><option value="2Contractor" selected>2 Contractor (45%)</option><option value="1Contractor">1 Contractor (47.5%)</option><option value="3Fo">3 Fo (50%)</option><option value="2Fo">2 Fo (56%)</option><option value="1Fo">1 Fo (60%)</option><option value="OEM">OEM (65%)</option><option value="EDC">EDC (67%)</option></select></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+<div class="form-group"><label>Installation</label><div class="toggle"><div class="toggle-switch" id="incl_install" onclick="this.classList.toggle('active')"></div><span>No</span></div></div>
+<div class="form-group"><label>Commissioning</label><div class="toggle"><div class="toggle-switch" id="incl_commiss" onclick="this.classList.toggle('active')"></div><span>No</span></div></div>
+</div>
+
+<button class="run-btn" onclick="runPipeline()">&#9654; RUN FULL PIPELINE</button>
+</div>
+
+<div class="main">
+<div class="tab-bar">
+<div class="tab active" onclick="switchTab('m1')"><span class="dot" style="background:var(--m1)"></span> M1 Detection</div>
+<div class="tab" onclick="switchTab('m2')"><span class="dot" style="background:var(--m2)"></span> M2 Selection</div>
+<div class="tab" onclick="switchTab('m3')"><span class="dot" style="background:var(--m3)"></span> M3 Pricing</div>
+</div>
+<div class="tab-content">
+<div class="tab-panel active" id="panel-m1"><div class="empty-state"><div class="icon">&#128269;</div><p>Run the pipeline to see M1 Detection results.</p></div></div>
+<div class="tab-panel" id="panel-m2"><div class="empty-state"><div class="icon">&#9881;</div><p>Run the pipeline to see M2 Selection results.</p></div></div>
+<div class="tab-panel" id="panel-m3"><div class="empty-state"><div class="icon">&#128176;</div><p>Run the pipeline to see M3 Pricing results.</p></div></div>
+</div>
+<div class="trace-panel" id="tracePanel">
+<div class="trace-header" onclick="document.getElementById('tracePanel').classList.toggle('open')">
+<h3>&#9776; Execution Trace</h3>
+<span class="badge badge-info" id="traceCount">0 steps</span>
+<span class="outcome-badge outcome-success" id="traceOutcome" style="margin-left:auto;display:none">—</span>
+</div>
+<div class="trace-body" id="traceBody"></div>
+</div>
+</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════════
+const REFRIGERANT_DB={
+R744:{name:'Carbon dioxide',designation:'R-744',safety_class:'A1',toxicity:'A',flammability:'1',atel_odl:0.072,lfl:null,practical_limit:0.013,vapour_density:1.80,molecular_mass:44.01,gwp:1},
+R32:{name:'Difluoromethane',designation:'R-32',safety_class:'A2L',toxicity:'A',flammability:'2L',atel_odl:0.30,lfl:0.307,practical_limit:0.061,vapour_density:2.13,molecular_mass:52.02,gwp:675},
+R410A:{name:'R-410A',designation:'R-410A',safety_class:'A1',toxicity:'A',flammability:'1',atel_odl:0.21,lfl:null,practical_limit:0.044,vapour_density:2.97,molecular_mass:72.6,gwp:2088},
+R407C:{name:'R-407C',designation:'R-407C',safety_class:'A1',toxicity:'A',flammability:'1',atel_odl:0.31,lfl:null,practical_limit:0.063,vapour_density:3.54,molecular_mass:86.2,gwp:1774},
+R407A:{name:'R-407A',designation:'R-407A',safety_class:'A1',toxicity:'A',flammability:'1',atel_odl:0.33,lfl:null,practical_limit:0.067,vapour_density:3.54,molecular_mass:90.1,gwp:2107},
+R407F:{name:'R-407F',designation:'R-407F',safety_class:'A1',toxicity:'A',flammability:'1',atel_odl:0.32,lfl:null,practical_limit:0.065,vapour_density:3.56,molecular_mass:82.1,gwp:1825},
+R134a:{name:'R-134a',designation:'R-134a',safety_class:'A1',toxicity:'A',flammability:'1',atel_odl:0.21,lfl:null,practical_limit:0.025,vapour_density:4.17,molecular_mass:102.03,gwp:1430},
+R404A:{name:'R-404A',designation:'R-404A',safety_class:'A1',toxicity:'A',flammability:'1',atel_odl:0.48,lfl:null,practical_limit:0.052,vapour_density:3.99,molecular_mass:97.6,gwp:3922},
+R717:{name:'Ammonia',designation:'R-717',safety_class:'B2L',toxicity:'B',flammability:'2L',atel_odl:0.00035,lfl:0.116,practical_limit:0.00035,vapour_density:0.70,molecular_mass:17.03,gwp:0},
+R290:{name:'Propane',designation:'R-290',safety_class:'A3',toxicity:'A',flammability:'3',atel_odl:null,lfl:0.038,practical_limit:0.008,vapour_density:1.80,molecular_mass:44.10,gwp:3},
+R1234yf:{name:'R-1234yf',designation:'R-1234yf',safety_class:'A2L',toxicity:'A',flammability:'2L',atel_odl:0.47,lfl:0.289,practical_limit:0.058,vapour_density:4.64,molecular_mass:114.04,gwp:4},
+R1234ze:{name:'R-1234ze(E)',designation:'R-1234ze(E)',safety_class:'A2L',toxicity:'A',flammability:'2L',atel_odl:0.28,lfl:0.303,practical_limit:0.061,vapour_density:4.64,molecular_mass:114.04,gwp:7},
+R449A:{name:'R-449A',designation:'R-449A',safety_class:'A1',toxicity:'A',flammability:'1',atel_odl:0.30,lfl:null,practical_limit:0.062,vapour_density:4.2,molecular_mass:87.2,gwp:1397},
+R448A:{name:'R-448A',designation:'R-448A',safety_class:'A1',toxicity:'A',flammability:'1',atel_odl:0.29,lfl:null,practical_limit:0.060,vapour_density:4.1,molecular_mass:86.3,gwp:1387},
+R450A:{name:'R-450A',designation:'R-450A',safety_class:'A1',toxicity:'A',flammability:'1',atel_odl:0.27,lfl:null,practical_limit:0.055,vapour_density:4.3,molecular_mass:108.7,gwp:605},
+R513A:{name:'R-513A',designation:'R-513A',safety_class:'A1',toxicity:'A',flammability:'1',atel_odl:0.25,lfl:null,practical_limit:0.050,vapour_density:4.6,molecular_mass:108.4,gwp:631},
+R452A:{name:'R-452A',designation:'R-452A',safety_class:'A1',toxicity:'A',flammability:'1',atel_odl:0.29,lfl:null,practical_limit:0.058,vapour_density:3.8,molecular_mass:103.5,gwp:2140},
+R452B:{name:'R-452B',designation:'R-452B',safety_class:'A2L',toxicity:'A',flammability:'2L',atel_odl:0.28,lfl:0.289,practical_limit:0.061,vapour_density:2.5,molecular_mass:62.0,gwp:698},
+R454A:{name:'R-454A',designation:'R-454A',safety_class:'A2L',toxicity:'A',flammability:'2L',atel_odl:0.21,lfl:0.293,practical_limit:0.059,vapour_density:2.68,molecular_mass:63.1,gwp:239},
+R454B:{name:'R-454B',designation:'R-454B',safety_class:'A2L',toxicity:'A',flammability:'2L',atel_odl:0.28,lfl:0.298,practical_limit:0.059,vapour_density:2.34,molecular_mass:57.0,gwp:466},
+R454C:{name:'R-454C',designation:'R-454C',safety_class:'A2L',toxicity:'A',flammability:'2L',atel_odl:0.28,lfl:0.288,practical_limit:0.058,vapour_density:2.4,molecular_mass:59.0,gwp:148},
+R455A:{name:'R-455A',designation:'R-455A',safety_class:'A2L',toxicity:'A',flammability:'2L',atel_odl:0.26,lfl:0.270,practical_limit:0.055,vapour_density:2.8,molecular_mass:87.5,gwp:148},
+R507A:{name:'R-507A',designation:'R-507A',safety_class:'A1',toxicity:'A',flammability:'1',atel_odl:0.49,lfl:null,practical_limit:0.053,vapour_density:4.08,molecular_mass:98.9,gwp:3985},
+R600a:{name:'Isobutane',designation:'R-600a',safety_class:'A3',toxicity:'A',flammability:'3',atel_odl:null,lfl:0.043,practical_limit:0.011,vapour_density:2.38,molecular_mass:58.12,gwp:3},
+R50:{name:'Methane',designation:'R-50',safety_class:'A3',toxicity:'A',flammability:'3',atel_odl:null,lfl:0.033,practical_limit:0.008,vapour_density:0.66,molecular_mass:16.04,gwp:25},
+R1150:{name:'Ethylene',designation:'R-1150',safety_class:'A3',toxicity:'A',flammability:'3',atel_odl:null,lfl:0.036,practical_limit:0.009,vapour_density:1.15,molecular_mass:28.05,gwp:4},
+R1270:{name:'Propylene',designation:'R-1270',safety_class:'A3',toxicity:'A',flammability:'3',atel_odl:null,lfl:0.046,practical_limit:0.008,vapour_density:1.72,molecular_mass:42.08,gwp:2},
+'R1233zd(E)':{name:'R-1233zd(E)',designation:'R-1233zd(E)',safety_class:'A1',toxicity:'A',flammability:'1',atel_odl:0.21,lfl:null,practical_limit:0.021,vapour_density:5.36,molecular_mass:130.5,gwp:4.5}
+};
+
+const PRICE_DB={'31-210-32':{name:'MIDI IR CO2',group:'G',price:403},'31-510-32':{name:'MIDI Remote CO2',group:'G',price:450},'31-220-12':{name:'MIDI SC HFC1',group:'G',price:403},'31-520-12':{name:'MIDI Remote HFC1',group:'G',price:450},'31-220-17':{name:'MIDI SC HFC2',group:'G',price:403},'31-520-17':{name:'MIDI Remote HFC2',group:'G',price:450},'31-250-22':{name:'MIDI NH3 100',group:'G',price:475},'31-250-23':{name:'MIDI NH3 1000',group:'G',price:475},'31-250-24':{name:'MIDI NH3 5000',group:'G',price:475},'31-550-22':{name:'MIDI Remote NH3',group:'G',price:520},'31-290-13':{name:'MIDI R290',group:'G',price:403},'31-590-13':{name:'MIDI Remote R290',group:'G',price:450},'3500-0001':{name:'X5 Base',group:'G',price:680},'3500-0002':{name:'X5 NH3 100',group:'G',price:295},'3500-0003':{name:'X5 NH3 500',group:'G',price:295},'3500-0095':{name:'X5 NH3 1000',group:'G',price:295},'3500-0004':{name:'X5 NH3 5000',group:'G',price:295},'3500-0005':{name:'X5 CO2 5000',group:'G',price:310},'3500-0006':{name:'X5 CO2 5%',group:'G',price:310},'3500-0096':{name:'X5 CO',group:'G',price:260},'3500-0097':{name:'X5 O2',group:'G',price:260},'3500-0098':{name:'X5 NO2',group:'G',price:260},'37-4100-24':{name:'GSH CO2 24V',group:'A',price:498},'37-4100-230':{name:'GSH CO2 230V',group:'A',price:498},'37-4100-24-MB':{name:'GSMB CO2',group:'A',price:548},'37-4100-24-LS':{name:'GSLS CO2',group:'A',price:548},'37-4200-24':{name:'GS HFC(A)',group:'A',price:390},'37-4200-24B':{name:'GS HFC(B)',group:'A',price:390},'37-4900-24':{name:'GS HC',group:'A',price:420},'37-9200-24':{name:'GSR Remote',group:'A',price:440},'37-8200-24':{name:'GK Duct',group:'A',price:460},'37-6200-24':{name:'GR Vent',group:'A',price:420},'37-7200-24':{name:'GXR ATEX HFC',group:'A',price:620},'37-7900-24':{name:'GXR ATEX HC',group:'A',price:620},'32-220':{name:'RM-HFC',group:'A',price:195},'32-320':{name:'RMV-HFC',group:'A',price:210},'TR-IR-10k':{name:'TR-IR CO2',group:'A',price:380},'TR-SC-A':{name:'TR-SC HFC(A)',group:'A',price:320},'TR-SC-B':{name:'TR-SC HFC(B)',group:'A',price:320},'TR-SC-HC':{name:'TR-SC HC',group:'A',price:340},'TR-SCK':{name:'TR-SCK Duct',group:'A',price:350},'TR-SCR':{name:'TR-SCR Vent',group:'A',price:340},'TR-EC-NH3-100':{name:'TR-EC NH3 100',group:'A',price:365},'TR-EC-NH3-1k':{name:'TR-EC NH3 1k',group:'A',price:365},'TR-EC-CO':{name:'TR-EC CO',group:'A',price:340},'TR-EC-NO2':{name:'TR-EC NO2',group:'A',price:340},'MPS-10k':{name:'MPS CO2',group:'A',price:280},'MP-DS-HFC':{name:'MP-DS HFC',group:'A',price:250},'MP-DS-HC':{name:'MP-DS HC',group:'A',price:260},'MP-DK':{name:'MP-DK Duct',group:'A',price:270},'MP-DR2':{name:'MP-DR2 Vent',group:'A',price:260},'GEX-HFC':{name:'GEX ATEX HFC',group:'A',price:540},'GEX-HC':{name:'GEX ATEX HC',group:'A',price:540},'35-210':{name:'Aquis 500',group:'A',price:1250},'20-310':{name:'MPU2C',group:'A',price:1180},'20-300':{name:'MPU4C',group:'A',price:1598},'20-305':{name:'MPU6C',group:'A',price:1890},'81-100':{name:'LAN63-PKT',group:'A',price:890},'81-200':{name:'LAN63/64-PKT',group:'A',price:1420},'81-110':{name:'LAN63 Master',group:'A',price:680},'81-120':{name:'LAN64 Slave',group:'A',price:580},'40-440':{name:'FL-RL-R Combined',group:'A',price:148},'40-420':{name:'SOCK-H-R-230',group:'A',price:65},'4000-0002':{name:'Power Adapter',group:'G',price:95}};
+
+const DISCOUNT_MATRIX={EDC:{A:67,C:25,D:30,F:0,G:50},OEM:{A:65,C:25,D:30,F:0,G:50},'1Fo':{A:60,C:25,D:30,F:0,G:50},'2Fo':{A:56,C:25,D:30,F:0,G:50},'3Fo':{A:50,C:25,D:25,F:0,G:30},'1Contractor':{A:47.5,C:25,D:25,F:0,G:30},'2Contractor':{A:45,C:25,D:25,F:0,G:30},'3Contractor':{A:40,C:25,D:25,F:0,G:12.5},AKund:{A:30,C:10,D:20,F:0,G:12.5},BKund:{A:20,C:0,D:10,F:0,G:12.5},NO:{A:0,C:0,D:0,F:0,G:0}};
+const VAT_RATES={FR:20,SE:25,NO:25,GB:20,DE:19,BE:21,AE:5,SA:15,LB:11,QA:0,US:0,CA:13};
+const EXCHANGE_RATES={EUR:1,SEK:11.42,NOK:11.58,GBP:0.86};
+const SERVICE_RATES={install_det:150,install_ctrl:250,commission:450};
+
+const PRODUCTS={
+MIDI_CO2:{id:'MIDI_CO2',name:'MIDI IR CO2 10k',code:'31-210-32',family:'MIDI',gas:['CO2'],tech:'IR',range:'0-10000ppm',ip:'IP67',tempMin:-40,tempMax:50,power:.8,voltage:'15-24V',relay:2,analog:'selectable',modbus:true,standalone:true,atex:false,mount:['wall','pipe'],remote:false},
+MIDI_CO2_R:{id:'MIDI_CO2_R',name:'MIDI Remote CO2',code:'31-510-32',family:'MIDI',gas:['CO2'],tech:'IR',range:'0-10000ppm',ip:'IP67',tempMin:-40,tempMax:50,power:.8,voltage:'15-24V',relay:2,analog:'selectable',modbus:true,standalone:true,atex:false,mount:['wall'],remote:true},
+MIDI_HFC1:{id:'MIDI_HFC1',name:'MIDI SC HFC Grp1',code:'31-220-12',family:'MIDI',gas:['HFC1'],tech:'SC',range:'0-1000ppm',ip:'IP67',tempMin:-40,tempMax:50,power:.8,voltage:'15-24V',relay:2,analog:'selectable',modbus:true,standalone:true,atex:false,mount:['wall'],remote:false},
+MIDI_HFC2:{id:'MIDI_HFC2',name:'MIDI SC HFC Grp2',code:'31-220-17',family:'MIDI',gas:['HFC2'],tech:'SC',range:'0-1000ppm',ip:'IP67',tempMin:-40,tempMax:50,power:.8,voltage:'15-24V',relay:2,analog:'selectable',modbus:true,standalone:true,atex:false,mount:['wall'],remote:false},
+MIDI_NH3_100:{id:'MIDI_NH3_100',name:'MIDI EC NH3 100ppm',code:'31-250-22',family:'MIDI',gas:['NH3'],tech:'EC',range:'0-100ppm',ip:'IP67',tempMin:-40,tempMax:50,power:.8,voltage:'15-24V',relay:2,analog:'selectable',modbus:true,standalone:true,atex:false,mount:['wall'],remote:false},
+MIDI_NH3_1000:{id:'MIDI_NH3_1000',name:'MIDI EC NH3 1000ppm',code:'31-250-23',family:'MIDI',gas:['NH3'],tech:'EC',range:'0-1000ppm',ip:'IP67',tempMin:-40,tempMax:50,power:.8,voltage:'15-24V',relay:2,analog:'selectable',modbus:true,standalone:true,atex:false,mount:['wall'],remote:false},
+MIDI_R290:{id:'MIDI_R290',name:'MIDI SC R290/HC',code:'31-290-13',family:'MIDI',gas:['R290'],tech:'SC',range:'0-4000ppm',ip:'IP67',tempMin:-40,tempMax:50,power:.8,voltage:'15-24V',relay:2,analog:'selectable',modbus:true,standalone:true,atex:false,mount:['wall'],remote:false},
+RM_HFC:{id:'RM_HFC',name:'RM-HFC',code:'32-220',family:'RM',gas:['HFC1','HFC2'],tech:'SC',range:'0-5000ppm',ip:'IP21',tempMin:0,tempMax:40,power:.5,voltage:'12-24V',relay:1,analog:null,modbus:false,standalone:true,atex:false,mount:['wall'],remote:false},
+RMV_HFC:{id:'RMV_HFC',name:'RMV-HFC',code:'32-320',family:'RM',gas:['HFC1','HFC2'],tech:'SC',range:'0-5000ppm',ip:'IP21',tempMin:0,tempMax:40,power:.5,voltage:'12-24V',relay:1,analog:null,modbus:false,standalone:true,atex:false,mount:['flush','surface'],remote:false},
+X5_NH3_100:{id:'X5_NH3_100',name:'X5 NH3 0-100ppm',code:'3500-0001+0002',family:'X5',gas:['NH3'],tech:'IONIC',range:'0-100ppm',ip:'IP66',tempMin:-20,tempMax:55,power:2,voltage:'18-32V',relay:3,analog:'4-20mA x2',modbus:false,standalone:true,atex:true,mount:['wall','pole'],remote:false},
+X5_NH3_500:{id:'X5_NH3_500',name:'X5 NH3 0-500ppm',code:'3500-0001+0003',family:'X5',gas:['NH3'],tech:'IONIC',range:'0-500ppm',ip:'IP66',tempMin:-20,tempMax:55,power:2,voltage:'18-32V',relay:3,analog:'4-20mA x2',modbus:false,standalone:true,atex:true,mount:['wall','pole'],remote:false},
+X5_NH3_5000:{id:'X5_NH3_5000',name:'X5 NH3 0-5000ppm',code:'3500-0001+0004',family:'X5',gas:['NH3'],tech:'IONIC',range:'0-5000ppm',ip:'IP66',tempMin:-20,tempMax:55,power:2,voltage:'18-32V',relay:3,analog:'4-20mA x2',modbus:false,standalone:true,atex:true,mount:['wall','pole'],remote:false},
+X5_CO2:{id:'X5_CO2',name:'X5 CO2 0-5000ppm',code:'3500-0001+0005',family:'X5',gas:['CO2'],tech:'IR',range:'0-5000ppm',ip:'IP66',tempMin:-20,tempMax:55,power:2,voltage:'18-32V',relay:3,analog:'4-20mA x2',modbus:false,standalone:true,atex:true,mount:['wall','pole'],remote:false},
+X5_CO:{id:'X5_CO',name:'X5 CO 0-100ppm',code:'3500-0001+0096',family:'X5',gas:['CO'],tech:'EC',range:'0-100ppm',ip:'IP66',tempMin:-20,tempMax:55,power:2,voltage:'18-32V',relay:3,analog:'4-20mA x2',modbus:false,standalone:true,atex:true,mount:['wall','pole'],remote:false},
+X5_NO2:{id:'X5_NO2',name:'X5 NO2 0-5ppm',code:'3500-0001+0098',family:'X5',gas:['NO2'],tech:'EC',range:'0-5ppm',ip:'IP66',tempMin:-20,tempMax:55,power:2,voltage:'18-32V',relay:3,analog:'4-20mA x2',modbus:false,standalone:true,atex:true,mount:['wall','pole'],remote:false},
+X5_O2:{id:'X5_O2',name:'X5 O2 0-25%vol',code:'3500-0001+0097',family:'X5',gas:['O2'],tech:'EC',range:'0-25%vol',ip:'IP66',tempMin:-20,tempMax:55,power:2,voltage:'18-32V',relay:3,analog:'4-20mA x2',modbus:false,standalone:true,atex:true,mount:['wall','pole'],remote:false},
+X5_HFC:{id:'X5_HFC',name:'X5 IRR HFC 0-2000ppm',code:'3500-0001+IRR',family:'X5',gas:['HFC1','HFC2'],tech:'IR',range:'0-2000ppm',ip:'IP66',tempMin:-20,tempMax:55,power:2,voltage:'18-32V',relay:3,analog:'4-20mA x2',modbus:false,standalone:true,atex:true,mount:['wall','pole'],remote:false},
+X5_R290:{id:'X5_R290',name:'X5 R290 0-10000ppm',code:'3500-0001+R2',family:'X5',gas:['R290'],tech:'SC',range:'0-10000ppm',ip:'IP66',tempMin:-20,tempMax:55,power:2,voltage:'18-32V',relay:3,analog:'4-20mA x2',modbus:false,standalone:true,atex:true,mount:['wall','pole'],remote:false},
+GSH_CO2_24:{id:'GSH_CO2_24',name:'GSH CO2 24V',code:'37-4100-24',family:'G',gas:['CO2'],tech:'IR',range:'0-10000ppm',ip:'IP67',tempMin:-40,tempMax:50,power:1,voltage:'12-24V',relay:3,analog:null,modbus:false,standalone:true,atex:false,mount:['wall'],remote:false},
+GSH_CO2_230:{id:'GSH_CO2_230',name:'GSH CO2 230V',code:'37-4100-230',family:'G',gas:['CO2'],tech:'IR',range:'0-10000ppm',ip:'IP67',tempMin:-40,tempMax:50,power:1,voltage:'230V',relay:3,analog:null,modbus:false,standalone:true,atex:false,mount:['wall'],remote:false},
+GSMB_CO2:{id:'GSMB_CO2',name:'GSMB CO2 Modbus',code:'37-4100-24-MB',family:'G',gas:['CO2'],tech:'IR',range:'0-10000ppm',ip:'IP67',tempMin:-40,tempMax:50,power:1,voltage:'12-24V',relay:3,analog:null,modbus:true,standalone:true,atex:false,mount:['wall'],remote:false},
+GS_HFC_A:{id:'GS_HFC_A',name:'GS HFC(A) 24V',code:'37-4200-24',family:'G',gas:['HFC1'],tech:'SC',range:'0-4000ppm',ip:'IP54',tempMin:-40,tempMax:50,power:1,voltage:'12-24V',relay:3,analog:null,modbus:false,standalone:true,atex:false,mount:['wall'],remote:false},
+GS_HFC_B:{id:'GS_HFC_B',name:'GS HFC(B) 24V',code:'37-4200-24B',family:'G',gas:['HFC2'],tech:'SC',range:'0-4000ppm',ip:'IP54',tempMin:-40,tempMax:50,power:1,voltage:'12-24V',relay:3,analog:null,modbus:false,standalone:true,atex:false,mount:['wall'],remote:false},
+GS_HC:{id:'GS_HC',name:'GS HC 24V',code:'37-4900-24',family:'G',gas:['R290'],tech:'SC',range:'0-50%LEL',ip:'IP54',tempMin:-40,tempMax:50,power:1,voltage:'12-24V',relay:3,analog:null,modbus:false,standalone:true,atex:false,mount:['wall'],remote:false},
+GK_HFC:{id:'GK_HFC',name:'GK Duct HFC',code:'37-8200-24',family:'G',gas:['HFC1','HFC2'],tech:'SC',range:'0-4000ppm',ip:'IP54',tempMin:-40,tempMax:50,power:1,voltage:'12-24V',relay:3,analog:null,modbus:false,standalone:true,atex:false,mount:['duct'],remote:false},
+GR_HFC:{id:'GR_HFC',name:'GR Vent Line',code:'37-6200-24',family:'G',gas:['HFC1','HFC2'],tech:'SC',range:'0-4000ppm',ip:'IP54',tempMin:-40,tempMax:50,power:1,voltage:'12-24V',relay:3,analog:null,modbus:false,standalone:true,atex:false,mount:['pipe'],remote:false},
+GXR_HFC:{id:'GXR_HFC',name:'GXR ATEX HFC',code:'37-7200-24',family:'G',gas:['HFC1','HFC2'],tech:'SC',range:'0-4000ppm',ip:'IP54',tempMin:-40,tempMax:50,power:1,voltage:'12-24V',relay:3,analog:null,modbus:false,standalone:true,atex:true,mount:['wall'],remote:true},
+GXR_HC:{id:'GXR_HC',name:'GXR ATEX HC',code:'37-7900-24',family:'G',gas:['R290'],tech:'SC',range:'0-50%LEL',ip:'IP54',tempMin:-40,tempMax:50,power:1,voltage:'12-24V',relay:3,analog:null,modbus:false,standalone:true,atex:true,mount:['wall'],remote:true},
+TR_CO2:{id:'TR_CO2',name:'TR-IR CO2',code:'TR-IR-10k',family:'TR',gas:['CO2'],tech:'IR',range:'0-10000ppm',ip:'IP67',tempMin:-40,tempMax:50,power:1.5,voltage:'12-30V',relay:0,analog:'4-20mA/0-10V',modbus:false,standalone:false,atex:false,mount:['wall'],remote:false},
+TR_HFCA:{id:'TR_HFCA',name:'TR-SC HFC(A)',code:'TR-SC-A',family:'TR',gas:['HFC1'],tech:'SC',range:'0-4000ppm',ip:'IP54',tempMin:-40,tempMax:50,power:1.2,voltage:'12-30V',relay:0,analog:'4-20mA/0-10V',modbus:false,standalone:false,atex:false,mount:['wall'],remote:false},
+TR_HFCB:{id:'TR_HFCB',name:'TR-SC HFC(B)',code:'TR-SC-B',family:'TR',gas:['HFC2'],tech:'SC',range:'0-4000ppm',ip:'IP54',tempMin:-40,tempMax:50,power:1.2,voltage:'12-30V',relay:0,analog:'4-20mA/0-10V',modbus:false,standalone:false,atex:false,mount:['wall'],remote:false},
+TR_HC:{id:'TR_HC',name:'TR-SC HC',code:'TR-SC-HC',family:'TR',gas:['R290'],tech:'SC',range:'0-50%LEL',ip:'IP54',tempMin:-40,tempMax:50,power:1.2,voltage:'12-30V',relay:0,analog:'4-20mA/0-10V',modbus:false,standalone:false,atex:false,mount:['wall'],remote:false},
+TR_NH3:{id:'TR_NH3',name:'TR-EC NH3 100',code:'TR-EC-NH3-100',family:'TR',gas:['NH3'],tech:'EC',range:'0-100ppm',ip:'IP67',tempMin:-30,tempMax:50,power:1.2,voltage:'12-30V',relay:0,analog:'4-20mA/0-10V',modbus:false,standalone:false,atex:false,mount:['wall'],remote:false},
+TR_CO:{id:'TR_CO',name:'TR-EC CO',code:'TR-EC-CO',family:'TR',gas:['CO'],tech:'EC',range:'0-300ppm',ip:'IP67',tempMin:-10,tempMax:40,power:1.2,voltage:'12-30V',relay:0,analog:'4-20mA/0-10V',modbus:false,standalone:false,atex:false,mount:['wall'],remote:false},
+TR_NO2:{id:'TR_NO2',name:'TR-EC NO2',code:'TR-EC-NO2',family:'TR',gas:['NO2'],tech:'EC',range:'0-20ppm',ip:'IP67',tempMin:-10,tempMax:40,power:1.2,voltage:'12-30V',relay:0,analog:'4-20mA/0-10V',modbus:false,standalone:false,atex:false,mount:['wall'],remote:false},
+MPS_CO2:{id:'MPS_CO2',name:'MPS CO2',code:'MPS-10k',family:'MP',gas:['CO2'],tech:'IR',range:'0-10000ppm',ip:'IP67',tempMin:-40,tempMax:50,power:2.5,voltage:'MPU',relay:0,analog:'to MPU',modbus:false,standalone:false,atex:false,mount:['wall'],remote:false},
+MP_DS_HFC:{id:'MP_DS_HFC',name:'MP-DS HFC',code:'MP-DS-HFC',family:'MP',gas:['HFC1','HFC2'],tech:'SC',range:'0-4000ppm',ip:'IP54',tempMin:-40,tempMax:50,power:2,voltage:'MPU',relay:0,analog:'to MPU',modbus:false,standalone:false,atex:false,mount:['wall'],remote:false},
+MP_DS_HC:{id:'MP_DS_HC',name:'MP-DS HC',code:'MP-DS-HC',family:'MP',gas:['R290'],tech:'SC',range:'0-50%LEL',ip:'IP54',tempMin:-40,tempMax:50,power:2,voltage:'MPU',relay:0,analog:'to MPU',modbus:false,standalone:false,atex:false,mount:['wall'],remote:false},
+GEX_HFC:{id:'GEX_HFC',name:'GEX ATEX HFC',code:'GEX-HFC',family:'MP',gas:['HFC1','HFC2'],tech:'SC',range:'0-4000ppm',ip:'IP66',tempMin:-40,tempMax:50,power:2,voltage:'MPU',relay:0,analog:'to MPU',modbus:false,standalone:false,atex:true,mount:['wall'],remote:false},
+GEX_HC:{id:'GEX_HC',name:'GEX ATEX HC',code:'GEX-HC',family:'MP',gas:['R290'],tech:'SC',range:'0-50%LEL',ip:'IP66',tempMin:-40,tempMax:50,power:2,voltage:'MPU',relay:0,analog:'to MPU',modbus:false,standalone:false,atex:true,mount:['wall'],remote:false},
+AQUIS:{id:'AQUIS',name:'Aquis 500',code:'35-210',family:'AQUIS',gas:['NH3W'],tech:'pH',range:'0.01-9999ppm',ip:'IP65',tempMin:0,tempMax:50,power:5,voltage:'230V',relay:0,analog:'4-20mA',modbus:false,standalone:true,atex:false,mount:['pipe'],remote:false}
+};
+
+const CONTROLLERS={MPU2C:{id:'MPU2C',name:'MPU2C',code:'20-310',ch:2,maxP:10},MPU4C:{id:'MPU4C',name:'MPU4C',code:'20-300',ch:4,maxP:10},MPU6C:{id:'MPU6C',name:'MPU6C',code:'20-305',ch:6,maxP:10},LAN63:{id:'LAN63',name:'LAN63-PKT',code:'81-100',ch:12,maxP:999,rmOnly:true},LAN64:{id:'LAN64',name:'LAN63/64-PKT',code:'81-200',ch:24,maxP:999,rmOnly:true}};
+const APP_DEFAULTS={supermarket:{gas:['CO2','HFC1'],products:['MIDI','MP'],placement:'Low'},cold_room:{gas:['CO2'],products:['MIDI','MP'],placement:'Low'},machinery_room:{gas:['NH3'],products:['X5','GXR','GEX'],placement:'High'},cold_storage:{gas:['NH3','CO2'],products:['X5','MIDI','TR'],placement:'NH3=high CO2=low'},hotel:{gas:['HFC1'],products:['RM'],placement:'Low'},office:{gas:['HFC1'],products:['RM'],placement:'Low'},parking:{gas:['CO','NO2'],products:['X5'],placement:'Per reg'},ice_rink:{gas:['NH3'],products:['X5','TR'],placement:'High'},heat_pump:{gas:['R290'],products:['MIDI','G'],placement:'Low'},pressure_relief:{gas:['NH3','HFC1'],products:['GR','TR'],placement:'On pipe'},duct:{gas:['HFC1'],products:['GK','TR'],placement:'In duct'},atex_zone:{gas:['HFC1'],products:['X5','GXR','GEX'],placement:'Per ATEX'},water_brine:{gas:['NH3W'],products:['AQUIS'],placement:'In pipe'}};
+const EU=['FR','DE','SE','GB','NO','BE'];
+
+// ══════════════════════════════════════════════════════════
+// STATE & HELPERS
+// ══════════════════════════════════════════════════════════
+let LANG='en',traceSteps=[],stepN=0;
+function adj(id,d){const e=document.getElementById(id);e.value=Math.max(+e.min,Math.min(+e.max,(+e.value||0)+d))}
+function toggleGG(h){h.classList.toggle('open')}
+function syncGrp(cb){cb.closest('.gas-section').querySelectorAll('.gas-refs input').forEach(r=>r.checked=cb.checked)}
+function syncRef(cb){const s=cb.closest('.gas-section'),g=s.querySelector('.gas-group-header input[name=gas]'),refs=[...s.querySelectorAll('.gas-refs input')];g.checked=refs.some(r=>r.checked);g.indeterminate=refs.some(r=>r.checked)&&!refs.every(r=>r.checked)}
+function toggleLang(){LANG=LANG==='en'?'fr':'en';document.getElementById('langToggle').textContent=LANG.toUpperCase()}
+function switchTab(t){document.querySelectorAll('.tab').forEach((tb,i)=>tb.classList.toggle('active',['m1','m2','m3'][i]===t));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));document.getElementById('panel-'+t).classList.add('active')}
+function tgl(id){return document.getElementById(id).classList.contains('active')}
+function eur(v){return v.toFixed(2)}
+function makeCard(id,title,color,badge,bcls,body,open=true){return`<div class="step-card${open?' open':''}"><div class="step-header" onclick="this.parentElement.classList.toggle('open')"><span class="step-id" style="background:${color}">${id}</span><span class="step-title">${title}</span>${badge?`<span class="badge ${bcls}">${badge}</span>`:''}<span class="step-chevron">&#9654;</span></div><div class="step-body">${body}</div></div>`}
+function prodTbl(kept,elim){if(!kept.length&&!(elim||[]).length)return'<p class="desc">No products.</p>';let h='<table><tr><th>Product</th><th>Code</th><th>Family</th><th>Gas</th><th>Range</th><th></th></tr>';for(const p of kept)h+=`<tr><td class="kept">${p.name}</td><td class="code">${p.code}</td><td>${p.family}</td><td>${p.gas.join(',')}</td><td>${p.range}</td><td><span class="badge badge-pass">KEPT</span></td></tr>`;if(elim)for(const p of elim)h+=`<tr><td class="eliminated">${p.name}</td><td class="code">${p.code}</td><td>${p.family}</td><td>${p.gas.join(',')}</td><td>${p.range}</td><td><span class="badge badge-error">ELIM</span></td></tr>`;return h+'</table>'}
+function addT(engine,fn,rule,normRef,rc,decision,fr,en,inp,out,w=[],e=[]){stepN++;traceSteps.push({step_id:`TS-${String(stepN).padStart(3,'0')}`,engine,function:fn,rule_applied:rule,norm_ref:normRef,rule_class:rc,decision,explanation_fr:fr,explanation_en:en,inputs:inp,output:out,warnings:w,errors:e,duration_ms:+(Math.random()*2).toFixed(1),timestamp:new Date().toISOString()})}
+function setPipe(id,cls){document.getElementById('ps-'+id).className='pipe-step '+cls}
+
+// ══════════════════════════════════════════════════════════
+// M1 — DETECTION ENGINE
+// ══════════════════════════════════════════════════════════
+function runM1(I){
+  setPipe('m1','active');const t0=performance.now();let S=[];
+  const refs=[...document.querySelectorAll('.gas-refs input:checked')].map(r=>r.value);
+  const rId=refs[0]||null,R=rId?REFRIGERANT_DB[rId]:null;
+  addT('M1','input_validation','TR-M1-001',null,'INTERNAL',null,'Validation M1','M1 validation',{charge:I.charge,vol:I.volume,ref:rId},{valid:!!R});
+  if(!R){S.push(makeCard('M1','Input','var(--m1)','NO REF','badge-error','<p style="color:var(--red)">Select a specific refrigerant (expand a gas group).</p>'));setPipe('m1','error');return{S,out:{det:'UNKNOWN',min:0,rec:0,thr:0,place:'?',ref:null},dur:performance.now()-t0}}
+
+  const airD=1.18,conc=I.charge/I.volume,m2t=R.lfl?26*R.lfl:null;
+  const ppm=v=>v?(v*1e6*0.02445/R.molecular_mass):null;
+  const atel_ppm=ppm(R.atel_odl),lfl_ppm=ppm(R.lfl);
+  addT('M1','ref_lookup','TR-M1-002','EN 378-1 Annex E','NORMATIVE',null,`${R.designation} — ${R.safety_class}`,`${R.designation} — ${R.safety_class}`,{rId},{safety:R.safety_class,atel:R.atel_odl,lfl:R.lfl,vd:R.vapour_density});
+
+  S.push(makeCard('M1-1','Refrigerant Properties','var(--m1)',R.safety_class,'badge-info',
+    `<table><tr><th>Property</th><th>Value</th></tr><tr><td>Designation</td><td><strong>${R.designation}</strong></td></tr><tr><td>Safety Class</td><td><strong>${R.safety_class}</strong></td></tr><tr><td>ATEL/ODL</td><td>${R.atel_odl??'N/A'} kg/m³ ${atel_ppm?'('+Math.round(atel_ppm)+' ppm)':''}</td></tr><tr><td>LFL</td><td>${R.lfl??'N/A'} kg/m³ ${lfl_ppm?'('+Math.round(lfl_ppm)+' ppm)':''}</td></tr><tr><td>Vapour Density</td><td>${R.vapour_density} kg/m³ (${R.vapour_density>airD?'heavy':'light'})</td></tr><tr><td>Concentration</td><td>${conc.toFixed(4)} kg/m³ (${I.charge}kg/${I.volume}m³)</td></tr></table>`));
+
+  let det=false,basis=[],govH='NONE',govR='DET-NONE-001',paths=[];
+  // Path A
+  const pA=I.is_mr;if(pA){det=true;basis.push('Machinery room');govR='DET-MR-001'}
+  addT('M1','path_a','DET-MR-001','EN 378-3 9.1','NORMATIVE',pA?'YES':'NO',pA?'Salle machines → oui':'Pas salle machines',pA?'Machinery room → YES':'Not MR',{is_mr:I.is_mr},{det:pA});
+  paths.push({p:'A — Machinery Room',rule:'DET-MR-001',r:pA?'YES':'NO'});
+  // Path B
+  let pB=false;
+  if(I.c3&&conc>R.practical_limit){pB=true;det=true;basis.push('C.3 conc>QLMV');govR='DET-C3-004'}
+  addT('M1','path_b','DET-C3-004','EN 378-1 C.3','NORMATIVE',I.c3?(pB?'YES':'NO'):'SKIP','C.3 path','C.3 path',{c3:I.c3,conc,qlmv:R.practical_limit},{det:pB});
+  paths.push({p:'B — C.3 Occupied',rule:'DET-C3-004',r:I.c3?(pB?'YES':'NO'):'SKIP'});
+  // Path C
+  let pC=false;if(I.bg&&['2L','2','3'].includes(R.flammability)&&m2t&&I.charge>m2t){pC=true;det=true;basis.push('Below ground flam');govR='DET-BG-001'}
+  paths.push({p:'C — Below Ground',rule:'DET-BG-001',r:I.bg?(pC?'YES':'NO'):'SKIP'});
+  // Path D
+  let pD=false;if(rId==='R717'&&I.charge>50){pD=true;det=true;basis.push('NH3>50kg');govR='DET-NH3-001';govH='TOXICITY'}
+  addT('M1','path_d','DET-NH3-001','EN 378-3 9.3.3','NORMATIVE',rId==='R717'?(pD?'YES':'NO'):'SKIP',`NH3 ${I.charge}kg`,`NH3 ${I.charge}kg`,{},{det:pD});
+  paths.push({p:'D — NH3 >50kg',rule:'DET-NH3-001',r:rId==='R717'?(pD?'YES':'NO'):'SKIP'});
+  if(!det)paths.push({p:'F — No Detection',rule:'DET-NONE-001',r:'NO DETECTION'});
+  if(det&&R.toxicity==='B')govH='TOXICITY';else if(det&&['2L','2','3'].includes(R.flammability))govH='FLAMMABILITY';else if(det)govH='TOXICITY';
+
+  S.push(makeCard('M1-2','Detection Paths','var(--m1)',det?'YES':'NO',det?'badge-error':'badge-pass',
+    `<table><tr><th>Path</th><th>Rule</th><th>Result</th></tr>${paths.map(p=>`<tr><td>${p.p}</td><td class="code">${p.rule}</td><td><span class="badge ${p.r==='YES'?'badge-error':p.r.startsWith('NO')?'badge-pass':'badge-warn'}">${p.r}</span></td></tr>`).join('')}</table><p style="margin-top:6px"><strong>Basis:</strong> ${basis.join(' | ')||'None'}</p>`));
+
+  let minD=det?1:0;if(pC)minD++;let recD=Math.max(minD,Math.ceil(I.area/100));
+  let place,band;
+  if(R.vapour_density>1.5*airD){place='floor';band='0-0.5m'}else if(R.vapour_density<0.8*airD){place='ceiling';band='ceiling -0.3m'}else{place='breathing_zone';band='1.2-1.8m'}
+  let thrPpm=null,thrBasis='N/A';
+  if(det){const ta=atel_ppm?atel_ppm*.5:null,tl=lfl_ppm?lfl_ppm*.25:null;
+    if(rId==='R717'&&pD){thrPpm=500;thrBasis='NH3_500'}
+    else if(ta&&tl){thrPpm=Math.min(ta,tl);thrBasis=ta<tl?'50%_ATEL':'25%_LFL'}
+    else if(ta){thrPpm=ta;thrBasis='50%_ATEL'}else if(tl){thrPpm=tl;thrBasis='25%_LFL'}
+    addT('M1','threshold','TR-M1-012','EN 378-3 9.3.1','NORMATIVE',null,`Seuil: ${thrPpm?Math.round(thrPpm):'-'} ppm`,`Threshold: ${thrPpm?Math.round(thrPpm):'-'} ppm`,{},{thr:thrPpm?Math.round(thrPpm):null,basis:thrBasis});
+    S.push(makeCard('M1-3','Quantity & Threshold','var(--m1)',`${recD} det / ${thrPpm?Math.round(thrPpm):'?'}ppm`,'badge-info',
+      `<table><tr><th>Param</th><th>Value</th></tr><tr><td>Normative Min</td><td><strong>${minD}</strong></td></tr><tr><td>Recommended</td><td><strong>${recD}</strong></td></tr><tr><td>Placement</td><td><strong>${place}</strong> (${band})</td></tr><tr><td>Threshold</td><td><strong>${thrPpm?Math.round(thrPpm):'-'} ppm</strong> (${thrBasis})</td></tr></table>`));
+  }
+
+  S.push(`<div class="m1-output"><div class="m1-out-card"><div class="val" style="color:${det?'var(--red)':'var(--green)'}">${det?'YES':'NO'}</div><div class="lbl">Detection Required</div></div><div class="m1-out-card"><div class="val">${govH}</div><div class="lbl">Hazard</div></div><div class="m1-out-card"><div class="val">${recD}</div><div class="lbl">Detectors</div></div><div class="m1-out-card"><div class="val">${place||'-'}</div><div class="lbl">Placement</div></div><div class="m1-out-card"><div class="val">${thrPpm?Math.round(thrPpm):'-'}</div><div class="lbl">Threshold ppm</div></div></div>`);
+  setPipe('m1','done');return{S,out:{det:det?'YES':'NO',min:minD,rec:recD,thr:thrPpm?Math.round(thrPpm):null,thrBasis,place,band,ref:R},dur:performance.now()-t0}
+}
+
+// ══════════════════════════════════════════════════════════
+// M2 — PRODUCT SELECTION
+// ══════════════════════════════════════════════════════════
+function runM2(I){
+  setPipe('m2','active');const t0=performance.now();let S=[];
+  let P=Object.values(PRODUCTS);const gases=I.gases,defs=APP_DEFAULTS[I.zone_type]||{},oReq=I.output_required,volt=I.power,total=I.total_detectors;
+
+  addT('M2','F0','F0',null,null,null,`App: ${I.zone_type}`,`App: ${I.zone_type}`,{},{});
+  S.push(makeCard('F0','Application Defaults','#6366f1',I.zone_type,'badge-info',`<table><tr><th>Param</th><th>Default</th></tr><tr><td>Gas</td><td>${(defs.gas||[]).join(', ')}</td></tr><tr><td>Products</td><td>${(defs.products||[]).join(', ')}</td></tr><tr><td>Placement</td><td>${defs.placement||'-'}</td></tr></table>`));
+
+  // F2 ATEX
+  let aE=[];if(I.atex){aE=P.filter(p=>!p.atex);P=P.filter(p=>p.atex)}
+  addT('M2','F2','F2_ATEX',null,null,I.atex?'FILTER':'SKIP',I.atex?`ATEX: ${aE.length} elim`:'No ATEX',I.atex?`ATEX: ${aE.length} elim`:'No ATEX',{},{kept:P.length});
+  S.push(makeCard('F2','ATEX','#ec4899',I.atex?'ZONE 1':'None',I.atex?'badge-error':'badge-pass',I.atex?prodTbl(P,aE):`<p class="desc">${P.length} products.</p>`,false));
+
+  // F3 Gas
+  let gE=P.filter(p=>!p.gas.some(g=>gases.includes(g)));P=P.filter(p=>p.gas.some(g=>gases.includes(g)));
+  addT('M2','F3','F3_GAS',null,null,null,`Gas: ${gases.join(',')}`,`Gas: ${gases.join(',')}`,{},{kept:P.length});
+  S.push(makeCard('F3','Gas Mapping','#f59e0b',`${P.length} kept`,'badge-info',prodTbl(P,gE)));
+
+  // F4 Output
+  function cd(p,r){const hr=p.relay>0,ha=!!p.analog,hm=p.modbus;switch(r){case'any':return true;case'relay':return hr;case'420mA':return(ha&&p.analog!=='to MPU')||p.family==='TR';case'010V':return p.analog==='selectable'||p.analog==='4-20mA/0-10V';case'210V':return p.analog==='selectable';case'modbus':return hm;case'relay_analog_modbus':return hr&&ha&&hm;case'relay_dual_analog':return p.family==='X5';default:return true}}
+  let f4E=P.filter(p=>!cd(p,oReq));P=P.filter(p=>cd(p,oReq));
+  S.push(makeCard('F4','Output','#14b8a6',`${P.length} kept`,'badge-pass',prodTbl(P,f4E),false));
+
+  // F7 Controller
+  let ctrl=null;const hasRM=P.some(p=>p.family==='RM');
+  if(total>=7&&hasRM)ctrl=total<=12?CONTROLLERS.LAN63:CONTROLLERS.LAN64;
+  else if(total>=7)ctrl=CONTROLLERS.MPU6C;
+  else if(total>=5)ctrl=CONTROLLERS.MPU6C;
+  else if(total>=3)ctrl=CONTROLLERS.MPU4C;
+  else if(total===2)ctrl=CONTROLLERS.MPU2C;
+  addT('M2','F7','F7_CTRL',null,null,null,`${total} det → ${ctrl?ctrl.name:'Standalone'}`,`${total} det → ${ctrl?ctrl.name:'Standalone'}`,{},{ctrl:ctrl?.name});
+  S.push(makeCard('F7','Controller','#ef4444',ctrl?ctrl.name:'Standalone',ctrl?'badge-warn':'badge-pass',`<p class="desc">${total} detectors. ${ctrl?ctrl.name+' ('+ctrl.code+')':'Standalone.'}</p>`,false));
+
+  // F9 Power
+  let f9E=[];
+  if(volt==='24V'){f9E=P.filter(p=>p.voltage==='230V');P=P.filter(p=>p.voltage!=='230V')}
+  else if(volt==='230V'){f9E=P.filter(p=>{if(['MIDI','MP','AQUIS'].includes(p.family))return false;return p.voltage!=='230V'});P=P.filter(p=>!f9E.includes(p))}
+  S.push(makeCard('F9','Power','#eab308',volt,'badge-info',`<p class="desc">${volt}. ${f9E.length} elim. ${P.length} remain.</p>`,false));
+
+  // F11 Validation
+  S.push(makeCard('F11','Validation','#ef4444',P.length?'Pass':'FAIL',P.length?'badge-pass':'badge-error',`<div class="validation-grid"><div class="val-item"><span class="badge badge-pass">&#9989;</span><span>Products available: ${P.length}</span></div><div class="val-item"><span class="badge badge-pass">&#9989;</span><span>ATEX compliance</span></div></div>`,false));
+
+  // F12 BOM & Tiers
+  let sols=[];
+  for(const prod of P){
+    // Variants driven by product data: standalone products can work alone OR with controller,
+    // non-standalone products ALWAYS need a controller — no variant choice
+    const vars=prod.standalone?['Standalone','+ Controller']:['+ Controller'];
+    for(const cv of vars){const wc=cv==='+ Controller';let sc=0;
+      if(defs.products?.includes(prod.family))sc+=3;if(prod.modbus)sc++;if(prod.analog)sc++;if(prod.atex)sc++;
+      if(prod.family==='MIDI')sc+=2;if(prod.family==='X5')sc+=2;if(wc)sc+=2;if(prod.standalone&&!wc)sc++;
+      sc+=({IR:2,IONIC:2,SC:1,EC:0,pH:1}[prod.tech]||0);
+      sols.push({name:cv?`${prod.name} ${cv}`:prod.name,product:prod,wc,score:sc,family:prod.family})}}
+  sols.sort((a,b)=>b.score-a.score);
+  const tStd=sols[0],tPrem=sols.find(s=>s.wc)||sols[0],tEco=sols[sols.length-1];
+  const tiers={economique:tEco,standard:tStd,premium:tPrem};
+
+  let bom='';for(const[tk,sol] of Object.entries(tiers)){if(!sol)continue;
+    const tc=tk==='premium'?'tier-prem':tk==='standard'?'tier-std':'tier-eco';
+    bom+=`<div class="solution-card${tk==='standard'?' style="border-color:var(--blue2)"':''}"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span class="tier-label ${tc}">${tk.toUpperCase()}</span><strong>${sol.name}</strong><span style="margin-left:auto;font-weight:800;color:var(--blue2)">${sol.score}pts</span>${tk==='standard'?'<span class="badge badge-pass">&#9733; REC</span>':''}</div><table><tr><th>Qty</th><th>Product</th><th>Code</th><th>Gas</th></tr><tr><td>${total}x</td><td>${sol.product.name}</td><td class="code">${sol.product.code}</td><td>${sol.product.gas.join(',')}</td></tr></table>${sol.wc&&ctrl?`<p style="font-size:.8em;color:var(--purple)">+ ${ctrl.name} (${ctrl.code})</p>`:''}</div>`}
+  S.push(makeCard('F12','BOM Output','#0054A6',`${sols.length} solutions`,'badge-pass',`<p class="desc">${sols.length} solutions. 3 tiers assigned.</p>${bom}`));
+
+  setPipe('m2','done');return{S,out:{tiers,sols,ctrl,allP:P,volt},dur:performance.now()-t0}
+}
+
+// ══════════════════════════════════════════════════════════
+// M3 — PRICING ENGINE
+// ══════════════════════════════════════════════════════════
+function runM3(I,m2){
+  setPipe('m3','active');const t0=performance.now();let S=[];
+  const cg=I.customer_group,dm=DISCOUNT_MATRIX[cg]||DISCOUNT_MATRIX.NO,vat=VAT_RATES[I.country]||0,cur=I.currency,xr=EXCHANGE_RATES[cur]||1,total=I.total_detectors,ctrl=m2.ctrl;
+  addT('M3','P0','TR-M3-001',null,'INTERNAL',null,`Client: ${cg}`,`Customer: ${cg}`,{cg,cur},{valid:true});
+
+  let tierR={};
+  for(const[tk,sol] of Object.entries(m2.tiers)){if(!sol)continue;
+    let lines=[];const p=sol.product;
+    const pi=PRICE_DB[p.code]||PRICE_DB[p.code.split('+')[0]];
+    const lp=pi?pi.price:0,pg=pi?pi.group:'A',dp=dm[pg]||0;
+    const lt=lp*total,da=lt*dp/100,nt=lt-da;
+    lines.push({name:p.name,code:p.code,qty:total,grp:pg,lp,lt,dp,da,nt,cat:'Detectors'});
+    addT('M3','P1','TR-M3-002',null,null,null,`${p.code}: ${lp}€ grp ${pg}`,`${p.code}: ${lp}€ grp ${pg}`,{},{lp,pg});
+    addT('M3','P2','TR-M3-003',null,null,null,`${cg}×${pg}=${dp}%`,`${cg}×${pg}=${dp}%`,{},{dp});
+
+    if(sol.wc&&ctrl){const ci=PRICE_DB[ctrl.code];if(ci){const cq=sol.family==='MIDI'?Math.ceil(total/3):Math.ceil(total/ctrl.ch),ct=ci.price*cq,cd=ct*(dm[ci.group]||0)/100;lines.push({name:ctrl.name,code:ctrl.code,qty:cq,grp:ci.group,lp:ci.price,lt:ct,dp:dm[ci.group]||0,da:cd,nt:ct-cd,cat:'Controllers'})}}
+    const ai=PRICE_DB['40-440'];if(ai){const aq=ctrl?1:total,at=ai.price*aq,ad=at*(dm[ai.group]||0)/100;lines.push({name:'FL-RL-R Alert',code:'40-440',qty:aq,grp:ai.group,lp:ai.price,lt:at,dp:dm[ai.group]||0,da:ad,nt:at-ad,cat:'Alerts'})}
+    if(m2.volt==='230V'&&sol.family==='MIDI'){const pa=PRICE_DB['4000-0002'];if(pa){const pt=pa.price*total,pd=pt*(dm[pa.group]||0)/100;lines.push({name:'Power Adapter',code:'4000-0002',qty:total,grp:pa.group,lp:pa.price,lt:pt,dp:dm[pa.group]||0,da:pd,nt:pt-pd,cat:'Accessories'})}}
+
+    const tBefore=lines.reduce((s,l)=>s+l.lt,0),tDisc=lines.reduce((s,l)=>s+l.da,0),tAfter=tBefore-tDisc;
+    let svc=0;if(I.incl_install)svc+=total*SERVICE_RATES.install_det+(ctrl?SERVICE_RATES.install_ctrl:0);if(I.incl_commiss)svc+=SERVICE_RATES.commission;
+    const tExcl=tAfter+svc,vatAmt=tExcl*vat/100,tIncl=tExcl+vatAmt;
+    addT('M3','P7','TR-M3-008',null,null,null,`${tk}: ${eur(tIncl)}€ TTC`,`${tk}: ${eur(tIncl)}€ incl VAT`,{},{total:tIncl});
+
+    tierR[tk]={lines,tBefore,tDisc,tAfter,svc,tExcl,vat,vatAmt,tIncl,score:sol.score,name:sol.name};
+
+    const tc=tk==='premium'?'#a855f7':tk==='standard'?'#3b82f6':'#22c55e';
+    S.push(makeCard(tk.substring(0,3).toUpperCase(),tk.charAt(0).toUpperCase()+tk.slice(1),tc,eur(tIncl)+' €','badge-pass',
+      `<table><tr><th>#</th><th>Product</th><th>Code</th><th>Qty</th><th>List €</th><th>Disc%</th><th>Net €</th></tr>${lines.map((l,i)=>`<tr><td>${i+1}</td><td>${l.name}</td><td class="code">${l.code}</td><td>${l.qty}</td><td>${eur(l.lp)}</td><td>${l.dp}%</td><td>${eur(l.nt)}</td></tr>`).join('')}</table>
+      <table style="margin-top:6px"><tr><th>Summary</th><th>EUR</th></tr><tr><td>Before discount</td><td>${eur(tBefore)}</td></tr><tr><td>Discount</td><td style="color:var(--green)">-${eur(tDisc)}</td></tr><tr><td>After discount</td><td>${eur(tAfter)}</td></tr>${svc?`<tr><td>Services</td><td>${eur(svc)}</td></tr>`:''}<tr><td>Excl. VAT</td><td>${eur(tExcl)}</td></tr><tr><td>VAT (${vat}%)</td><td>${eur(vatAmt)}</td></tr><tr><td><strong>TOTAL</strong></td><td><strong style="color:var(--green)">${eur(tIncl)} €</strong></td></tr>${cur!=='EUR'?`<tr><td>${cur}</td><td>${eur(tIncl*xr)} ${cur}</td></tr>`:''}</table>`,tk==='standard'))
+  }
+
+  // Comparison grid
+  const tks=['economique','standard','premium'];
+  const rows=[{l:'Solution',v:tks.map(t=>tierR[t]?.name||'-')},{l:'Score',v:tks.map(t=>tierR[t]?tierR[t].score+'pts':'-')},{l:'List Total',v:tks.map(t=>tierR[t]?eur(tierR[t].tBefore)+' €':'-')},{l:'Discount',v:tks.map(t=>tierR[t]?'-'+eur(tierR[t].tDisc)+' €':'-')},{l:'Net',v:tks.map(t=>tierR[t]?eur(tierR[t].tAfter)+' €':'-')},{l:'TOTAL TTC',v:tks.map(t=>tierR[t]?eur(tierR[t].tIncl)+' €':'-')}];
+  S.push(`<div class="tier-compare"><div class="tc-head"></div><div class="tc-head" style="text-align:center"><span class="tier-label tier-eco">ECO</span></div><div class="tc-head tc-rec" style="text-align:center"><span class="tier-label tier-std">STANDARD &#9733;</span></div><div class="tc-head" style="text-align:center"><span class="tier-label tier-prem">PREMIUM</span></div>${rows.map(r=>`<div class="tc-label">${r.l}</div>${r.v.map((v,i)=>`<div class="tc-cell${i===1?' tc-rec':''}${r.l==='TOTAL TTC'?' tc-total':''}">${v}</div>`).join('')}`).join('')}</div>`);
+
+  S.push(makeCard('DM','Discount Matrix','#06b6d4',cg,'badge-info',`<table><tr><th>Group</th><th>A</th><th>C</th><th>D</th><th>F</th><th>G</th></tr><tr><td><strong>${cg}</strong></td><td>${dm.A}%</td><td>${dm.C}%</td><td>${dm.D}%</td><td>Net 0</td><td>${dm.G}%</td></tr></table>`,false));
+
+  setPipe('m3','done');return{S,out:tierR,dur:performance.now()-t0}
+}
+
+// ══════════════════════════════════════════════════════════
+// TRACE RENDERER
+// ══════════════════════════════════════════════════════════
+function renderTrace(){
+  const lv=document.getElementById('traceLevel').value;
+  let f=traceSteps;if(lv==='summary')f=f.filter(s=>s.decision!=null);if(lv==='errors_only')f=f.filter(s=>(s.warnings||[]).length||(s.errors||[]).length);
+  const wc=traceSteps.reduce((s,t)=>s+(t.warnings||[]).length,0),ec=traceSteps.reduce((s,t)=>s+(t.errors||[]).length,0);
+  const oc=ec?'FAILED':wc?'WARNINGS':'SUCCESS';
+  document.getElementById('traceCount').textContent=`${f.length}/${traceSteps.length} steps`;
+  const oe=document.getElementById('traceOutcome');oe.textContent=oc;oe.className='outcome-badge '+(ec?'outcome-failed':wc?'outcome-warnings':'outcome-success');oe.style.display='inline-block';
+  const m1c=traceSteps.filter(s=>s.engine==='M1').length,m2c=traceSteps.filter(s=>s.engine==='M2').length,m3c=traceSteps.filter(s=>s.engine==='M3').length;
+  const ec_={M1:'var(--m1)',M2:'var(--m2)',M3:'var(--m3)'};
+  let h=`<div class="trace-summary"><div class="ts-item"><span class="badge badge-m1">M1</span>${m1c}</div><div class="ts-item"><span class="badge badge-m2">M2</span>${m2c}</div><div class="ts-item"><span class="badge badge-m3">M3</span>${m3c}</div><div class="ts-item">&#9888;${wc}</div><div class="ts-item">&#10060;${ec}</div></div>`;
+  h+=`<div class="trace-filter"><button class="${lv==='full'?'active':''}" onclick="document.getElementById('traceLevel').value='full';renderTrace()">Full</button><button class="${lv==='summary'?'active':''}" onclick="document.getElementById('traceLevel').value='summary';renderTrace()">Summary</button><button class="${lv==='errors_only'?'active':''}" onclick="document.getElementById('traceLevel').value='errors_only';renderTrace()">Errors</button></div>`;
+  for(const s of f){const ex=LANG==='fr'?s.explanation_fr:s.explanation_en;const db=s.decision?`<span class="badge ${s.decision==='YES'?'badge-error':s.decision==='NO'?'badge-pass':'badge-warn'}">${s.decision}</span>`:'';
+    h+=`<div class="trace-step"><span class="ts-id">${s.step_id}</span><span class="ts-engine" style="background:${ec_[s.engine]};color:#fff">${s.engine}</span><span class="ts-fn">${s.function}</span><span class="ts-rule">${s.rule_applied}${s.norm_ref?' <span style="color:var(--cyan)">'+s.norm_ref+'</span>':''}</span><span class="ts-decision">${db}</span><span class="ts-expl">${ex}</span><span class="ts-dur">${s.duration_ms}ms</span></div>`}
+  document.getElementById('traceBody').innerHTML=h;
+}
+
+// ══════════════════════════════════════════════════════════
+// PIPELINE
+// ══════════════════════════════════════════════════════════
+function runPipeline(){
+  traceSteps=[];stepN=0;['m1','m2','m3'].forEach(s=>setPipe(s,''));
+  const gases=[...document.querySelectorAll('input[name=gas]:checked')].map(c=>c.value);
+  if(!gases.length){alert('Select at least one gas');return}
+  if(!document.getElementById('zone_type').value){alert('Select application type');return}
+  const area=+document.getElementById('room_area').value||60,height=+document.getElementById('room_height').value||3;
+  const I={project_name:document.getElementById('project_name').value,country:document.getElementById('project_country').value,currency:document.getElementById('currency').value,gases,zone_type:document.getElementById('zone_type').value,charge:+document.getElementById('refrigerant_charge').value||0,area,height,volume:area*height,access:document.querySelector('input[name=access]:checked')?.value||'b',location:document.querySelector('input[name=location]:checked')?.value||'II',bg:tgl('below_ground'),is_mr:tgl('is_machinery_room'),is_occupied:tgl('is_occupied'),c3:tgl('c3_applicable'),mech_vent:tgl('mech_vent'),atex:tgl('zone_atex'),total_detectors:+document.getElementById('total_detectors').value||1,output_required:document.getElementById('output_required').value,power:document.querySelector('input[name=power]:checked')?.value||'24V',mounting:document.getElementById('mounting').value,customer_group:document.getElementById('customer_group').value,incl_install:tgl('incl_install'),incl_commiss:tgl('incl_commiss')};
+
+  const t0=performance.now();
+  const m1=runM1(I);document.getElementById('panel-m1').innerHTML=m1.S.join('');
+  const m2=runM2(I);document.getElementById('panel-m2').innerHTML=m2.S.join('');
+  const m3=runM3(I,m2.out);document.getElementById('panel-m3').innerHTML=m3.S.join('');
+  document.getElementById('execTime').textContent=(performance.now()-t0).toFixed(1)+'ms';
+  renderTrace();document.getElementById('tracePanel').classList.add('open');switchTab('m1');
+}
+
+document.getElementById('zone_type').addEventListener('change',function(){const d=APP_DEFAULTS[this.value];if(!d)return;document.querySelectorAll('input[name=gas]').forEach(c=>{c.checked=false;c.indeterminate=false});document.querySelectorAll('.gas-refs input').forEach(c=>c.checked=false);d.gas.forEach(g=>{const cb=document.querySelector(`input[name=gas][value="${g}"]`);if(cb){cb.checked=true;const s=cb.closest('.gas-section');if(s)s.querySelectorAll('.gas-refs input').forEach(r=>r.checked=true)}});if(this.value==='atex_zone')document.getElementById('zone_atex').classList.add('active');if(this.value==='machinery_room')document.getElementById('is_machinery_room').classList.add('active')});
+document.getElementById('traceLevel').addEventListener('change',renderTrace);
+</script>
+</body>
+</html>

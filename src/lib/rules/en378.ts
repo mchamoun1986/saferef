@@ -337,12 +337,12 @@ function pathE_VentilatedEnclosure(input: RegulationInput): PathResult {
 
 /**
  * Path F — Not Required / Recommended
- * DET-NONE-001: all paths negative → RECOMMENDED (SAMON policy)
+ * DET-NONE-001: all paths negative → RECOMMENDED (SafeRef policy)
  */
 function pathF_NotRequired(): PathResult {
   return {
     decision: 'RECOMMENDED',
-    basis: 'DET-NONE-001: All paths negative — detection not normatively required by EN 378. SAMON recommends detection as good engineering practice.',
+    basis: 'DET-NONE-001: All paths negative — detection not normatively required by EN 378. SafeRef recommends detection as good engineering practice.',
     ruleId: 'DET-NONE-001',
     ruleClass: 'RECOMMENDED',
     sourceClauses: [],

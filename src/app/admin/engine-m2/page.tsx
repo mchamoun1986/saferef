@@ -551,7 +551,7 @@ total = sum(all components)
                 ]}
                 result="Complete BOM"
                 ruleIds={['BOM-F10', 'BOM-F11', 'BOM-F13', 'BOM-F14', 'BOM-F15']}
-                clauses={['EN 378 alert requirement', 'SAMON recommended accessories']}
+                clauses={['EN 378 alert requirement', 'SafeRef recommended accessories']}
                 color="purple"
               />
 

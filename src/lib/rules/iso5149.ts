@@ -105,10 +105,10 @@ function evaluateDetectionISO5149(input: RegulationInput): DetectionEvaluation {
           path: 'B_OccupiedSpace',
           decision: 'RECOMMENDED',
           ruleId: 'ISO5149-OCC-003',
-          basis: `ISO 5149-3:2014 — charge ${input.charge} kg <= RCL × V = ${rclLimit.toFixed(2)} kg (SAMON recommends detection)`,
+          basis: `ISO 5149-3:2014 — charge ${input.charge} kg <= RCL × V = ${rclLimit.toFixed(2)} kg (SafeRef recommends detection)`,
           extraDetector: false,
         });
-        detectionBasis = 'ISO 5149-3:2014 — charge below RCL limit. SAMON recommends detection as good engineering practice.';
+        detectionBasis = 'ISO 5149-3:2014 — charge below RCL limit. SafeRef recommends detection as good engineering practice.';
         governingRuleId = 'ISO5149-OCC-003';
         assumptions.push('National and local regulations may mandate detection even when ISO 5149 does not');
       }

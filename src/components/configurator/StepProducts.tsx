@@ -8,7 +8,15 @@ import { toProductEntries } from '@/lib/m2-engine/parse-product';
 import { selectProducts } from '@/lib/m2-engine/selection-engine';
 import { calculatePricing } from '@/lib/m2-engine/pricing-engine';
 import StepTieredBOM from '@/components/selector/StepTieredBOM';
+import StepCalcSheet from './StepCalcSheet';
 import { type Lang } from './i18n';
+
+interface SpaceTypeOption {
+  id: string;
+  labelFr: string;
+  labelEn: string;
+  icon: string;
+}
 
 interface Props {
   clientData: ClientData;
@@ -16,6 +24,8 @@ interface Props {
   zones: ZoneData[];
   refrigerant: RefrigerantV5;
   zoneRegulations: ZoneRegulationResult[];
+  application?: { id: string; labelFr: string; labelEn: string; icon: string } | null;
+  spaceTypes?: SpaceTypeOption[];
   lang?: Lang;
 }
 
@@ -26,7 +36,7 @@ const CUSTOMER_GROUPS = [
 ];
 
 export default function StepProducts({
-  clientData, gasAppData, zones, refrigerant, zoneRegulations, lang = 'en',
+  clientData, gasAppData, zones, refrigerant, zoneRegulations, application, spaceTypes = [], lang = 'en',
 }: Props) {
   const [rawProducts, setRawProducts] = useState<ProductRecord[]>([]);
   const [discountMatrix, setDiscountMatrix] = useState<DiscountRow[]>([]);
@@ -96,6 +106,34 @@ export default function StepProducts({
     return db;
   }, [rawProducts]);
 
+  // Build zone calc data for PDF report
+  const zoneCalcData = useMemo(() => {
+    return zoneRegulations.map((zr, idx) => {
+      const zone = zones[idx];
+      return {
+        zoneName: zone?.name || `Zone ${idx + 1}`,
+        surface: zone?.surface || 0,
+        height: zone?.height || 0,
+        charge: zone?.charge || 0,
+        volume: zone?.volumeOverride || (zone?.surface || 0) * (zone?.height || 0),
+        detectionRequired: zr.result.detectionRequired,
+        detectors: zr.result.recommendedDetectors,
+        thresholdPpm: zr.result.thresholdPpm,
+        placement: zr.result.placementHeight,
+        placementM: zr.result.placementHeightM,
+      };
+    });
+  }, [zones, zoneRegulations]);
+
+  // Build image map from raw products (code → image filename)
+  const productImages = useMemo(() => {
+    const map: Record<string, string | null> = {};
+    for (const p of rawProducts) {
+      if (p.image) map[p.code] = p.image;
+    }
+    return map;
+  }, [rawProducts]);
+
   // Run M3 pricing engine
   const pricingResult = useMemo((): PricingResult | null => {
     if (!selectionResult) return null;
@@ -117,15 +155,41 @@ export default function StepProducts({
   }
 
   return (
-    <StepTieredBOM
-      selectionResult={selectionResult}
-      pricingResult={pricingResult}
-      customerGroup={customerGroup}
-      customerGroups={CUSTOMER_GROUPS}
-      onCustomerGroupChange={setCustomerGroup}
-      clientData={clientData}
-      gasAppData={gasAppData}
-      regulationResult={zoneRegulations[0]?.result}
-    />
+    <div className="space-y-8">
+      {/* CalcSheet summary (read-only recap) */}
+      <details className="group">
+        <summary className="cursor-pointer flex items-center gap-2 text-sm font-semibold text-[#16354B] bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 hover:bg-gray-100 transition-colors">
+          <span className="text-gray-400 group-open:rotate-90 transition-transform">▸</span>
+          Calculation Sheet — Regulatory Analysis
+          <span className="ml-auto text-xs text-gray-400 font-normal">Click to expand</span>
+        </summary>
+        <div className="mt-2 border border-gray-200 rounded-lg overflow-hidden">
+          <StepCalcSheet
+            clientData={clientData}
+            gasAppData={gasAppData}
+            zones={zones}
+            refrigerant={refrigerant}
+            application={application ?? null}
+            spaceTypes={spaceTypes}
+            zoneRegulations={zoneRegulations}
+            lang={lang}
+          />
+        </div>
+      </details>
+
+      {/* Product Recommendation */}
+      <StepTieredBOM
+        selectionResult={selectionResult}
+        pricingResult={pricingResult}
+        customerGroup={customerGroup}
+        customerGroups={CUSTOMER_GROUPS}
+        onCustomerGroupChange={setCustomerGroup}
+        clientData={clientData}
+        gasAppData={gasAppData}
+        regulationResult={zoneRegulations[0]?.result}
+        productImages={productImages}
+        zoneCalcData={zoneCalcData}
+      />
+    </div>
   );
 }

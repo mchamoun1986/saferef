@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { User, FolderOpen } from 'lucide-react';
 import type { ProductRecord, DiscountRow, BOMZone } from '@/lib/m2-engine/types';
 import type { SelectionInput, SelectionResult, PricingInput, PricingResult } from '@/lib/engine-types';
 import { toProductEntries } from '@/lib/m2-engine/parse-product';
@@ -13,7 +14,42 @@ import StepZoneQty from './StepZoneQty';
 import StepTieredBOM from './StepTieredBOM';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
-const STEP_LABELS = ['Application & Gas', 'Technical', 'Zones', 'Quote'];
+const STEP_LABELS = ['Client', 'Application & Gas', 'Technical', 'Zones', 'Products'];
+
+interface SelectorClientData {
+  firstName: string;
+  lastName: string;
+  company: string;
+  email: string;
+  phone: string;
+  projectName: string;
+  country: string;
+  rgpdConsent: boolean;
+}
+
+const COUNTRIES = [
+  { value: 'FR', label: 'France' },
+  { value: 'SE', label: 'Sweden' },
+  { value: 'UK', label: 'United Kingdom' },
+  { value: 'DE', label: 'Germany' },
+  { value: 'ES', label: 'Spain' },
+  { value: 'IT', label: 'Italy' },
+  { value: 'NL', label: 'Netherlands' },
+  { value: 'BE', label: 'Belgium' },
+  { value: 'CH', label: 'Switzerland' },
+  { value: 'AT', label: 'Austria' },
+  { value: 'NO', label: 'Norway' },
+  { value: 'DK', label: 'Denmark' },
+  { value: 'FI', label: 'Finland' },
+  { value: 'PL', label: 'Poland' },
+  { value: 'CZ', label: 'Czech Republic' },
+  { value: 'PT', label: 'Portugal' },
+  { value: 'IE', label: 'Ireland' },
+  { value: 'GR', label: 'Greece' },
+  { value: 'RO', label: 'Romania' },
+  { value: 'HU', label: 'Hungary' },
+  { value: 'OTHER', label: 'Other' },
+];
 
 interface RefOption {
   id: string;
@@ -35,6 +71,84 @@ const CUSTOMER_GROUPS = [
   'AKund', 'BKund', 'NO',
 ];
 
+/* ── Inline Client Step (mirrors Calculator StepClient styling) ── */
+function StepClientInline({ data, onChange }: { data: SelectorClientData; onChange: (d: SelectorClientData) => void }) {
+  const update = <K extends keyof SelectorClientData>(field: K, value: SelectorClientData[K]) => {
+    onChange({ ...data, [field]: value });
+  };
+
+  const inputClass =
+    'w-full bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-lg px-3.5 py-2.5 text-sm font-medium text-[#16354B] focus:border-[#16354B] focus:ring-2 focus:ring-[#16354B]/20 outline-none transition-colors';
+  const labelClass = 'block text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider mb-1.5';
+
+  return (
+    <div className="space-y-5">
+      {/* RGPD Consent */}
+      <div className="bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-xl px-5 py-3 flex items-start gap-3">
+        <input type="checkbox" className="mt-1 w-4 h-4 accent-[#16354B] flex-shrink-0" checked={data.rgpdConsent} onChange={(e) => update('rgpdConsent', e.target.checked)} />
+        <span className="text-xs text-[#6b8da5] leading-relaxed">
+          I consent to my data being processed by SafeRef for this request (GDPR EU 2016/679).
+        </span>
+      </div>
+
+      {/* Client Info */}
+      <div className="bg-white rounded-xl shadow-[0_2px_12px_rgba(22,53,75,0.08)] p-5 space-y-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-1 h-6 bg-[#E63946] rounded-full" />
+          <User className="w-5 h-5 text-[#E63946]" />
+          <h3 className="text-sm font-bold text-[#16354B]">Client Information</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>First Name</label>
+            <input type="text" className={inputClass} value={data.firstName} onChange={(e) => update('firstName', e.target.value)} />
+          </div>
+          <div>
+            <label className={labelClass}>Last Name</label>
+            <input type="text" className={inputClass} value={data.lastName} onChange={(e) => update('lastName', e.target.value)} />
+          </div>
+          <div>
+            <label className={labelClass}>Company</label>
+            <input type="text" className={inputClass} value={data.company} onChange={(e) => update('company', e.target.value)} />
+          </div>
+          <div>
+            <label className={labelClass}>Email</label>
+            <input type="email" className={inputClass} value={data.email} onChange={(e) => update('email', e.target.value)} />
+          </div>
+          <div>
+            <label className={labelClass}>Phone</label>
+            <input type="tel" className={inputClass} value={data.phone} onChange={(e) => update('phone', e.target.value)} />
+          </div>
+        </div>
+      </div>
+
+      {/* Project Info */}
+      <div className="bg-white rounded-xl shadow-[0_2px_12px_rgba(22,53,75,0.08)] p-5 space-y-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-1 h-6 bg-[#E63946] rounded-full" />
+          <FolderOpen className="w-5 h-5 text-[#E63946]" />
+          <h3 className="text-sm font-bold text-[#16354B]">Project Information</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>Project Name</label>
+            <input type="text" className={inputClass} value={data.projectName} onChange={(e) => update('projectName', e.target.value)} />
+          </div>
+          <div>
+            <label className={labelClass}>Country</label>
+            <select className={inputClass} value={data.country} onChange={(e) => update('country', e.target.value)}>
+              <option value="">Select country...</option>
+              {COUNTRIES.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SelectorWizard() {
   const [step, setStep] = useState(1);
   const [rawProducts, setRawProducts] = useState<ProductRecord[]>([]);
@@ -43,22 +157,27 @@ export default function SelectorWizard() {
   const [applications, setApplications] = useState<AppOption[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Step 1 state
+  // Step 1 — Client state
+  const [clientData, setClientData] = useState<SelectorClientData>({
+    firstName: '', lastName: '', company: '', email: '', phone: '', projectName: '', country: 'FR', rgpdConsent: false,
+  });
+
+  // Step 2 state (was step 1)
   const [application, setApplication] = useState('');
   const [gasGroup, setGasGroup] = useState('');
   const [refrigerantRefs, setRefrigerantRefs] = useState<string[]>([]);
   const [preferredFamily, setPreferredFamily] = useState('');
 
-  // Step 2 state
+  // Step 3 state (was step 2)
   const [voltage, setVoltage] = useState<'12V' | '24V' | '230V'>('24V');
   const [atexRequired, setAtexRequired] = useState(false);
-  const [mountType, setMountType] = useState('wall');
+  const [mountType, setMountType] = useState('ambient');
   const [standalone, setStandalone] = useState(false);
 
-  // Step 3 state
+  // Step 4 state (was step 3)
   const [zones, setZones] = useState<BOMZone[]>([{ name: 'Zone 1', detectorQty: 1 }]);
 
-  // Step 4 state
+  // Step 5 state (was step 4)
   const [customerGroup, setCustomerGroup] = useState('');
   const [selectionResult, setSelectionResult] = useState<SelectionResult | null>(null);
   const [pricingResult, setPricingResult] = useState<PricingResult | null>(null);
@@ -101,7 +220,7 @@ export default function SelectorWizard() {
       outputRequired: 'any',
       sitePowerVoltage: voltage,
       mountingType: mountType,
-      projectCountry: 'SE',
+      projectCountry: clientData.country || 'FR',
       products,
       controllers,
       accessories,
@@ -117,12 +236,21 @@ export default function SelectorWizard() {
       priceDb,
     };
     setPricingResult(calculatePricing(pInput));
-    setStep(4);
+    setStep(5);
   }
 
-  // Recalculate pricing when customer group changes on step 4
+  // Build image map from raw products (code -> image filename)
+  const productImages = useMemo(() => {
+    const map: Record<string, string | null> = {};
+    for (const p of rawProducts) {
+      if (p.image) map[p.code] = p.image;
+    }
+    return map;
+  }, [rawProducts]);
+
+  // Recalculate pricing when customer group changes on step 5
   useMemo(() => {
-    if (step !== 4 || !selectionResult) return;
+    if (step !== 5 || !selectionResult) return;
     const pInput: PricingInput = {
       tiers: selectionResult.tiers,
       customerGroup: (customerGroup || 'NO') as PricingInput['customerGroup'],
@@ -134,8 +262,8 @@ export default function SelectorWizard() {
   }, [customerGroup]);
 
   function nextStep() {
-    if (step === 3) { generateQuote(); return; }
-    setStep(s => Math.min(s + 1, 4));
+    if (step === 4) { generateQuote(); return; }
+    setStep(s => Math.min(s + 1, 5));
   }
 
   function prevStep() {
@@ -190,6 +318,9 @@ export default function SelectorWizard() {
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
         {step === 1 && (
+          <StepClientInline data={clientData} onChange={setClientData} />
+        )}
+        {step === 2 && (
           <StepAppGas
             applications={applications}
             refrigerants={refrigerants}
@@ -203,7 +334,7 @@ export default function SelectorWizard() {
             onPreferredFamilyChange={setPreferredFamily}
           />
         )}
-        {step === 2 && (
+        {step === 3 && (
           <StepTechnical
             voltage={voltage}
             atexRequired={atexRequired}
@@ -215,28 +346,30 @@ export default function SelectorWizard() {
             onStandaloneChange={setStandalone}
           />
         )}
-        {step === 3 && (
+        {step === 4 && (
           <StepZoneQty zones={zones} onChange={setZones} />
         )}
-        {step === 4 && selectionResult && pricingResult && (
+        {step === 5 && selectionResult && pricingResult && (
           <StepTieredBOM
             selectionResult={selectionResult}
             pricingResult={pricingResult}
             customerGroup={customerGroup}
             customerGroups={CUSTOMER_GROUPS}
             onCustomerGroupChange={setCustomerGroup}
-            clientData={{ firstName: '', lastName: '', company: '', email: '', phone: '', projectName: '', country: 'SE', customerGroup }}
+            clientData={{ ...clientData, customerGroup }}
             gasAppData={{ zoneType: application, selectedRefrigerant: refrigerantRefs[0] || '', selectedRange: '', sitePowerVoltage: voltage, zoneAtex: atexRequired, mountingType: mountType }}
+            productImages={productImages}
+            zoneCalcData={[]}
           />
         )}
 
-        {step < 4 ? (
+        {step < 5 ? (
           <div className="flex justify-between mt-8">
             {step > 1 ? (
               <button onClick={prevStep} className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold px-8 py-3 rounded-lg">Back</button>
             ) : <div />}
             <button onClick={nextStep} className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold px-8 py-3 rounded-lg shadow-lg">
-              {step === 3 ? 'Generate Quote' : 'Next'}
+              {step === 4 ? 'Continue to Products' : 'Next'}
             </button>
           </div>
         ) : (

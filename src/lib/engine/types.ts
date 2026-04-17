@@ -250,6 +250,7 @@ export interface ProductEntry {
   maxPower: number | null;
   subCategory: string | null;
   compatibleFamilies: string[];
+  image?: string | null;
 }
 
 export interface AlertAccessory {
@@ -280,6 +281,7 @@ export interface TierSolution {
     gas: string; range: string | null; sensorTech: string | null;
     sensorLife: string | null; ip: string | null;
     tempMin: number | null; tempMax: number | null;
+    image: string | null;
   };
   detectorSpecs: {
     power: number | null; voltage: string | null;

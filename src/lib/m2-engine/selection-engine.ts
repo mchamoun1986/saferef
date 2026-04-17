@@ -228,6 +228,35 @@ function canDeliverOutput(p: ProductEntry, req: string): boolean {
 
 function f5_mounting(products: ProductEntry[], mountingType: string): ProductEntry[] {
   if (!mountingType || mountingType === 'any') return products;
+
+  // Detection Location logic:
+  // 'ambient' → all detectors (integrated or remote, all mount on wall)
+  // 'duct' → only detectors with remote sensor (remote=true) — needs duct sampling accessory
+  // 'pipe_valve' → detectors with remote=true OR native pipe products (mount includes 'pipe')
+  if (mountingType === 'ambient') {
+    // All detectors can detect in ambient air
+    return products;
+  }
+
+  if (mountingType === 'duct') {
+    // Duct detection requires MIDI remote sensor + duct sampling accessory
+    // X5 remote stays ambient-only — not suitable for duct
+    const filtered = products.filter(p => p.remote === true && p.family === 'MIDI');
+    return filtered.length > 0 ? filtered : products;
+  }
+
+  if (mountingType === 'pipe_valve') {
+    // Pipe/valve: MIDI remote + native pipe products (e.g. Aquis)
+    // X5 remote stays ambient-only — not suitable for pipe
+    const filtered = products.filter(p => {
+      if (p.remote === true && p.family === 'MIDI') return true;
+      if (p.mount && p.mount.includes('pipe')) return true;
+      return false;
+    });
+    return filtered.length > 0 ? filtered : products;
+  }
+
+  // Fallback for any legacy values
   const filtered = products.filter(p => {
     if (!p.mount || p.mount.length === 0) return true;
     return p.mount.includes(mountingType);
@@ -656,6 +685,7 @@ function buildSolution(
       range: detector.range, sensorTech: detector.sensorTech,
       sensorLife: detector.sensorLife, ip: detector.ip,
       tempMin: detector.tempMin, tempMax: detector.tempMax,
+      image: detector.image ?? null,
     },
     detectorSpecs: {
       power: detector.power, voltage: detector.voltage,

@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAMON Detection Requirement Engine — Simulator V5</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--card:#1a1d28;--card2:#222633;--border:#2a2e3d;--text:#e0e0e0;--dim:#888;--blue:#0054A6;--blue2:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f59e0b;--cyan:#06b6d4;--purple:#a855f7}
+body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:370px;min-width:370px;background:var(--card);border-right:1px solid var(--border);padding:20px;overflow-y:auto;position:sticky;top:0;height:100vh}
+.main{flex:1;padding:24px;overflow-y:auto;min-width:0}
+header{text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+header h1{font-size:1.1em;color:var(--blue2);margin-bottom:3px;font-weight:700}
+header p{font-size:.7em;color:var(--dim)}
+.samon-badge{display:inline-block;background:var(--blue);color:#fff;font-size:.62em;font-weight:700;padding:2px 8px;border-radius:3px;margin-bottom:8px;letter-spacing:1px}
+.section-title{font-size:.63em;font-weight:700;color:var(--blue2);text-transform:uppercase;letter-spacing:1px;margin:14px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.form-group{margin-bottom:11px}
+.form-group>label{display:block;font-size:.7em;font-weight:600;color:var(--dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+select,input[type=number]{width:100%;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.82em;transition:.2s}
+select:focus,input:focus{outline:none;border-color:var(--blue2)}
+select option{background:var(--card)}
+.props-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:8px;display:none}
+.props-card.visible{display:block}
+.props-header{font-size:.67em;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.props-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.prop-item{display:flex;flex-direction:column}
+.prop-label{color:var(--dim);font-size:.67em;text-transform:uppercase;letter-spacing:.4px}
+.prop-value{font-weight:600;color:var(--cyan);font-size:.82em}
+.pv-safety{color:var(--orange)}.pv-place{color:var(--purple)}
+.radio-group{display:flex;gap:5px;flex-wrap:wrap}
+.radio-group label{font-size:.78em;display:flex;align-items:center;gap:4px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:6px;transition:.2s}
+.radio-group label:hover{border-color:var(--blue2)}
+.radio-group label:has(input:checked){border-color:var(--blue2);background:rgba(59,130,246,.12)}
+.radio-group input:checked+span{color:var(--blue2);font-weight:600}
+.radio-group input{accent-color:var(--blue2)}
+.radio-cards{display:flex;flex-direction:column;gap:5px}
+.radio-card{display:flex;align-items:flex-start;gap:7px;cursor:pointer;padding:7px 10px;border:1px solid var(--border);border-radius:7px;transition:.2s;font-size:.78em}
+.radio-card:hover{border-color:var(--blue2);background:rgba(59,130,246,.04)}
+.radio-card:has(input:checked){border-color:var(--blue2);background:rgba(59,130,246,.1)}
+.radio-card input{accent-color:var(--blue2);margin-top:2px;flex-shrink:0}
+.radio-card input:checked~.rc-wrap .rc-code{color:var(--blue2)}
+.rc-wrap{display:flex;flex-direction:column;gap:1px;min-width:0}
+.rc-code{font-weight:700;font-size:.95em;color:var(--text);line-height:1.2}
+.rc-desc{color:var(--dim);font-size:.85em;line-height:1.25}
+.toggle-row{display:flex;align-items:flex-start;justify-content:space-between;padding:6px 0;gap:8px}
+.toggle-lbl{font-size:.79em;line-height:1.2}
+.toggle-desc{color:var(--dim);font-size:.68em;line-height:1.25;margin-top:1px}
+.toggle-info{display:flex;flex-direction:column;flex:1;min-width:0}
+.form-hint{color:var(--dim);font-size:.67em;margin-top:2px;line-height:1.3;font-style:italic}
+.toggle-sw{width:40px;height:22px;background:var(--border);border-radius:11px;cursor:pointer;position:relative;transition:.3s;flex-shrink:0}
+.toggle-sw.active{background:var(--blue2)}
+.toggle-sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.3s}
+.toggle-sw.active::after{left:21px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.presets{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.preset-btn{font-size:.7em;padding:4px 10px;border:1px solid var(--border);border-radius:12px;background:var(--card2);color:var(--dim);cursor:pointer;transition:.2s;white-space:nowrap}
+.preset-btn:hover{border-color:var(--blue2);color:var(--blue2)}
+.disclaimer{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.18);border-radius:8px;padding:10px 12px;margin-top:14px;font-size:.65em;color:var(--dim);line-height:1.45}
+.disclaimer strong{color:var(--orange);font-size:1.05em;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
+.disclaimer ul{margin:4px 0 0 14px;padding:0}
+.disclaimer li{margin-bottom:2px}
+.run-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:8px;font-size:.93em;font-weight:700;cursor:pointer;margin-top:12px;transition:.2s;text-transform:uppercase;letter-spacing:1.5px}
+.run-btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,84,166,.5)}
+.run-btn:active{transform:translateY(0)}
+.main-header{margin-bottom:18px}
+.main-header h2{font-size:1.05em;color:var(--text);font-weight:600}
+.main-header p{font-size:.77em;color:var(--dim);margin-top:3px}
+.placeholder{text-align:center;padding:60px 20px;color:var(--dim)}
+.placeholder .ph-icon{font-size:3em;margin-bottom:12px;opacity:.25}
+.step-card{background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.step-hdr{display:flex;align-items:center;padding:11px 15px;cursor:pointer;user-select:none;gap:9px;transition:.15s}
+.step-hdr:hover{background:var(--card2)}
+.step-num{font-size:.65em;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--blue);color:#fff;min-width:26px;text-align:center;flex-shrink:0}
+.step-title{flex:1;font-weight:600;font-size:.86em}
+.step-badge{font-size:.66em;padding:2px 8px;border-radius:10px;font-weight:600;flex-shrink:0}
+.step-chev{color:var(--dim);transition:.2s;font-size:.72em;flex-shrink:0}
+.step-card.open .step-chev{transform:rotate(90deg)}
+.step-body{padding:0 15px 13px;display:none;font-size:.82em}
+.step-card.open .step-body{display:block}
+table{width:100%;border-collapse:collapse;margin:8px 0;font-size:.8em}
+th{background:var(--card2);padding:6px 9px;text-align:left;font-size:.7em;text-transform:uppercase;color:var(--dim);letter-spacing:.5px;white-space:nowrap}
+td{padding:5px 9px;border-top:1px solid var(--border);vertical-align:top}
+tr:hover td{background:rgba(255,255,255,.02)}
+.row-yes td{background:rgba(34,197,94,.07)}
+.row-no td{background:rgba(239,68,68,.06)}
+.row-skip td{opacity:.42}
+.row-manual td{background:rgba(245,158,11,.07)}
+.badge{display:inline-block;font-size:.7em;padding:2px 7px;border-radius:10px;font-weight:600}
+.b-yes{background:rgba(34,197,94,.15);color:var(--green)}
+.b-no{background:rgba(239,68,68,.15);color:var(--red)}
+.b-warn,.b-manual{background:rgba(245,158,11,.15);color:var(--orange)}
+.b-skip{background:rgba(107,114,128,.15);color:var(--dim)}
+.b-pass{background:rgba(34,197,94,.15);color:var(--green)}
+.b-error{background:rgba(239,68,68,.15);color:var(--red)}
+.b-norm{background:rgba(0,84,166,.22);color:var(--blue2)}
+.b-derived{background:rgba(6,182,212,.15);color:var(--cyan)}
+.b-rec{background:rgba(168,85,247,.15);color:var(--purple)}
+.b-info{background:rgba(107,114,128,.15);color:var(--dim)}
+.decision-banner{border-radius:10px;padding:16px 22px;margin-bottom:14px;display:flex;align-items:center;gap:14px}
+.decision-banner.yes{background:rgba(239,68,68,.11);border:1px solid rgba(239,68,68,.28)}
+.decision-banner.no{background:rgba(34,197,94,.11);border:1px solid rgba(34,197,94,.28)}
+.decision-banner.manual{background:rgba(245,158,11,.11);border:1px solid rgba(245,158,11,.28)}
+.db-icon{font-size:1.8em;flex-shrink:0}
+.db-text h3{font-size:1.15em;font-weight:700;margin-bottom:2px}
+.db-yes h3{color:var(--red)}.db-no h3{color:var(--green)}.db-manual h3{color:var(--orange)}
+.db-text p{font-size:.8em;color:var(--dim)}
+.threshold-box{background:var(--bg);border:2px solid var(--blue2);border-radius:10px;padding:14px 18px;text-align:center;margin:10px 0}
+.threshold-box .t-lbl{font-size:.7em;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
+.threshold-box .t-val{font-size:2em;font-weight:700;color:var(--blue2);line-height:1}
+.threshold-box .t-unit{font-size:.82em;color:var(--dim);margin-top:2px}
+.thr-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.thr-two .threshold-box:first-child{border-color:var(--orange)}.thr-two .threshold-box:first-child .t-val{color:var(--orange)}
+.thr-two .threshold-box:last-child{border-color:var(--red)}.thr-two .threshold-box:last-child .t-val{color:var(--red)}
+.conc-wrap{margin:12px 0}
+.conc-track{height:28px;background:var(--bg);border-radius:14px;position:relative;border:1px solid var(--border);overflow:hidden}
+.conc-zone{position:absolute;height:100%;top:0}
+.cz-safe{background:rgba(34,197,94,.2);left:0}.cz-1m{background:rgba(245,158,11,.25)}.cz-2m{background:rgba(239,68,68,.25)}
+.conc-ptr-row{height:24px;position:relative;margin-top:4px}
+.conc-ptr{position:absolute;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;font-size:.67em;font-weight:700;z-index:2}
+.conc-ptr-tick{width:2px;height:8px;background:var(--text);margin-bottom:1px}
+.conc-ptr-lbl{background:var(--card2);padding:1px 5px;border-radius:3px;white-space:nowrap;color:var(--text);border:1px solid var(--border)}
+.conc-val-lbl{color:var(--cyan);font-family:Consolas,monospace;font-size:1.05em}
+.conc-leg{display:flex;gap:12px;flex-wrap:wrap;margin-top:5px;font-size:.7em;color:var(--dim);align-items:center}
+.conc-leg-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0;display:inline-block}
+.calc-block{background:var(--bg);border-radius:6px;padding:8px 11px;margin:5px 0}
+.calc-block .cb-lbl{color:var(--dim);font-size:.68em;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.cb-formula{font-family:"Cascadia Code",Consolas,monospace;color:var(--cyan);font-size:.82em;word-break:break-all}
+.cb-result{font-family:"Cascadia Code",Consolas,monospace;color:var(--green);font-weight:700;font-size:.85em}
+.cb-note{color:var(--dim);font-size:.77em;font-style:italic;margin-top:2px}
+.output-json{background:var(--bg);border-radius:8px;padding:13px;font-family:"Cascadia Code",Consolas,monospace;font-size:.74em;overflow-x:auto;line-height:1.65;white-space:pre}
+.jk{color:var(--blue2)}.js{color:var(--green)}.jn{color:var(--orange)}
+.jbt{color:var(--green);font-weight:600}.jbf{color:var(--red);font-weight:600}.jnull{color:var(--dim)}
+.trace-filters{display:flex;gap:5px;margin-bottom:9px;flex-wrap:wrap}
+.tfbtn{font-size:.73em;padding:3px 11px;border:1px solid var(--border);border-radius:11px;background:transparent;color:var(--dim);cursor:pointer;transition:.2s}
+.tfbtn.active{border-color:var(--blue2);color:var(--blue2);background:rgba(59,130,246,.1)}
+.trace-step{border-radius:6px;padding:9px 11px;margin:4px 0;border-left:3px solid var(--border)}
+.trace-step:nth-child(even){background:rgba(255,255,255,.013)}
+.ts-YES{border-left-color:var(--green)}.ts-NO{border-left-color:var(--red)}
+.ts-SKIP{border-left-color:var(--dim);opacity:.55}.ts-MANUAL_REVIEW{border-left-color:var(--orange)}
+.ts-meta{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:3px;align-items:center}
+.ts-id{font-size:.67em;color:var(--dim);font-family:Consolas,monospace;background:var(--bg);padding:1px 4px;border-radius:3px}
+.ts-eng{font-size:.65em;padding:1px 5px;border-radius:3px;background:rgba(0,84,166,.22);color:var(--blue2);font-weight:700}
+.ts-fn{font-size:.67em;color:var(--cyan);font-family:Consolas,monospace}
+.ts-en{color:var(--text);margin-bottom:2px;font-size:.83em}
+.ts-fr{color:var(--dim);font-style:italic;font-size:.76em}
+.ts-dur{font-size:.65em;color:var(--dim);margin-top:2px}
+.ts-io{display:flex;gap:7px;flex-wrap:wrap;margin-top:5px}
+.ts-blk{background:var(--bg);border-radius:4px;padding:4px 7px;font-family:Consolas,monospace;font-size:.7em;flex:1;min-width:120px;word-break:break-all}
+.ts-blk-lbl{color:var(--dim);font-size:.65em;text-transform:uppercase;margin-bottom:2px;font-family:"Segoe UI",system-ui;font-weight:600}
+.kv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:5px;margin:7px 0}
+.kv-item{background:var(--bg);border-radius:6px;padding:5px 9px}
+.kv-lbl{font-size:.65em;color:var(--dim);text-transform:uppercase;letter-spacing:.4px}
+.kv-val{font-weight:600;color:var(--text);font-size:.82em;margin-top:1px;word-break:break-all}
+.info-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.82em}
+.info-row:last-child{border:none}.ik{color:var(--dim)}.iv{font-weight:600;text-align:right}
+.code{font-family:"Cascadia Code",Consolas,monospace;font-size:.8em;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--cyan)}
+.mt8{margin-top:8px}.dimtext{color:var(--dim)}
+.density-row{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:.82em;flex-wrap:wrap}
+.dens-val{font-weight:700;font-family:Consolas,monospace;color:var(--cyan)}
+@media(max-width:900px){.layout{flex-direction:column}.sidebar{width:100%;min-width:unset;height:auto;position:static}.main{padding:14px}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <header>
+    <div class="samon-badge">SAMON V5</div>
+    <h1>Detection Requirement Engine</h1>
+    <p>EN 378-3 Decision + Sizing + Placement + Thresholds</p>
+  </header>
+  <div class="section-title">Preset Scenarios</div>
+  <div class="presets">
+    <button class="preset-btn" onclick="loadPreset(0)">R-32 Office</button>
+    <button class="preset-btn" onclick="loadPreset(1)">R-290 Shop</button>
+    <button class="preset-btn" onclick="loadPreset(2)">R-717 MR</button>
+    <button class="preset-btn" onclick="loadPreset(3)">R-744 MR</button>
+    <button class="preset-btn" onclick="loadPreset(4)">R-1234yf Retail</button>
+  </div>
+  <div class="section-title">Refrigerant</div>
+  <div class="form-group">
+    <label>Refrigerant Designation</label>
+    <select id="refrigerant" onchange="onRefrigerantChange()">
+      <option value="">&#8212; Select refrigerant &#8212;</option>
+      <option value="R-22">R-22 (A1)</option>
+      <option value="R-32">R-32 (A2L)</option>
+      <option value="R-134a">R-134a (A1)</option>
+      <option value="R-290">R-290 (A3)</option>
+      <option value="R-404A">R-404A (A1)</option>
+      <option value="R-407C">R-407C (A1)</option>
+      <option value="R-410A">R-410A (A1)</option>
+      <option value="R-448A">R-448A (A1)</option>
+      <option value="R-449A">R-449A (A1)</option>
+      <option value="R-513A">R-513A (A1)</option>
+      <option value="R-600a">R-600a (A3)</option>
+      <option value="R-717">R-717 (B2L)</option>
+      <option value="R-744">R-744 (A1)</option>
+      <option value="R-1234yf">R-1234yf (A2L)</option>
+      <option value="R-1234ze(E)">R-1234ze(E) (A2L)</option>
+    </select>
+  </div>
+  <div class="props-card" id="propsCard">
+    <div class="props-header">Refrigerant Properties (Auto-loaded)</div>
+    <div class="props-grid">
+      <div class="prop-item"><span class="prop-label">Safety Class</span><span class="pv-safety" id="p_safety">&#8212;</span></div>
+      <div class="prop-item"><span class="prop-label">Toxicity</span><span class="prop-value" id="p_tox">&#8212;</span></div>
+      <div class="prop-item"><span class="prop-label">Flammability</span><span class="prop-value" id="p_flam">&#8212;</span></div>
+      <div class="prop-item"><span class="prop-label">ATEL/ODL kg/m³</span><span class="prop-value" id="p_atel">&#8212;</span></div>
+      <div class="prop-item"><span class="prop-label">LFL kg/m³</span><span class="prop-value" id="p_lfl">&#8212;</span></div>
+      <div class="prop-item"><span class="prop-label">Vapour Density kg/m³</span><span class="prop-value" id="p_vd">&#8212;</span></div>
+      <div class="prop-item"><span class="prop-label">Mol. Mass g/mol</span><span class="prop-value" id="p_mm">&#8212;</span></div>
+      <div class="prop-item"><span class="prop-label">Placement Hint</span><span class="pv-place" id="p_plc">&#8212;</span></div>
+    </div>
+  </div>
+  <div class="section-title">Installation Context</div>
+  <div class="form-group"><label>Refrigerant Charge (kg)</label><input type="number" id="charge" min="0" step="0.1" value="8"></div>
+  <div class="grid2">
+    <div class="form-group"><label>Room Area (m²)</label><input type="number" id="area" min="0" step="1" value="60" oninput="calcVolume()"></div>
+    <div class="form-group"><label>Ceiling Height (m)</label><input type="number" id="height" min="0" step="0.1" value="2.5" oninput="calcVolume()"></div>
+  </div>
+  <div class="form-group"><label>Volume (m³) <span style="font-weight:400;color:var(--dim)">auto = Area &times; Height</span></label><input type="number" id="volume" min="0" step="1" value="150" style="color:var(--cyan);background:var(--card2);border-style:dashed"></div>
+  <div class="form-group">
+    <label>Access Category <span style="font-weight:400;color:var(--dim)">(EN 378-1, Table A.1)</span></label>
+    <div class="form-hint">Who can access the space where the refrigerating system is installed?</div>
+    <div class="radio-cards">
+      <label class="radio-card"><input type="radio" name="access" value="a"><div class="rc-wrap"><span class="rc-code">a &mdash; General Occupancy</span><span class="rc-desc">Public access, no restriction. Shops, supermarkets, cinemas, hospitals, schools, hotels.</span></div></label>
+      <label class="radio-card"><input type="radio" name="access" value="b" checked><div class="rc-wrap"><span class="rc-code">b &mdash; Supervised Occupancy</span><span class="rc-desc">Authorized persons only. Offices, labs, factories where occupants are aware of safety measures.</span></div></label>
+      <label class="radio-card"><input type="radio" name="access" value="c"><div class="rc-wrap"><span class="rc-code">c &mdash; Authorized Personnel</span><span class="rc-desc">Trained personnel only. Machinery rooms, dedicated equipment rooms, industrial plants.</span></div></label>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Location Class <span style="font-weight:400;color:var(--dim)">(EN 378-1, Clause 5)</span></label>
+    <div class="form-hint">Where is the refrigerating system physically located relative to occupied spaces?</div>
+    <div class="radio-cards">
+      <label class="radio-card"><input type="radio" name="location" value="I"><div class="rc-wrap"><span class="rc-code">I &mdash; Occupied Space</span><span class="rc-desc">Compressor/receiver inside the occupied space. Split AC, display cases in shop floor.</span></div></label>
+      <label class="radio-card"><input type="radio" name="location" value="II" checked><div class="rc-wrap"><span class="rc-code">II &mdash; Adjacent Room</span><span class="rc-desc">System in unoccupied room that communicates with occupied space via openings. Adjacent plantroom.</span></div></label>
+      <label class="radio-card"><input type="radio" name="location" value="III"><div class="rc-wrap"><span class="rc-code">III &mdash; Machinery Room</span><span class="rc-desc">Dedicated ventilated machinery room with no direct opening to occupied space. Separate engine room.</span></div></label>
+      <label class="radio-card"><input type="radio" name="location" value="IV"><div class="rc-wrap"><span class="rc-code">IV &mdash; Ventilated Enclosure</span><span class="rc-desc">Equipment in a ventilated enclosure within an occupied space. Rooftop unit casing, sealed cabinet.</span></div></label>
+    </div>
+  </div>
+  <div class="section-title">Conditions &amp; Context</div>
+  <div class="form-group">
+    <div class="toggle-row">
+      <div class="toggle-info"><span class="toggle-lbl">Below Ground</span><span class="toggle-desc">System installed in basement or underground level (affects flammable detection rules, EN 378-3 Cl.4.3)</span></div>
+      <div class="toggle-sw" id="t_below" onclick="toggleSw(&#39;t_below&#39;)"></div>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-info"><span class="toggle-lbl">Machinery Room</span><span class="toggle-desc">Dedicated room for refrigeration equipment &mdash; triggers mandatory detection (EN 378-3 Cl.9.1)</span></div>
+      <div class="toggle-sw" id="t_mr" onclick="toggleSw(&#39;t_mr&#39;)"></div>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-info"><span class="toggle-lbl">Occupied Space</span><span class="toggle-desc">People present during normal operation (offices, shops, restaurants)</span></div>
+      <div class="toggle-sw" id="t_occ" onclick="toggleSw(&#39;t_occ&#39;)"></div>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-info"><span class="toggle-lbl">Human Comfort</span><span class="toggle-desc">System used for human comfort cooling/heating (AC, heat pumps) vs. process/industrial use</span></div>
+      <div class="toggle-sw" id="t_hc" onclick="toggleSw(&#39;t_hc&#39;)"></div>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-info"><span class="toggle-lbl">C.3 Applicable</span><span class="toggle-desc">Annex C.3 alternative charge limits in use &mdash; enables QLMV/QLAV/RCL concentration check for detection decision</span></div>
+      <div class="toggle-sw active" id="t_c3" onclick="toggleSw(&#39;t_c3&#39;)"></div>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-info"><span class="toggle-lbl">Mech. Ventilation Present</span><span class="toggle-desc">Mechanical ventilation installed in the space (affects protective measure count under C.3)</span></div>
+      <div class="toggle-sw" id="t_vent" onclick="toggleSw(&#39;t_vent&#39;)"></div>
+    </div>
+  </div>
+  <button class="run-btn" onclick="runEngine()">&#9654; Run Engine</button>
+  <div class="disclaimer">
+    <strong>&#9888; Assumptions &amp; Limitations</strong>
+    <ul>
+      <li>Based on <strong>EN 378:2016</strong> (FprEN final draft). National adoptions (NF, BS, DIN, UNI&hellip;) may impose additional or different requirements.</li>
+      <li>This tool provides a <strong>preliminary engineering assessment only</strong>. It does not replace a qualified engineer's judgement or a formal risk assessment.</li>
+      <li>Room geometry is assumed <strong>simple rectangular</strong>. L-shaped, multi-level, or irregular spaces require manual review.</li>
+      <li>Single refrigerant system assumed. <strong>Mixed refrigerant installations</strong> in the same space are not covered.</li>
+      <li>Refrigerant data sourced from EN 378-1 Annex E. <strong>Verify values against the latest published edition</strong> before use in compliance documentation.</li>
+      <li>Conservative approach: when data is uncertain or borderline, the engine defaults to <strong>requiring detection</strong>.</li>
+      <li><strong>National and local regulations</strong> (e.g., ATEX zones, F-Gas requirements, insurance conditions) may mandate detection even when EN 378 does not.</li>
+      <li>Detector placement is indicative. <strong>Final positioning must account for actual airflow, obstructions, and equipment layout</strong> on site.</li>
+      <li>Threshold values calculated at <strong>standard conditions (25&deg;C, 101.3 kPa)</strong>. Altitude and temperature variations may affect real-world concentrations.</li>
+      <li>SAMON accepts <strong>no liability</strong> for design decisions based solely on this tool's output. All results must be validated by a competent professional before implementation.</li>
+    </ul>
+  </div>
+</aside>
+<main class="main">
+  <div class="main-header">
+    <h2>SAMON Detection Requirement Engine &mdash; Simulator V5</h2>
+    <p>EN 378-3 Detection Decision + Sizing + Placement + Thresholds &nbsp;|&nbsp; Engine: M1 &nbsp;|&nbsp; Spec: DB-V4D-2026-04 &nbsp;|&nbsp; V4D-5.0</p>
+  </div>
+  <div id="results">
+    <div class="placeholder"><div class="ph-icon">&#9881;</div>
+    <p>Select a refrigerant and configure the installation context,<br>then click <strong>Run Engine</strong> to evaluate detection requirements.</p></div>
+  </div>
+</main>
+</div>
+<script>
+// ========== REFRIGERANT DATABASE (Appendix A) ==========
+const REFS = {
+  "R-22":   {sc:"A1", tox:"A", flam:"1",  atel:0.21,    lfl:null,  vd:3.54, mm:86.5,  plc:"floor"},
+  "R-32":   {sc:"A2L",tox:"A", flam:"2L", atel:0.30,    lfl:0.307, vd:2.13, mm:52,    plc:"floor"},
+  "R-134a": {sc:"A1", tox:"A", flam:"1",  atel:0.21,    lfl:null,  vd:4.17, mm:102,   plc:"floor"},
+  "R-290":  {sc:"A3", tox:"A", flam:"3",  atel:0.09,    lfl:0.038, vd:1.80, mm:44,    plc:"floor"},
+  "R-404A": {sc:"A1", tox:"A", flam:"1",  atel:0.52,    lfl:null,  vd:4.03, mm:97.6,  plc:"floor"},
+  "R-407C": {sc:"A1", tox:"A", flam:"1",  atel:0.27,    lfl:null,  vd:3.54, mm:86.2,  plc:"floor"},
+  "R-410A": {sc:"A1", tox:"A", flam:"1",  atel:0.42,    lfl:null,  vd:2.97, mm:72.6,  plc:"floor"},
+  "R-448A": {sc:"A1", tox:"A", flam:"1",  atel:0.30,    lfl:null,  vd:3.98, mm:97.1,  plc:"floor"},
+  "R-449A": {sc:"A1", tox:"A", flam:"1",  atel:0.43,    lfl:null,  vd:3.98, mm:97.3,  plc:"floor"},
+  "R-513A": {sc:"A1", tox:"A", flam:"1",  atel:0.28,    lfl:null,  vd:4.64, mm:108.4, plc:"floor"},
+  "R-600a": {sc:"A3", tox:"A", flam:"3",  atel:0.0059,  lfl:0.043, vd:2.38, mm:58.1,  plc:"floor"},
+  "R-717":  {sc:"B2L",tox:"B", flam:"2L", atel:0.00022, lfl:0.116, vd:0.70, mm:17,    plc:"ceiling"},
+  "R-744":  {sc:"A1", tox:"A", flam:"1",  atel:0.072,   lfl:null,  vd:1.80, mm:44,    plc:"floor"},
+  "R-1234yf":{sc:"A2L",tox:"A",flam:"2L", atel:0.47,    lfl:0.289, vd:4.66, mm:114,   plc:"floor"},
+  "R-1234ze(E)":{sc:"A2L",tox:"A",flam:"2L",atel:0.28,  lfl:0.303, vd:4.66, mm:114,   plc:"floor"}
+};
+
+// Table C.3 — QLMV/QLAV/RCL values (EN 378-1:2016)
+const C3TABLE = {
+  "R-22":        {rcl:0.21,  qlmv:0.28, qlav:0.50},
+  "R-134a":      {rcl:0.21,  qlmv:0.28, qlav:0.58},
+  "R-407C":      {rcl:0.27,  qlmv:0.44, qlav:0.49},
+  "R-410A":      {rcl:0.39,  qlmv:0.42, qlav:0.42},
+  "R-744":       {rcl:0.072, qlmv:0.074,qlav:0.18},
+  "R-32":        {rcl:0.061, qlmv:0.063,qlav:0.15},
+  "R-1234yf":    {rcl:0.058, qlmv:0.060,qlav:0.14},
+  "R-1234ze(E)": {rcl:0.061, qlmv:0.063,qlav:0.15}
+};
+
+// ========== PRESET SCENARIOS ==========
+const PRESETS = [
+  // 0: R-32 Office — detection NOT required (conc < QLMV)
+  {ref:'R-32',   charge:8,   volume:150, area:60,  height:2.5, access:'b', loc:'II',  below:false, mr:false, occ:true,  hc:true,  c3:true,  vent:false},
+  // 1: R-290 Shop — detection NOT required (C.3 not applicable for A3)
+  {ref:'R-290',  charge:2,   volume:112, area:40,  height:2.8, access:'a', loc:'I',   below:false, mr:false, occ:true,  hc:false, c3:false, vent:false},
+  // 2: R-717 MR — detection REQUIRED (machinery room + NH3 >50kg)
+  {ref:'R-717',  charge:200, volume:280, area:80,  height:3.5, access:'c', loc:'III', below:false, mr:true,  occ:false, hc:false, c3:false, vent:false},
+  // 3: R-744 MR — detection REQUIRED (machinery room)
+  {ref:'R-744',  charge:120, volume:150, area:50,  height:3.0, access:'c', loc:'III', below:false, mr:true,  occ:false, hc:false, c3:false, vent:false},
+  // 4: R-1234yf Retail — detection NOT required (conc < QLMV)
+  {ref:'R-1234yf',charge:25, volume:600, area:200, height:3.0, access:'a', loc:'II',  below:false, mr:false, occ:true,  hc:true,  c3:true,  vent:false}
+];
+
+// ========== UI HELPERS ==========
+function toggleSw(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('active');
+}
+function getSw(id) {
+  return document.getElementById(id).classList.contains('active');
+}
+function setSw(id, val) {
+  const el = document.getElementById(id);
+  if (val) el.classList.add('active'); else el.classList.remove('active');
+}
+function getRadio(name) {
+  const el = document.querySelector('input[name="'+name+'"]:checked');
+  return el ? el.value : null;
+}
+function setRadio(name, val) {
+  const el = document.querySelector('input[name="'+name+'"][value="'+val+'"]');
+  if (el) el.checked = true;
+}
+function v(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function sv(id, val) { document.getElementById(id).value = val; }
+function calcVolume() {
+  const a = v('area'), h = v('height');
+  if (a > 0 && h > 0) sv('volume', (a * h).toFixed(0));
+}
+
+function onRefrigerantChange() {
+  const ref = document.getElementById('refrigerant').value;
+  const card = document.getElementById('propsCard');
+  if (!ref || !REFS[ref]) { card.classList.remove('visible'); return; }
+  const r = REFS[ref];
+  card.classList.add('visible');
+  document.getElementById('p_safety').textContent = r.sc;
+  document.getElementById('p_tox').textContent = r.tox;
+  document.getElementById('p_flam').textContent = r.flam;
+  document.getElementById('p_atel').textContent = r.atel !== null ? r.atel.toFixed(5).replace(/\.?0+$/,'') : 'n/a';
+  document.getElementById('p_lfl').textContent  = r.lfl  !== null ? r.lfl.toFixed(4).replace(/\.?0+$/,'') : 'n/a (non-flam)';
+  document.getElementById('p_vd').textContent   = r.vd + ' kg/m³';
+  document.getElementById('p_mm').textContent   = r.mm + ' g/mol';
+  document.getElementById('p_plc').textContent  = r.plc.toUpperCase();
+}
+
+function loadPreset(i) {
+  const p = PRESETS[i];
+  document.getElementById('refrigerant').value = p.ref;
+  onRefrigerantChange();
+  sv('charge', p.charge); sv('area', p.area); sv('height', p.height); calcVolume();
+  setRadio('access', p.access); setRadio('location', p.loc);
+  setSw('t_below', p.below); setSw('t_mr', p.mr); setSw('t_occ', p.occ);
+  setSw('t_hc', p.hc); setSw('t_c3', p.c3); setSw('t_vent', p.vent);
+}
+
+function stepCard(num, title, badge, badgeCls, content, open) {
+  const cls = open ? ' open' : '';
+  return '<div class="step-card'+cls+'">'+
+    '<div class="step-hdr" onclick="this.parentElement.classList.toggle(\'open\')">'+
+    '<span class="step-num">'+num+'</span>'+
+    '<span class="step-title">'+title+'</span>'+
+    '<span class="step-badge badge '+badgeCls+'">'+badge+'</span>'+
+    '<span class="step-chev">&#9658;</span>'+
+    '</div><div class="step-body">'+content+'</div></div>';
+}
+
+function fmt4(n) {
+  if (n === null || n === undefined || isNaN(n)) return 'n/a';
+  return n.toPrecision(4);
+}
+function fmtPpm(n) {
+  if (n === null || isNaN(n)) return 'n/a';
+  return Math.floor(n).toLocaleString();
+}
+function fmtKgm3(n) {
+  if (n === null || isNaN(n)) return 'n/a';
+  return n.toPrecision(4);
+}
+
+// ========== V4-D DETECTION REQUIREMENT ENGINE ==========
+const AIR_DENSITY = 1.18; // kg/m³ at 25°C
+const VM = 24.45; // molar volume L/mol at 25°C 101.3 kPa
+
+function calcPpm(c_kg, mm) { return (VM * c_kg * 1e6) / mm; }
+function calcKgm3(ppm, mm) { return (mm * ppm) / (VM * 1e6); }
+
+function runEngine() {
+  const refName = document.getElementById('refrigerant').value;
+  if (!refName || !REFS[refName]) {
+    document.getElementById('results').innerHTML = '<div class="placeholder"><div class="ph-icon">&#9888;</div><p>Please select a refrigerant first.</p></div>';
+    return;
+  }
+
+  const r = REFS[refName];
+  const charge = v('charge');
+  const volume = v('volume');
+  const area = v('area');
+  const height = v('height');
+  const access = getRadio('access');
+  const location = getRadio('location');
+  const belowGround = getSw('t_below');
+  const isMR = getSw('t_mr');
+  const isOccupied = getSw('t_occ');
+  const humanComfort = getSw('t_hc');
+  const c3Applicable = getSw('t_c3');
+  const mechVent = getSw('t_vent');
+
+  const concentration = volume > 0 ? charge / volume : 0;
+  const c3 = C3TABLE[refName] || null;
+  const m2 = r.lfl !== null ? 26 * r.lfl : null;
+
+  // ====== TRACE ======
+  const trace = [];
+  function tr(id, ruleId, en, fr, decision, inputs, outputs) {
+    trace.push({id, ruleId, en, fr, decision, inputs: inputs || {}, outputs: outputs || {}});
+  }
+
+  // ====== PATH A — Machinery Room ======
+  let pathA = 'SKIP';
+  let pathABasis = '';
+  if (isMR) {
+    pathA = 'YES';
+    pathABasis = 'EN 378-3:2016, Clause 9.1 — Detectors mandatory in machinery rooms';
+    tr('A1','DET-MR-001','Machinery room → detection required','Salle des machines → détection obligatoire','YES',{is_machinery_room:true},{detection:'YES'});
+    if (belowGround && ['2L','2','3'].includes(r.flam) && m2 !== null && charge > m2) {
+      tr('A2','DET-MR-002','MR + underground + flam > m2 → extra detector','SM + souterrain + inflammable > m2 → détecteur supplémentaire','YES',{below_ground:true,flam:r.flam,charge,m2},{extra_detector:true});
+    }
+  } else {
+    tr('A0','DET-MR-001','Not a machinery room — skip Path A','Pas une salle des machines — Path A ignoré','SKIP',{is_machinery_room:false});
+  }
+
+  // ====== PATH B — C.3 Occupied Space ======
+  let pathB = 'SKIP';
+  let pathBBasis = '';
+  let c3Zone = '';
+  if (c3Applicable && c3) {
+    if (belowGround) {
+      // Underground C.3.2.3
+      if (concentration <= c3.rcl) {
+        pathB = 'NO';
+        pathBBasis = 'C.3.2.3: concentration ' + fmtKgm3(concentration) + ' <= RCL ' + c3.rcl;
+        c3Zone = 'conc ≤ RCL';
+        tr('B1','DET-C3-006','Underground: conc <= RCL → no detection (this path)','Souterrain: conc <= RCL → pas de détection','NO',{concentration,rcl:c3.rcl});
+      } else if (concentration <= c3.qlmv) {
+        pathB = 'YES';
+        pathBBasis = 'C.3.2.3: RCL < concentration <= QLMV → at least 1 measure required';
+        c3Zone = 'RCL < conc ≤ QLMV';
+        tr('B2','DET-C3-007','Underground: RCL < conc <= QLMV → detection required','Souterrain: RCL < conc <= QLMV → détection requise','YES',{concentration,rcl:c3.rcl,qlmv:c3.qlmv});
+      } else {
+        pathB = 'YES';
+        pathBBasis = 'C.3.2.3: conc > QLMV → at least 2 measures required';
+        c3Zone = 'conc > QLMV';
+        tr('B3','DET-C3-008','Underground: conc > QLMV → 2 measures required','Souterrain: conc > QLMV → 2 mesures requises','YES',{concentration,qlmv:c3.qlmv});
+      }
+    } else {
+      // Above-ground C.3.2.2
+      if (concentration <= c3.qlmv) {
+        pathB = 'NO';
+        pathBBasis = 'C.3.2.2: concentration ' + fmtKgm3(concentration) + ' <= QLMV ' + c3.qlmv + ' → no measures required';
+        c3Zone = 'conc ≤ QLMV';
+        tr('B4','DET-C3-003','Above ground: conc <= QLMV → no detection required','Hors-sol: conc <= QLMV → pas de détection','NO',{concentration,qlmv:c3.qlmv});
+      } else if (concentration <= c3.qlav) {
+        pathB = 'YES';
+        pathBBasis = 'C.3.2.2: QLMV < concentration <= QLAV → at least 1 protective measure';
+        c3Zone = 'QLMV < conc ≤ QLAV';
+        tr('B5','DET-C3-004','Above ground: QLMV < conc <= QLAV → 1 measure','Hors-sol: QLMV < conc <= QLAV → 1 mesure','YES',{concentration,qlmv:c3.qlmv,qlav:c3.qlav});
+      } else {
+        pathB = 'YES';
+        pathBBasis = 'C.3.2.2: conc > QLAV → at least 2 protective measures required';
+        c3Zone = 'conc > QLAV';
+        tr('B6','DET-C3-005','Above ground: conc > QLAV → 2 measures required','Hors-sol: conc > QLAV → 2 mesures requises','YES',{concentration,qlmv:c3.qlmv,qlav:c3.qlav});
+      }
+    }
+  } else if (c3Applicable && !c3) {
+    pathB = 'MANUAL_REVIEW';
+    pathBBasis = 'C.3 applicable but no QLMV/QLAV/RCL data for ' + refName;
+    tr('B7','DET-C3-001','C.3 applicable but no table data → manual review','C.3 applicable mais données manquantes → revue manuelle','MANUAL_REVIEW',{refrigerant:refName});
+  } else {
+    tr('B0','DET-C3-001','C.3 not applicable — skip Path B','C.3 non applicable — Path B ignoré','SKIP',{c3_applicable:false});
+  }
+
+  // ====== PATH C — Below-ground flammable ======
+  let pathC = 'SKIP';
+  let pathCBasis = '';
+  if (belowGround && ['2L','2','3'].includes(r.flam) && m2 !== null && charge > m2) {
+    pathC = 'YES';
+    pathCBasis = 'EN 378-3:2016, Clause 4.3 — Underground + flammable + charge > m2';
+    tr('C1','DET-BG-001','Below ground + flammable + charge > m2 → detection + extra detector','Souterrain + inflammable + charge > m2 → détection + détecteur supplémentaire','YES',{below_ground:true,flam:r.flam,charge,m2});
+  } else {
+    tr('C0','DET-BG-001','Below-ground flammable path not triggered','Chemin souterrain inflammable non déclenché','SKIP',{below_ground:belowGround,flam:r.flam,charge,m2});
+  }
+
+  // ====== PATH D — Ammonia-specific ======
+  let pathD = 'SKIP';
+  let pathDBasis = '';
+  let nh3TwoLevel = false;
+  if (refName === 'R-717' && charge > 50) {
+    pathD = 'YES';
+    pathDBasis = 'EN 378-3:2016, Clause 9.3.3 — R-717 > 50 kg → two-level alarm';
+    nh3TwoLevel = true;
+    tr('D1','DET-NH3-001','R-717 > 50 kg → two-level alarm required','R-717 > 50 kg → alarme deux niveaux obligatoire','YES',{refrigerant:'R-717',charge},{two_level:true});
+  } else if (refName === 'R-717') {
+    tr('D2','DET-NH3-002','R-717 <= 50 kg → general paths apply','R-717 <= 50 kg → chemins généraux applicables','SKIP',{charge});
+  } else {
+    tr('D0','DET-NH3-001','Not R-717 — skip Path D','Pas R-717 — Path D ignoré','SKIP',{refrigerant:refName});
+  }
+
+  // ====== PATH E — Location IV enclosure ======
+  let pathE = 'SKIP';
+  if (location === 'IV') {
+    pathE = 'MANUAL_REVIEW';
+    tr('E1','DET-ENC-001','Location IV ventilated enclosure → manual review','Emplacement IV enceinte ventilée → revue manuelle','MANUAL_REVIEW',{location:'IV'});
+  } else {
+    tr('E0','DET-ENC-001','Not Location IV — skip Path E','Pas emplacement IV — Path E ignoré','SKIP',{location});
+  }
+
+  // ====== AGGREGATE DECISION ======
+  const paths = [
+    {id:'A',label:'Machinery Room',result:pathA,basis:pathABasis,rule:pathA==='YES'?'DET-MR-001':'—'},
+    {id:'B',label:'C.3 Occupied Space',result:pathB,basis:pathBBasis,rule:pathB==='YES'?'DET-C3-xxx':'—'},
+    {id:'C',label:'Below-Ground Flammable',result:pathC,basis:pathCBasis,rule:pathC==='YES'?'DET-BG-001':'—'},
+    {id:'D',label:'Ammonia-Specific',result:pathD,basis:pathDBasis,rule:pathD==='YES'?'DET-NH3-001':'—'},
+    {id:'E',label:'Location IV Enclosure',result:pathE,basis:'',rule:pathE==='MANUAL_REVIEW'?'DET-ENC-001':'—'}
+  ];
+
+  let detectionRequired = 'NO';
+  let governingBasis = 'DET-NONE-001: All paths negative — detection not normatively required but RECOMMENDED as good engineering practice';
+  let governingRule = 'DET-NONE-001';
+  const yesPaths = paths.filter(p => p.result === 'YES');
+  const mrPaths = paths.filter(p => p.result === 'MANUAL_REVIEW');
+
+  if (yesPaths.length > 0) {
+    detectionRequired = 'YES';
+    governingBasis = yesPaths.map(p => p.basis).join(' | ');
+    governingRule = yesPaths[0].rule;
+  } else if (mrPaths.length > 0) {
+    detectionRequired = 'MANUAL_REVIEW';
+    governingBasis = 'One or more paths require manual review';
+    governingRule = mrPaths[0].rule;
+  }
+
+  tr('F1', detectionRequired === 'NO' ? 'DET-NONE-001' : governingRule,
+    'Final detection decision: ' + detectionRequired,
+    'Décision finale: ' + detectionRequired,
+    detectionRequired, {yes_paths: yesPaths.length, mr_paths: mrPaths.length});
+
+  // ====== GOVERNING HAZARD ======
+  let governingHazard = 'NONE';
+  if (r.tox === 'B' && ['2L','2','3'].includes(r.flam)) governingHazard = 'BOTH';
+  else if (r.tox === 'B') governingHazard = 'TOXICITY';
+  else if (['2L','2','3'].includes(r.flam)) governingHazard = 'FLAMMABILITY';
+
+  // ====== THRESHOLD ENGINE ======
+  let threshold_ppm = null, threshold_kg_m3 = null, threshold_basis = '';
+  let atel_ppm = null, half_atel_ppm = null;
+  let lfl_ppm = null, lfl_25pct_ppm = null;
+  let stage2_ppm = null;
+  const actions = [];
+
+  if (nh3TwoLevel) {
+    threshold_ppm = 500;
+    threshold_kg_m3 = calcKgm3(500, r.mm);
+    threshold_basis = 'NH3_500';
+    stage2_ppm = 30000;
+    actions.push('Pre-alarm 500 ppm: warning + start ventilation');
+    actions.push('Main alarm 30,000 ppm: emergency shutdown + evacuation');
+    tr('TH1','THR-NH3-001','R-717 > 50 kg: two-level 500 / 30,000 ppm','R-717 > 50 kg: deux niveaux 500 / 30 000 ppm','YES',{},{threshold_ppm:500,stage2:30000});
+  } else {
+    if (r.atel !== null) {
+      atel_ppm = calcPpm(r.atel, r.mm);
+      half_atel_ppm = atel_ppm * 0.5;
+    }
+    if (r.lfl !== null) {
+      lfl_ppm = calcPpm(r.lfl, r.mm);
+      lfl_25pct_ppm = lfl_ppm * 0.25;
+    }
+    if (half_atel_ppm !== null && lfl_25pct_ppm !== null) {
+      if (half_atel_ppm <= lfl_25pct_ppm) {
+        threshold_ppm = Math.floor(half_atel_ppm);
+        threshold_basis = '50%_ATEL_ODL';
+      } else {
+        threshold_ppm = Math.floor(lfl_25pct_ppm);
+        threshold_basis = '25%_LFL';
+      }
+    } else if (half_atel_ppm !== null) {
+      threshold_ppm = Math.floor(half_atel_ppm);
+      threshold_basis = '50%_ATEL_ODL';
+    } else if (lfl_25pct_ppm !== null) {
+      threshold_ppm = Math.floor(lfl_25pct_ppm);
+      threshold_basis = '25%_LFL';
+    }
+    if (threshold_ppm !== null) {
+      threshold_kg_m3 = calcKgm3(threshold_ppm, r.mm);
+    }
+    actions.push('Activate alarm at ' + (threshold_ppm || '—') + ' ppm');
+    if (isMR) actions.push('Start emergency ventilation (EN 378-3 9.1 + 5.13)');
+    tr('TH2','THR-GEN-001','Threshold: min(50% ATEL, 25% LFL)','Seuil: min(50% ATEL, 25% LFL)',threshold_ppm?'YES':'NO',
+      {atel_ppm: atel_ppm ? Math.round(atel_ppm) : null, lfl_25pct_ppm: lfl_25pct_ppm ? Math.round(lfl_25pct_ppm) : null},
+      {threshold_ppm, threshold_basis});
+  }
+
+  // ====== DETECTOR QUANTITY ======
+  let minDet = 0, recDet = 0;
+  const qtyNotes = [];
+  if (detectionRequired === 'YES' || detectionRequired === 'MANUAL_REVIEW') {
+    minDet = 1;
+    qtyNotes.push('QTY-MIN-001: Detection required → min 1 detector');
+    if (belowGround && ['2L','2','3'].includes(r.flam) && m2 !== null && charge > m2) {
+      minDet += 1;
+      qtyNotes.push('QTY-MIN-002: Below ground + flammable > m2 → +1 additional');
+    }
+    recDet = Math.max(minDet, area > 100 ? Math.ceil(area / 100) : 1);
+    if (area > 100) qtyNotes.push('QTY-REC-001: Area ' + area + ' m² > 100 → ' + Math.ceil(area / 100) + ' detectors');
+    if (area > 200) qtyNotes.push('QTY-REC-004: Area > 200 m² → at least 2 recommended');
+  }
+  tr('Q1','QTY-MIN-001','Detector quantity: min=' + minDet + ', rec=' + recDet,'Quantité: min=' + minDet + ', rec=' + recDet,
+    detectionRequired,{area,below_ground:belowGround},{min:minDet,rec:recDet});
+
+  // ====== PLACEMENT ENGINE ======
+  let placementHeight = 'floor';
+  let placementHeightM = '0 – 0.5 m';
+  let placementRationale = '';
+  const densityRatio = r.vd / AIR_DENSITY;
+
+  if (r.vd > 1.5 * AIR_DENSITY) {
+    placementHeight = 'floor';
+    placementHeightM = '0 – 0.5 m';
+    placementRationale = 'PLC-HGT-002: ρr=' + r.vd + ' > 1.5×ρa=' + (1.5*AIR_DENSITY).toFixed(2) + ' → gas pools at floor level';
+  } else if (r.vd < 0.8 * AIR_DENSITY) {
+    placementHeight = 'ceiling';
+    placementHeightM = (height - 0.3).toFixed(1) + ' m (ceiling − 0.3 m)';
+    placementRationale = 'PLC-HGT-003: ρr=' + r.vd + ' < 0.8×ρa=' + (0.8*AIR_DENSITY).toFixed(2) + ' → gas rises to ceiling';
+  } else {
+    placementHeight = 'breathing_zone';
+    placementHeightM = '1.2 – 1.8 m';
+    placementRationale = 'PLC-HGT-004: ρr=' + r.vd + ' near neutral buoyancy → breathing zone';
+  }
+
+  const candidateZones = [];
+  if (isMR) candidateZones.push({zone:'Near compressor/equipment',rule:'PLC-MR-001'});
+  if (belowGround) candidateZones.push({zone:'Lowest accessible point',rule:'PLC-BG-001'});
+  candidateZones.push({zone:'Near probable leak source (joints, valves)',rule:'PLC-POS-001'});
+  if (isMR) candidateZones.push({zone:'Near ventilation exhaust intake',rule:'PLC-POS-001'});
+
+  tr('P1','PLC-HGT-002','Placement: '+placementHeight+' ('+placementHeightM+')','Placement: '+placementHeight+' ('+placementHeightM+')',
+    'YES',{vapour_density:r.vd,air_density:AIR_DENSITY,ratio:densityRatio.toFixed(2)},{height:placementHeight,band:placementHeightM});
+
+  // ====== REVIEW FLAGS ======
+  const reviewFlags = [];
+  if (c3Applicable && !c3) reviewFlags.push('MR-002: QLMV/QLAV/RCL not available for ' + refName);
+  if (c3 && Math.abs(concentration - c3.qlmv) / c3.qlmv < 0.05) reviewFlags.push('MR-003: Concentration within 5% of QLMV boundary');
+  if (location === 'IV') reviewFlags.push('MR-008: Ventilated enclosure — assess integrity');
+  if (belowGround && r.tox === 'B') reviewFlags.push('MR-009: Below ground + class B refrigerant');
+
+  // ====== CONCENTRATION BAR ======
+  const concPpm = volume > 0 ? calcPpm(concentration, r.mm) : 0;
+
+  // ====== RENDER ======
+  let html = '';
+
+  // Decision banner
+  const decCls = detectionRequired === 'YES' ? 'yes' : detectionRequired === 'NO' ? 'no' : 'manual';
+  const decIcon = detectionRequired === 'YES' ? '&#9888;' : detectionRequired === 'NO' ? '&#10004;' : '&#9881;';
+  const decTitle = detectionRequired === 'YES' ? 'DETECTION REQUIRED' : detectionRequired === 'NO' ? 'DETECTION RECOMMENDED' : 'MANUAL REVIEW NEEDED';
+  html += '<div class="decision-banner '+decCls+'"><div class="db-icon">'+decIcon+'</div><div class="db-text db-'+decCls+'"><h3>'+decTitle+'</h3><p>'+governingBasis+'</p></div></div>';
+
+  // Step 1: Detection Decision
+  let s1 = '<table><tr><th>Path</th><th>Description</th><th>Result</th><th>Rule ID</th><th>Basis</th></tr>';
+  paths.forEach(p => {
+    const rc = p.result === 'YES' ? 'row-yes' : p.result === 'NO' ? 'row-no' : p.result === 'SKIP' ? 'row-skip' : 'row-manual';
+    const bc = p.result === 'YES' ? 'b-yes' : p.result === 'NO' ? 'b-no' : p.result === 'SKIP' ? 'b-skip' : 'b-manual';
+    s1 += '<tr class="'+rc+'"><td><strong>'+p.id+'</strong></td><td>'+p.label+'</td><td><span class="badge '+bc+'">'+p.result+'</span></td><td><span class="code">'+p.rule+'</span></td><td>'+p.basis+'</td></tr>';
+  });
+  s1 += '</table>';
+  s1 += '<div class="kv-grid">';
+  s1 += '<div class="kv-item"><div class="kv-lbl">Governing Hazard</div><div class="kv-val">'+governingHazard+'</div></div>';
+  s1 += '<div class="kv-item"><div class="kv-lbl">Safety Class</div><div class="kv-val">'+r.sc+'</div></div>';
+  s1 += '<div class="kv-item"><div class="kv-lbl">Concentration</div><div class="kv-val">'+fmtKgm3(concentration)+' kg/m³</div></div>';
+  if (c3) {
+    s1 += '<div class="kv-item"><div class="kv-lbl">QLMV</div><div class="kv-val">'+c3.qlmv+' kg/m³</div></div>';
+    s1 += '<div class="kv-item"><div class="kv-lbl">QLAV</div><div class="kv-val">'+c3.qlav+' kg/m³</div></div>';
+    s1 += '<div class="kv-item"><div class="kv-lbl">RCL</div><div class="kv-val">'+c3.rcl+' kg/m³</div></div>';
+    if (c3Zone) s1 += '<div class="kv-item"><div class="kv-lbl">C.3 Zone</div><div class="kv-val">'+c3Zone+'</div></div>';
+  }
+  s1 += '</div>';
+  html += stepCard('1','Detection Decision',detectionRequired,
+    detectionRequired==='YES'?'b-yes':detectionRequired==='NO'?'b-no':'b-manual', s1, true);
+
+  // Step 2: Threshold
+  let s2 = '';
+  if (nh3TwoLevel) {
+    s2 += '<div class="thr-two">';
+    s2 += '<div class="threshold-box"><div class="t-lbl">Pre-alarm (Level 1)</div><div class="t-val">500</div><div class="t-unit">ppm — Warning + ventilation</div></div>';
+    s2 += '<div class="threshold-box"><div class="t-lbl">Main Alarm (Level 2)</div><div class="t-val">30,000</div><div class="t-unit">ppm — Shutdown + evacuation</div></div>';
+    s2 += '</div>';
+    s2 += '<div class="calc-block mt8"><div class="cb-lbl">Basis</div><div class="cb-result">THR-NH3-001 — EN 378-3:2016, Clause 9.3.3 [NORMATIVE]</div></div>';
+  } else if (threshold_ppm !== null) {
+    s2 += '<div class="threshold-box"><div class="t-lbl">Normative Threshold</div><div class="t-val">'+threshold_ppm.toLocaleString()+'</div><div class="t-unit">ppm ('+threshold_basis+') = '+fmtKgm3(threshold_kg_m3)+' kg/m³</div></div>';
+    s2 += '<div class="calc-block mt8"><div class="cb-lbl">50% ATEL/ODL</div>';
+    if (atel_ppm !== null) {
+      s2 += '<div class="cb-formula">(24.45 × '+r.atel+' × 10⁶) / '+r.mm+' = '+Math.round(atel_ppm).toLocaleString()+' ppm → 50% = '+Math.round(half_atel_ppm).toLocaleString()+' ppm</div>';
+    } else {
+      s2 += '<div class="cb-formula">n/a (non-toxic / no ATEL data)</div>';
+    }
+    s2 += '</div>';
+    s2 += '<div class="calc-block"><div class="cb-lbl">25% LFL</div>';
+    if (lfl_ppm !== null) {
+      s2 += '<div class="cb-formula">(24.45 × '+r.lfl+' × 0.25 × 10⁶) / '+r.mm+' = '+Math.round(lfl_25pct_ppm).toLocaleString()+' ppm</div>';
+    } else {
+      s2 += '<div class="cb-formula">n/a (non-flammable)</div>';
+    }
+    s2 += '</div>';
+    s2 += '<div class="calc-block"><div class="cb-lbl">Governing</div><div class="cb-result">min('+
+      (half_atel_ppm !== null ? Math.round(half_atel_ppm).toLocaleString() : 'n/a')+', '+
+      (lfl_25pct_ppm !== null ? Math.round(lfl_25pct_ppm).toLocaleString() : 'n/a')+') = '+
+      threshold_ppm.toLocaleString()+' ppm ('+threshold_basis+')</div></div>';
+    s2 += '<div class="cb-note">EN 378-3:2016, Clause 9.3.1 [NORMATIVE] — Round down (conservative)</div>';
+  } else {
+    s2 += '<p class="dimtext">No threshold applicable (detection not required and no data).</p>';
+  }
+  // Actions
+  if (actions.length > 0) {
+    s2 += '<div class="section-title mt8">Required Actions</div><ul>';
+    actions.forEach(a => s2 += '<li>'+a+'</li>');
+    s2 += '</ul>';
+  }
+  html += stepCard('2','Alarm Thresholds', threshold_ppm ? threshold_ppm.toLocaleString()+' ppm' : '—',
+    threshold_ppm ? 'b-norm' : 'b-info', s2, true);
+
+  // Step 3: Concentration Visualization
+  let s3 = '';
+  if (c3 && volume > 0) {
+    const maxConc = c3.qlav * 1.5;
+    const pctConc = Math.min(concentration / maxConc * 100, 100);
+    const pctQlmv = c3.qlmv / maxConc * 100;
+    const pctQlav = c3.qlav / maxConc * 100;
+    s3 += '<div class="conc-wrap">';
+    s3 += '<div class="conc-track">';
+    s3 += '<div class="conc-zone cz-safe" style="width:'+pctQlmv+'%"></div>';
+    s3 += '<div class="conc-zone cz-1m" style="left:'+pctQlmv+'%;width:'+(pctQlav-pctQlmv)+'%"></div>';
+    s3 += '<div class="conc-zone cz-2m" style="left:'+pctQlav+'%;width:'+(100-pctQlav)+'%"></div>';
+    s3 += '</div>';
+    s3 += '<div class="conc-ptr-row">';
+    s3 += '<div class="conc-ptr" style="left:'+pctConc+'%"><div class="conc-ptr-tick"></div><div class="conc-ptr-lbl conc-val-lbl">'+fmtKgm3(concentration)+'</div></div>';
+    s3 += '<div class="conc-ptr" style="left:'+pctQlmv+'%"><div class="conc-ptr-tick" style="background:var(--orange)"></div><div class="conc-ptr-lbl" style="color:var(--orange)">QLMV '+c3.qlmv+'</div></div>';
+    s3 += '<div class="conc-ptr" style="left:'+pctQlav+'%"><div class="conc-ptr-tick" style="background:var(--red)"></div><div class="conc-ptr-lbl" style="color:var(--red)">QLAV '+c3.qlav+'</div></div>';
+    s3 += '</div>';
+    s3 += '<div class="conc-leg">';
+    s3 += '<span><span class="conc-leg-dot" style="background:rgba(34,197,94,.3)"></span> Safe (≤ QLMV)</span>';
+    s3 += '<span><span class="conc-leg-dot" style="background:rgba(245,158,11,.35)"></span> 1 measure (QLMV–QLAV)</span>';
+    s3 += '<span><span class="conc-leg-dot" style="background:rgba(239,68,68,.35)"></span> 2 measures (> QLAV)</span>';
+    s3 += '</div></div>';
+    s3 += '<div class="calc-block mt8"><div class="cb-lbl">Concentration Calc</div><div class="cb-formula">'+charge+' kg / '+volume+' m³ = '+fmtKgm3(concentration)+' kg/m³ = '+fmtPpm(concPpm)+' ppm</div></div>';
+  } else {
+    s3 += '<p class="dimtext">C.3 concentration comparison not applicable for this configuration.</p>';
+    if (volume > 0) {
+      s3 += '<div class="calc-block mt8"><div class="cb-lbl">Room Concentration</div><div class="cb-formula">'+charge+' kg / '+volume+' m³ = '+fmtKgm3(concentration)+' kg/m³ = '+fmtPpm(concPpm)+' ppm</div></div>';
+    }
+  }
+  html += stepCard('3','Concentration Analysis', fmtKgm3(concentration)+' kg/m³', 'b-derived', s3, false);
+
+  // Step 4: Detector Quantity
+  let s4 = '';
+  s4 += '<div class="kv-grid">';
+  s4 += '<div class="kv-item"><div class="kv-lbl">Normative Minimum</div><div class="kv-val" style="font-size:1.5em;color:var(--blue2)">'+minDet+'</div></div>';
+  s4 += '<div class="kv-item"><div class="kv-lbl">Recommended</div><div class="kv-val" style="font-size:1.5em;color:var(--green)">'+recDet+'</div></div>';
+  s4 += '</div>';
+  if (qtyNotes.length > 0) {
+    s4 += '<ul class="mt8" style="font-size:.85em;color:var(--dim)">';
+    qtyNotes.forEach(n => s4 += '<li>'+n+'</li>');
+    s4 += '</ul>';
+  }
+  html += stepCard('4','Detector Quantity', 'Min '+minDet+' / Rec '+recDet, 'b-rec', s4, false);
+
+  // Step 5: Placement
+  let s5 = '';
+  s5 += '<div class="kv-grid">';
+  s5 += '<div class="kv-item"><div class="kv-lbl">Height Band</div><div class="kv-val">'+placementHeight.toUpperCase()+'</div></div>';
+  s5 += '<div class="kv-item"><div class="kv-lbl">Height Range</div><div class="kv-val">'+placementHeightM+'</div></div>';
+  s5 += '</div>';
+  s5 += '<div class="density-row mt8">Vapour density: <span class="dens-val">'+r.vd+' kg/m³</span> vs Air: <span class="dens-val">'+AIR_DENSITY+' kg/m³</span> → ratio: <span class="dens-val">'+densityRatio.toFixed(2)+'</span></div>';
+  s5 += '<div class="calc-block"><div class="cb-lbl">Rationale</div><div class="cb-result">'+placementRationale+'</div></div>';
+  if (candidateZones.length > 0) {
+    s5 += '<table class="mt8"><tr><th>Zone</th><th>Rule</th></tr>';
+    candidateZones.forEach(z => s5 += '<tr><td>'+z.zone+'</td><td><span class="code">'+z.rule+'</span></td></tr>');
+    s5 += '</table>';
+  }
+  html += stepCard('5','Placement', placementHeight.toUpperCase(), 'b-derived', s5, false);
+
+  // Step 6: Review Flags
+  if (reviewFlags.length > 0) {
+    let s6 = '<ul>';
+    reviewFlags.forEach(f => s6 += '<li style="color:var(--orange)">⚠ '+f+'</li>');
+    s6 += '</ul>';
+    html += stepCard('6','Review Flags', reviewFlags.length+' flag(s)', 'b-warn', s6, true);
+  }
+
+  // Step 7: Trace
+  let s7 = '';
+  s7 += '<div class="trace-filters">';
+  ['ALL','YES','NO','SKIP','MANUAL_REVIEW'].forEach(f => {
+    s7 += '<button class="tfbtn'+(f==='ALL'?' active':'')+'" onclick="filterTrace(this,\''+f+'\')">'+f+'</button>';
+  });
+  s7 += '</div>';
+  s7 += '<div id="traceList">';
+  trace.forEach((t,i) => {
+    s7 += '<div class="trace-step ts-'+t.decision+'" data-decision="'+t.decision+'">';
+    s7 += '<div class="ts-meta"><span class="ts-id">'+t.id+'</span><span class="ts-eng badge b-norm">M1</span>';
+    s7 += '<span class="ts-fn">'+t.ruleId+'</span>';
+    s7 += '<span class="badge '+(t.decision==='YES'?'b-yes':t.decision==='NO'?'b-no':t.decision==='SKIP'?'b-skip':'b-warn')+'">'+t.decision+'</span></div>';
+    s7 += '<div class="ts-en">'+t.en+'</div>';
+    s7 += '<div class="ts-fr">'+t.fr+'</div>';
+    if (Object.keys(t.inputs).length > 0 || Object.keys(t.outputs).length > 0) {
+      s7 += '<div class="ts-io">';
+      if (Object.keys(t.inputs).length > 0) {
+        s7 += '<div class="ts-blk"><div class="ts-blk-lbl">Inputs</div>'+JSON.stringify(t.inputs)+'</div>';
+      }
+      if (Object.keys(t.outputs).length > 0) {
+        s7 += '<div class="ts-blk"><div class="ts-blk-lbl">Outputs</div>'+JSON.stringify(t.outputs)+'</div>';
+      }
+      s7 += '</div>';
+    }
+    s7 += '</div>';
+  });
+  s7 += '</div>';
+  html += stepCard('7','Execution Trace', trace.length+' steps', 'b-info', s7, false);
+
+  // Step 8: JSON Output
+  const output = {
+    detection_required: detectionRequired,
+    detection_basis: governingBasis,
+    governing_hazard: governingHazard,
+    governing_rule_id: governingRule,
+    min_detectors: minDet,
+    recommended_detectors: recDet,
+    placement_height: placementHeight,
+    placement_height_m: placementHeightM,
+    candidate_zones: candidateZones,
+    threshold_ppm: threshold_ppm,
+    threshold_kg_m3: threshold_kg_m3,
+    threshold_basis: threshold_basis,
+    stage2_threshold_ppm: stage2_ppm,
+    required_actions: actions,
+    concentration_kg_m3: concentration,
+    concentration_ppm: Math.round(concPpm),
+    review_flags: reviewFlags,
+    assumptions: [
+      'Based on EN 378:2016 (FprEN). National adoptions may differ.',
+      'Preliminary assessment only — does not replace qualified engineer judgement or formal risk assessment.',
+      'Simple rectangular room geometry assumed.',
+      'Single refrigerant system per space assumed.',
+      'Refrigerant data from EN 378-1 Annex E — verify against latest published edition.',
+      'Conservative: borderline cases default to requiring detection.',
+      'National/local regulations (ATEX, F-Gas, insurance) may impose additional requirements.',
+      'Placement is indicative — final positioning requires site-specific assessment.',
+      'Standard conditions: 25°C, 101.3 kPa. Altitude/temperature may affect real concentrations.',
+      'No liability accepted for design decisions based solely on this output.'
+    ],
+    refrigerant: refName,
+    safety_class: r.sc
+  };
+  let s8 = '<div class="output-json">'+syntaxHL(JSON.stringify(output, null, 2))+'</div>';
+  html += stepCard('8','JSON Output', 'V4-D', 'b-norm', s8, false);
+
+  document.getElementById('results').innerHTML = html;
+}
+
+function filterTrace(btn, filter) {
+  document.querySelectorAll('.tfbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.trace-step').forEach(el => {
+    if (filter === 'ALL') { el.style.display = ''; }
+    else { el.style.display = el.dataset.decision === filter ? '' : 'none'; }
+  });
+}
+
+function syntaxHL(json) {
+  return json.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"([^"]+)":/g,'<span class="jk">"$1"</span>:')
+    .replace(/: "([^"]*)"/g,': <span class="js">"$1"</span>')
+    .replace(/: (\d+\.?\d*)/g,': <span class="jn">$1</span>')
+    .replace(/: (true)/g,': <span class="jbt">$1</span>')
+    .replace(/: (false)/g,': <span class="jbf">$1</span>')
+    .replace(/: (null)/g,': <span class="jnull">$1</span>');
+}
+</script>
+</body>
+</html>

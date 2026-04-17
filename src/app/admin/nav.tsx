@@ -28,6 +28,7 @@ const ALL_LINKS: NavLink[] = [
   { href: '/admin/simulator-m2', label: 'Sim M2', roles: ['admin'] },
   { href: '/admin/traceability', label: 'Traceability', roles: ['admin'] },
   { href: '/sales', label: 'Sales', roles: ['admin'] },
+  { href: '/admin/architecture', label: 'Architecture', roles: ['admin'] },
 ];
 
 const ROLE_BADGE: Record<Role, { label: string; color: string }> = {
@@ -84,8 +85,8 @@ export default function AdminNav() {
       </div>
 
       <div className="ml-auto flex items-center gap-3">
-        <Link href="/configurator" className="text-gray-400 text-sm hover:text-white transition-colors">
-          Configurator &rarr;
+        <Link href="/calculator" className="text-gray-400 text-sm hover:text-white transition-colors">
+          Calculator &rarr;
         </Link>
         {role && (
           <button onClick={handleLogout}

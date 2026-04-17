@@ -447,10 +447,10 @@ export default function StepCalcSheet({
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text("SafeRef Designer — Gas Detection Calculation Sheet", margin, 12);
+      doc.text("SafeRef Calculator — Gas Detection Calculation Sheet", margin, 12);
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      doc.text(`${regulationName} — SAMON AB`, margin, 19);
+      doc.text(`${regulationName} — SafeRef`, margin, 19);
       doc.setTextColor(...green);
       doc.setFont("helvetica", "bold");
       doc.text(`Ref: ${sheetRef}`, pw - margin, 12, { align: "right" });
@@ -1067,6 +1067,7 @@ export default function StepCalcSheet({
                   <span>
                     <span className="text-[#6b8da5]">{t.alarmThreshold}:</span>{" "}
                     <span className="font-semibold text-[#16354B]">{Math.round(zr.result.thresholdPpm).toLocaleString()} ppm</span>
+                    <span className="text-[9px] text-[#6b8da5] ml-1 italic">(max. — set alarm below this value)</span>
                   </span>
                 </div>
 
@@ -1233,28 +1234,23 @@ export default function StepCalcSheet({
         </div>
 
         {/* ── ACTION BUTTONS ─────────────────────────────────────── */}
-        <div className="px-6 py-4 bg-white border-t border-[#e2e8f0] flex items-center gap-3 no-print">
-          <button
-            onClick={handlePrint}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#16354B] text-white text-sm font-semibold rounded-lg hover:bg-[#1e4a6a] transition-colors"
-          >
-            <Printer className="w-4 h-4" />
-            {t.print}
-          </button>
-          <button
-            onClick={handleDownloadPdf}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#E63946] text-white text-sm font-semibold rounded-lg hover:bg-[#d32f3c] transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            {t.downloadPdf}
-          </button>
-          <button
-            onClick={handleSave}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#A7C031] text-white text-sm font-semibold rounded-lg hover:bg-[#8fb028] transition-colors"
-          >
-            <Save className="w-4 h-4" />
-            {t.save}
-          </button>
+        <div className="px-6 py-4 bg-white border-t border-[#e2e8f0] no-print">
+          <div className="flex items-center gap-3 text-xs text-gray-400">
+            <button
+              onClick={handleDownloadPdf}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-500 rounded hover:bg-gray-50 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              {t.downloadPdf}
+            </button>
+            <button
+              onClick={handlePrint}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-500 rounded hover:bg-gray-50 transition-colors"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              {t.print}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -45,6 +45,7 @@ export function toProductEntry(p: ProductRecord): ProductEntry {
     maxPower: p.maxPower ?? null,
     subCategory: p.subCategory,
     compatibleFamilies: parseJsonArray(p.compatibleFamilies),
+    image: p.image ?? null,
   };
 }
 

@@ -286,7 +286,7 @@ export default function ProductCatalogPage() {
                     {/* Brand */}
                     <div className="flex items-center gap-1 mb-1.5">
                       <span className="w-2 h-2 rounded-full bg-[#E63946]" />
-                      <span className="text-[11px] font-bold text-[#E63946]">SAMON</span>
+                      <span className="text-[11px] font-bold text-[#E63946]">SafeRef</span>
                     </div>
                     {/* Specs line */}
                     {(p.voltage || p.sensorTech || p.ip) && (

@@ -360,7 +360,7 @@ function generateQuotePdfHtml(
 
   <!-- Footer -->
   <div class="footer">
-    <div><b>SAMON AB</b> &mdash; Gas Detection Systems &mdash; www.samon.com</div>
+    <div><b>SafeRef</b> &mdash; Gas Detection Systems &mdash; www.saferef.com</div>
     <div>EN 378:2016 / EN 14624:2014 &mdash; SafeRef v2</div>
   </div>
 

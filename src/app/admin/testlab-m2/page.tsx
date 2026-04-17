@@ -377,7 +377,7 @@ export default function TestLabM2Page() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="bg-green-600 text-white text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded">
-                SAMON TESTLAB
+                SAFEREF TESTLAB
               </span>
               <span className="bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded">
                 M2/M3

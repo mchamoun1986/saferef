@@ -101,11 +101,11 @@ function evaluateDetectionAshrae15(input: RegulationInput): DetectionEvaluation 
         path: 'B_OccupiedSpace',
         decision: 'RECOMMENDED',
         ruleId: 'ASHRAE15-OCC-002',
-        basis: `ASHRAE 15-2022 Table 1 — charge ${input.charge} kg <= exemption ${exemption} kg (SAMON recommends detection)`,
+        basis: `ASHRAE 15-2022 Table 1 — charge ${input.charge} kg <= exemption ${exemption} kg (SafeRef recommends detection)`,
         extraDetector: false,
       });
       // Keep RECOMMENDED
-      detectionBasis = `ASHRAE 15-2022 Table 1 — charge below exemption. SAMON recommends detection as good engineering practice.`;
+      detectionBasis = `ASHRAE 15-2022 Table 1 — charge below exemption. SafeRef recommends detection as good engineering practice.`;
       governingRuleId = 'ASHRAE15-OCC-002';
       assumptions.push('National and local regulations may mandate detection even when ASHRAE 15 does not');
     }
@@ -277,7 +277,7 @@ export const ashrae15RuleSet: RuleSet = {
    * ASHRAE 15-2022 §7.4 alarm thresholds:
    * Flammable (A2L/A2/A3/B2L/B2/B3 with LFL):
    *   alarm1 = 25% LFL (normative single trigger point)
-   *   alarm2 = 50% LFL (SAMON recommended second level)
+   *   alarm2 = 50% LFL (SafeRef recommended second level)
    *   cutoff = 100% LFL
    * Non-flammable (A1/B1):
    *   alarm1 = 25% RCL (threshold), alarm2 = 50% RCL, cutoff = 100% RCL

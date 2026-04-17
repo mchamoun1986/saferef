@@ -638,7 +638,7 @@ m3 = 130 * LFL * V   // Large charge limit
                 <RulePathCard
                   pathId="F"
                   title="Not Required / Recommended"
-                  description="If all paths A-E and G are negative (SKIP or NO), detection is not normatively required. SAMON policy: recommend detection as good engineering practice regardless."
+                  description="If all paths A-E and G are negative (SKIP or NO), detection is not normatively required. SafeRef policy: recommend detection as good engineering practice regardless."
                   conditions={[
                     'All paths A-E and G returned SKIP or NO',
                     'National/local regulations may still mandate detection',
@@ -699,7 +699,7 @@ m3 = 130 * LFL * V   // Large charge limit
                   conditions={[
                     'isOccupiedSpace === true',
                     'charge > exemption (Table 1) -> YES',
-                    'charge <= exemption -> RECOMMENDED (SAMON policy)',
+                    'charge <= exemption -> RECOMMENDED (SafeRef policy)',
                   ]}
                   result="YES / RECOMMENDED"
                   ruleIds={['ASHRAE15-OCC-001', 'ASHRAE15-OCC-002']}
@@ -1117,7 +1117,7 @@ m3 = 130 * LFL * V   // Large charge limit
                 <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-4 text-center">
                   <div className="text-3xl font-bold text-blue-600">3rd</div>
                   <div className="font-semibold text-blue-900 mt-1">RECOMMENDED</div>
-                  <p className="text-xs text-blue-700 mt-1">All paths negative. SAMON policy: recommend detection as good practice.</p>
+                  <p className="text-xs text-blue-700 mt-1">All paths negative. SafeRef policy: recommend detection as good practice.</p>
                 </div>
               </div>
             </div>

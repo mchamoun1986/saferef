@@ -935,7 +935,7 @@ export default function TestLabPage() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="bg-red-600 text-white text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded">
-                SAMON TESTLAB
+                SAFEREF TESTLAB
               </span>
             </div>
             <h1 className="text-lg font-bold text-white mt-2">SafeRef Engine Simulator</h1>

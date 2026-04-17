@@ -3,7 +3,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { type Lang, LANGS, LANG_FLAGS, LANG_NAMES, NAV, VALIDATION } from '@/components/configurator/i18n';
+import { type Lang, NAV, VALIDATION } from '@/components/configurator/i18n';
+import { useLang } from '@/lib/i18n-context';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import StepClient from '@/components/configurator/StepClient';
 import StepGasApp from '@/components/configurator/StepGasApp';
 import StepZones from '@/components/configurator/StepZones';
@@ -41,7 +43,7 @@ const defaultGasAppData: GasAppData = {
   selectedRange: '',
   sitePowerVoltage: '24V',
   zoneAtex: false,
-  mountingType: 'wall',
+  mountingType: 'ambient',
 };
 
 const defaultRegulatoryContext: RegulatoryContext = {
@@ -60,9 +62,7 @@ const defaultRegulatoryContext: RegulatoryContext = {
 export default function ConfiguratorPage() {
   // Wizard step
   const [step, setStep] = useState(1);
-  const [lang, setLang] = useState<Lang>('en');
-  const [langOpen, setLangOpen] = useState(false);
-  const langRef = useRef<HTMLDivElement>(null);
+  const { lang } = useLang();
 
   // Step state
   const [clientData, setClientData] = useState<ClientData>(defaultClientData);
@@ -84,19 +84,6 @@ export default function ConfiguratorPage() {
   const [applications, setApplications] = useState<{ id: string; labelFr: string; labelEn: string; icon: string; accessCategory: string; locationClass: string; belowGround: boolean; isMachineryRoom: boolean; isOccupiedSpace: boolean; humanComfort: boolean; c3Applicable: boolean; mechVentilation: boolean; applicableSpaceTypes: string; }[]>([]);
   const [spaceTypes, setSpaceTypes] = useState<{ id: string; labelFr: string; labelEn: string; icon: string; accessCategory: string; locationClass: string; belowGround: boolean; isMachineryRoom: boolean; isOccupiedSpace: boolean; humanComfort: boolean; c3Applicable: boolean; mechVentilation: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // ─── Close lang dropdown on outside click ─────────────────────────────
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (langRef.current && !langRef.current.contains(e.target as Node)) {
-        setLangOpen(false);
-      }
-    }
-    if (langOpen) {
-      document.addEventListener('mousedown', handleClick);
-      return () => document.removeEventListener('mousedown', handleClick);
-    }
-  }, [langOpen]);
 
   // ─── Fetch API data on mount ──────────────────────────────────────────
 
@@ -360,36 +347,9 @@ export default function ConfiguratorPage() {
         <Link href="/" className="flex items-center gap-1 hover:opacity-80 transition-opacity">
           <span className="text-[#E63946] font-extrabold text-xl tracking-wide">Safe</span>
           <span className="text-white font-extrabold text-xl">Ref</span>
-          <span className="ml-3 text-sm text-[#6b8da5]">Designer</span>
+          <span className="ml-3 text-sm text-[#6b8da5]">Calculator</span>
         </Link>
-        <div ref={langRef} className="relative">
-          <button
-            onClick={() => setLangOpen(!langOpen)}
-            className="flex items-center gap-1.5 px-3 py-1 border border-gray-500 rounded text-sm hover:bg-gray-700 transition-colors"
-          >
-            <span>{LANG_FLAGS[lang]}</span>
-            <span>{lang.toUpperCase()}</span>
-            <svg className={`w-3 h-3 transition-transform ${langOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          {langOpen && (
-            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[140px] overflow-hidden">
-              {LANGS.map((loc) => (
-                <button
-                  key={loc}
-                  onClick={() => { setLang(loc); setLangOpen(false); }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
-                    loc === lang ? 'bg-[#16354B]/10 font-semibold text-[#16354B]' : 'hover:bg-gray-50 text-gray-700'
-                  }`}
-                >
-                  <span>{LANG_FLAGS[loc]}</span>
-                  <span>{LANG_NAMES[loc]}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <LanguageSwitcher compact />
       </nav>
 
       {/* Step progress */}
@@ -490,6 +450,8 @@ export default function ConfiguratorPage() {
             zones={zones}
             refrigerant={selectedRefrigerant}
             zoneRegulations={calcResult.zoneResults}
+            application={selectedApplication}
+            spaceTypes={spaceTypes.map(st => ({ id: st.id, labelFr: st.labelFr, labelEn: st.labelEn, icon: st.icon }))}
             lang={lang}
           />
         )}
@@ -538,7 +500,7 @@ export default function ConfiguratorPage() {
               onClick={() => setStep(5)}
               className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold px-8 py-3 rounded-lg transition-all shadow-lg shadow-[#A7C031]/30"
             >
-              {(NAV[lang] as Record<string, string>).quote || 'Generate Quote'}
+              Continue to Product Selection &rarr;
             </button>
           </div>
         )}
