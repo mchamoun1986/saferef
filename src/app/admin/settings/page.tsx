@@ -35,7 +35,7 @@ function PasswordCard({ role, label, currentPassword, onChanged }: {
   const [newPwd, setNewPwd] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [showCurrent, setShowCurrent] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(true);
 
   async function changePassword() {
     if (newPwd.length < 6) { setMessage("Min 6 characters"); return; }
