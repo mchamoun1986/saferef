@@ -146,6 +146,10 @@ export default function ProductsPage() {
   const [filterFamily, setFilterFamily] = useState<string>('');
   const [filterGas, setFilterGas] = useState('');
   const [filterSubCat, setFilterSubCat] = useState('');
+  const [filterTier, setFilterTier] = useState('');
+  const [filterVoltage, setFilterVoltage] = useState('');
+  const [filterSensor, setFilterSensor] = useState('');
+  const [filterCompat, setFilterCompat] = useState('');
   const [search, setSearch] = useState('');
   const [dialog, setDialog] = useState(false);
   const [isNew, setIsNew] = useState(false);
@@ -194,12 +198,16 @@ export default function ProductsPage() {
     if (filterFamily) list = list.filter(p => p.family === filterFamily);
     if (filterGas) list = list.filter(p => parseJson<string[]>(p.gas, []).includes(filterGas));
     if (filterSubCat) list = list.filter(p => p.subCategory === filterSubCat);
+    if (filterTier) list = list.filter(p => p.tier === filterTier);
+    if (filterVoltage) list = list.filter(p => (p.voltage || '').includes(filterVoltage));
+    if (filterSensor) list = list.filter(p => p.sensorTech === filterSensor);
+    if (filterCompat) list = list.filter(p => parseJson<string[]>(p.compatibleFamilies, []).includes(filterCompat));
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(p => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
     }
     return list;
-  }, [products, filterType, filterFamily, filterGas, filterSubCat, search]);
+  }, [products, filterType, filterFamily, filterGas, filterSubCat, filterTier, filterVoltage, filterSensor, filterCompat, search]);
 
   // CRUD
   function openNew() { setIsNew(true); setForm({ ...EMPTY_PRODUCT, type: filterType || 'detector' }); setDialog(true); }
@@ -286,6 +294,36 @@ export default function ProductsPage() {
             className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white">
             <option value="">All Sub-Categories</option>
             {subCategories.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        )}
+        {filterType === 'detector' && (
+          <>
+            <select value={filterTier} onChange={e => setFilterTier(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white">
+              <option value="">All Tiers</option>
+              <option value="premium">Premium</option>
+              <option value="standard">Standard</option>
+              <option value="centralized">Centralized</option>
+            </select>
+            <select value={filterSensor} onChange={e => setFilterSensor(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white">
+              <option value="">All Sensors</option>
+              <option value="IR">IR</option>
+              <option value="SC">SC</option>
+              <option value="EC">EC</option>
+              <option value="pH">pH</option>
+            </select>
+          </>
+        )}
+        {(filterType === 'accessory' || filterType === 'controller') && (
+          <select value={filterCompat} onChange={e => setFilterCompat(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white">
+            <option value="">All Compatible</option>
+            <option value="MIDI">MIDI</option>
+            <option value="X5">X5</option>
+            <option value="RM">RM</option>
+            <option value="AQUIS">AQUIS</option>
+            <option value="ALL">ALL</option>
           </select>
         )}
         <span className="text-sm text-gray-500 ml-auto font-mono">{filtered.length} / {products.filter(p => p.type === filterType).length}</span>
