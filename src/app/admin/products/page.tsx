@@ -409,6 +409,13 @@ export default function ProductsPage() {
                   <F label="Family" value={form.family} onChange={v => setForm({ ...form, family: v })} />
                   <F label="Product Name" value={form.name} onChange={v => setForm({ ...form, name: v })} />
                   <F label="Order Code" value={form.code} onChange={v => setForm({ ...form, code: v })} mono />
+                  {/* Sub-Category + Compatibility — shown early for accessories/controllers */}
+                  {form.type === 'accessory' && (
+                    <>
+                      <Sel label="Sub-Category" value={form.subCategory ?? ''} options={['', 'mounting', 'alert', 'spare', 'service', 'power', 'cable', 'other']} onChange={v => setForm({ ...form, subCategory: v || null })} />
+                      <F label="Compatible Families" value={form.compatibleFamilies} onChange={v => setForm({ ...form, compatibleFamilies: v })} mono placeholder='["MIDI","X5"] or ["ALL"]' />
+                    </>
+                  )}
                   <N label="Price (EUR)" value={form.price} onChange={v => setForm({ ...form, price: v })} />
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Image</label>
