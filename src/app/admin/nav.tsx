@@ -110,7 +110,7 @@ export default function AdminNav() {
         </span>
       )}
 
-      <div className="flex gap-1 overflow-x-auto items-center">
+      <div className="flex gap-1 items-center flex-wrap">
         {navItems.map((item) => {
           if (item.type === 'link') {
             return (
