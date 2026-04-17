@@ -28,6 +28,7 @@ const ALL_LINKS: NavLink[] = [
   { href: '/admin/simulator', label: 'Sim M1', roles: ['admin'], group: 'Lab & Sim' },
   { href: '/admin/simulator-m2', label: 'Sim M2', roles: ['admin'], group: 'Lab & Sim' },
   { href: '/admin/traceability', label: 'Traceability', roles: ['admin'] },
+  { href: '/admin/catalogue', label: 'Catalogue', roles: ['admin', 'sales', 'management'] },
   { href: '/admin/quotes', label: 'Quotes', roles: ['admin', 'sales', 'management'] },
   { href: '/admin/architecture', label: 'Architecture', roles: ['admin'] },
   { href: '/admin/settings', label: 'Settings', roles: ['admin'] },
