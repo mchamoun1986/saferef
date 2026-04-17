@@ -455,8 +455,8 @@ export default function ProductsPage() {
                 <TA label="Compatible Applications (JSON)" value={form.apps} onChange={v => setForm({ ...form, apps: v })} rows={2} mono />
               </Section>
 
-              {/* ═══ DETECTION ═══ */}
-              <Section title="DETECTION" color="text-[#1a2332]">
+              {/* ═══ DETECTION ═══ (detectors only) */}
+              {form.type === 'detector' && <Section title="DETECTION" color="text-[#1a2332]">
                 <div className="grid grid-cols-2 gap-4">
                   <F label="Range" value={form.range ?? ''} onChange={v => setForm({ ...form, range: v || null })} placeholder="e.g. 0-10000ppm" />
                   <F label="Sensor Tech" value={form.sensorTech ?? ''} onChange={v => setForm({ ...form, sensorTech: v || null })} placeholder="IR / SC / EC / pH" />
@@ -465,18 +465,18 @@ export default function ProductsPage() {
                   <N label="Temp Min (C)" value={form.tempMin ?? 0} onChange={v => setForm({ ...form, tempMin: v || null })} />
                   <N label="Temp Max (C)" value={form.tempMax ?? 0} onChange={v => setForm({ ...form, tempMax: v || null })} />
                 </div>
-              </Section>
+              </Section>}
 
-              {/* ═══ ELECTRICAL ═══ */}
-              <Section title="ELECTRICAL" color="text-[#1a2332]">
+              {/* ═══ ELECTRICAL ═══ (detectors + controllers) */}
+              {(form.type === 'detector' || form.type === 'controller') && <Section title="ELECTRICAL" color="text-[#1a2332]">
                 <div className="grid grid-cols-2 gap-4">
                   <F label="Voltage" value={form.voltage ?? ''} onChange={v => setForm({ ...form, voltage: v || null })} placeholder="e.g. 15-24V" />
                   <N label="Power (W)" value={form.power ?? 0} onChange={v => setForm({ ...form, power: v || null })} />
                 </div>
-              </Section>
+              </Section>}
 
-              {/* ═══ OUTPUTS ═══ */}
-              <Section title="OUTPUTS" color="text-[#1a2332]">
+              {/* ═══ OUTPUTS ═══ (detectors only) */}
+              {form.type === 'detector' && <Section title="OUTPUTS" color="text-[#1a2332]">
                 <div className="grid grid-cols-2 gap-4">
                   <N label="Relay count" value={form.relay} onChange={v => setForm({ ...form, relay: Math.round(v) })} />
                   <F label="Analog" value={form.analog ?? ''} onChange={v => setForm({ ...form, analog: v || null })} placeholder="selectable / 4-20mA / 0-10V" />
@@ -486,10 +486,10 @@ export default function ProductsPage() {
                   <Check label="Remote" checked={form.remote} onChange={v => setForm({ ...form, remote: v })} />
                   <Check label="Standalone" checked={form.standalone} onChange={v => setForm({ ...form, standalone: v })} />
                 </div>
-              </Section>
+              </Section>}
 
-              {/* ═══ CONNECTION ═══ */}
-              <Section title="CONNECTION" color="text-[#1a2332]">
+              {/* ═══ CONNECTION ═══ (controllers only) */}
+              {(form.type === 'controller' || form.type === 'detector') && <Section title="CONNECTION" color="text-[#1a2332]">
                 <div className="grid grid-cols-2 gap-4">
                   <F label="Connect To" value={form.connectTo ?? ''} onChange={v => setForm({ ...form, connectTo: v || null })} placeholder="e.g. MPU/SPU/SPLS" />
                   <F label="Compatible Families" value={form.compatibleFamilies} onChange={v => setForm({ ...form, compatibleFamilies: v })} mono placeholder='["MIDI","X5"] or ["ALL"]' />
@@ -498,10 +498,10 @@ export default function ProductsPage() {
                   <N label="Channels" value={form.channels ?? 0} onChange={v => setForm({ ...form, channels: v || null })} />
                   <N label="Max Power (W)" value={form.maxPower ?? 0} onChange={v => setForm({ ...form, maxPower: v || null })} />
                 </div>
-              </Section>
+              </Section>}
 
-              {/* ═══ MOUNTING ═══ */}
-              <Section title="MOUNTING" color="text-[#1a2332]">
+              {/* ═══ MOUNTING ═══ (detectors only) */}
+              {form.type === 'detector' && <Section title="MOUNTING" color="text-[#1a2332]">
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-2">Mount Types</label>
                   <div className="flex flex-wrap gap-3">
@@ -513,7 +513,7 @@ export default function ProductsPage() {
                     ))}
                   </div>
                 </div>
-              </Section>
+              </Section>}
 
               {/* ═══ CERTIFICATIONS & FEATURES ═══ */}
               <Section title="CERTIFICATIONS & FEATURES" color="text-[#1a2332]">
