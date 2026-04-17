@@ -4,7 +4,7 @@ import { getSessionRole } from '@/lib/auth';
 const ROLE_DEFAULTS: Record<string, string> = {
   admin: '/admin',
   sales: '/admin/quotes',
-  management: '/admin',
+  management: '/admin/products',
 };
 
 export default async function ForbiddenPage() {

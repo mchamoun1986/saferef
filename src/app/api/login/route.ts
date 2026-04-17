@@ -4,12 +4,28 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { signSession, SESSION_COOKIE, SESSION_MAX_AGE, type Role } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 
 const ROLE_ENV_VARS: Record<Role, string> = {
   admin: 'ADMIN_PASSWORD_HASH',
   sales: 'SALES_PASSWORD_HASH',
   management: 'MANAGEMENT_PASSWORD_HASH',
 };
+
+async function logLogin(role: string, success: boolean, request: Request) {
+  try {
+    await prisma.loginLog.create({
+      data: {
+        role,
+        success,
+        ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown',
+      },
+    });
+  } catch (e) {
+    console.error('[API] Login log failed:', e);
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -36,8 +52,11 @@ export async function POST(request: Request) {
 
     const valid = await bcrypt.compare(password, hash);
     if (!valid) {
+      await logLogin(role, false, request);
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
+
+    await logLogin(role, true, request);
 
     const sessionValue = await signSession({ role: role as Role, loggedInAt: Date.now() });
 

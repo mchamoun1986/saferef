@@ -7,7 +7,7 @@ import Link from 'next/link';
 const ROLE_DEFAULTS: Record<string, string> = {
   admin: '/admin',
   sales: '/admin/quotes',
-  management: '/admin',
+  management: '/admin/products',
 };
 
 function LoginForm() {

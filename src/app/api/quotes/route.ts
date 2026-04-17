@@ -40,7 +40,7 @@ function normalize(val: unknown, fallback: string): string {
 // ── GET — list quotes ─────────────────────────────────────────────────
 
 export async function GET(request: Request) {
-  const authError = await requireRole(['admin', 'sales']);
+  const authError = await requireRole(['admin', 'sales', 'management']);
   if (authError) return authError;
 
   try {
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
 // ── POST — create quote ───────────────────────────────────────────────
 
 export async function POST(request: Request) {
-  const authError = await requireRole(['admin', 'sales']);
+  const authError = await requireRole(['admin', 'sales', 'management']);
   if (authError) return authError;
 
   try {

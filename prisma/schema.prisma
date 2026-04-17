@@ -176,3 +176,12 @@ model Quote {
   updatedAt     DateTime @updatedAt
   expiresAt     DateTime?
 }
+
+model LoginLog {
+  id        String   @id @default(cuid())
+  role      String
+  success   Boolean
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}

@@ -29,6 +29,7 @@ const ALL_LINKS: NavLink[] = [
   { href: '/admin/traceability', label: 'Traceability', roles: ['admin'] },
   { href: '/admin/quotes', label: 'Quotes', roles: ['admin', 'sales', 'management'] },
   { href: '/admin/architecture', label: 'Architecture', roles: ['admin'] },
+  { href: '/admin/settings', label: 'Settings', roles: ['admin'] },
 ];
 
 const ROLE_BADGE: Record<Role, { label: string; color: string }> = {

@@ -18,9 +18,15 @@ const ROUTE_ROLES: Record<string, Role[]> = {
   '/admin/products': ['admin', 'management'],
   '/admin/discount-matrix': ['admin', 'management'],
   '/admin/calc-sheets': ['admin', 'management'],
+  // Quotes — accessible to all internal roles
+  '/admin/quotes': ['admin', 'sales', 'management'],
+  // Architecture — admin only
+  '/admin/architecture': ['admin'],
+  // Settings — admin only
+  '/admin/settings': ['admin'],
   // Admin dashboard (admin only)
   '/admin': ['admin'],
-  // Admin + Sales
+  // Legacy sales routes
   '/sales': ['admin', 'sales'],
 };
 
