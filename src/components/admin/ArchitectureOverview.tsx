@@ -334,7 +334,7 @@ function DetailsTab({ data }: { data: ArchData | null }) {
               ["/", "Homepage", "public"],
               ["/calculator", "Calculator", "public"],
               ["/selector", "Selector", "public"],
-              ["/products", "Catalog", "public"],
+              ["/admin/catalogue", "Catalogue", "all roles"],
               ["/login", "Auth", "public"],
               ["/sales", "Dashboard", "sales+"],
               ["/sales/quotes", "Quotes", "sales+"],
