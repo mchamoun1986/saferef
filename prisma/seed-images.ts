@@ -44,31 +44,75 @@ const CONTROLLER_IMAGES: Record<string, string> = {
   'SPU': 'spu.png',
   'SPLS': 'spls.png',
   'LAN': 'lan.png',
-  'UNIT': 'glaciar-controller-10.jpg',
-  'SCU': 'glaciar-controller-10.jpg',
+  'GLACIAR Controller': 'glaciar-controller-10.png',
 };
 
-// Accessory images by subCategory or code prefix
+// Accessory images by code
 const ACCESSORY_IMAGES: Record<string, string> = {
-  // Alert
-  '40-440': 'alarm-flash-siren.png',
-  '40-442': 'alarm-flash-siren.png',
-  '40-441': 'alarm-flash-siren.png',
-  '40-410': 'alarm-siren.png',
-  '40-4022': 'alarm-beacon.png',
-  '40-4021': 'alarm-beacon.png',
-  '40-4023': 'alarm-beacon.png',
-  '40-221': 'alarm-beacon.png',
-  // Power
-  '4000-0001': 'glaciar-power.jpg',
+  // Alert — sirens & flashers
+  '40-440': 'fl-rl-siren.png',
+  '40-442': 'fl-rl-siren.png',
+  '40-441': 'fl-rl-siren.png',
+  '40-410': 'siren-1992.png',
+  '40-4022': 'be-flashing-light.jpg',
+  '40-4021': 'be-flashing-light.jpg',
+  '40-4023': 'be-flashing-light.jpg',
+  // UPS
+  '40-221': 'ups-5000.png',
+  '4000-0001': 'ups-1000.png',
+  // Power adapter
   '4000-0002': 'power-adapter.jpg',
-  // Service/DT300
+  // Protection brackets
+  '40-901': 'protection-bracket.png',
+  '40-902': 'protection-bracket.png',
+  // Service tools
   '60-120': 'dt300.png',
   '60-130': 'dt300.png',
+  // Flow regulators
+  '61-9013': 'flow-regulator.jpg',
+  '61-9015': 'flow-regulator.jpg',
   // Calibration adapter
   '62-9011': 'calibration-adapter.jpg',
   // Aquis
-  '35-210': 'aquis.png',
+  '35-210': 'aquis500-water.png',
+  // MIDI accessories
+  '62-9022': 'midi-protection-cap.jpg',
+  '62-9031': 'midi-pipe-adapter.jpg',
+  '62-9041': 'midi-duct-adapter.jpg',
+  '62-9051': 'midi-magnet-wands.jpg',
+  // MIDI replacement sensor modules (SEN-series)
+  'SEN-41032': 'midi-sensor-module.jpg',
+  'SEN-42012': 'midi-sensor-module.jpg',
+  'SEN-42017': 'midi-sensor-module.jpg',
+  'SEN-45022': 'midi-sensor-module.jpg',
+  'SEN-45023': 'midi-sensor-module.jpg',
+  'SEN-45024': 'midi-sensor-module.jpg',
+  'SEN-49013': 'midi-sensor-module.jpg',
+  // Sensor protection caps
+  'DEL659': 'sensor-protection-cap.png',
+  'DEL660': 'sensor-protection-cap.png',
+  // X5 components
+  '3500-0029': 'x5-cable-gland.png',
+  '3500-0030': 'x5-cable-gland.png',
+  '3500-0031': 'x5-stopping-plug.png',
+  // X5 accessories
+  '3500-0085': 'x5-splash-guard.png',
+  '3500-0086': 'protection-bracket.png',
+  '3500-0087': 'x5-magnetic-wand.png',
+  '3500-0088': 'x5-gas-collector.png',
+  '3500-0089': 'sensor-protection-cap.png',
+  '3500-0090': 'x5-splash-guard.png',
+  '3500-0094': 'calibration-adapter.jpg',
+  '3500-0104': 'midi-duct-adapter.jpg',
+  '3500-0105': 'x5-pipe-adapter.jpg',
+  '3500-0106': 'calibration-adapter.jpg',
+  '3500-0110': 'x5-pipe-adapter.jpg',
+  // Portables
+  '5000-0001': 'glaciar-x5.png',
+  '5000-0002': 'glaciar-x5.png',
+  '5000-0003': 'glaciar-x5.png',
+  '5000-0004': 'glaciar-x5.png',
+  '5000-0005': 'glaciar-x5.png',
 };
 
 async function main() {
@@ -100,7 +144,11 @@ async function main() {
         }
       }
     }
-    // 5. X5 accessories get X5 image
+    // 5. Calibration gas bottles (61-series) get bottle photo
+    else if (p.code.startsWith('61-')) {
+      image = 'calibration-gas-bottle.png';
+    }
+    // 6. X5 accessories get X5 image
     else if (p.type === 'accessory' && p.compatibleFamilies?.includes('X5')) {
       image = 'glaciar-x5.png';
     }
