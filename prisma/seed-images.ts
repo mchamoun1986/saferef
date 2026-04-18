@@ -102,10 +102,10 @@ const ACCESSORY_IMAGES: Record<string, string> = {
   '3500-0088': 'x5-gas-collector.png',
   '3500-0089': 'sensor-protection-cap.png',
   '3500-0090': 'x5-splash-guard.png',
-  '3500-0094': 'calibration-adapter.jpg',
+  '3500-0094': 'x5-calibration-kit.jpg',
   '3500-0104': 'midi-duct-adapter.jpg',
   '3500-0105': 'x5-pipe-adapter.jpg',
-  '3500-0106': 'calibration-adapter.jpg',
+  '3500-0106': 'x5-calibration-kit.jpg',
   '3500-0110': 'x5-pipe-adapter.jpg',
   // Portables
   '5000-0001': 'glaciar-x5.png',
