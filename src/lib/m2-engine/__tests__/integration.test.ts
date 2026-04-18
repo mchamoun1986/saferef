@@ -76,7 +76,7 @@ describe('M2 + M3 Integration', () => {
     };
     const selResult = selectProducts(selInput);
 
-    expect(selResult.tiers.premium).not.toBeNull();
+    expect(selResult.tiers.premiumStandalone).not.toBeNull();
     expect(selResult.comparison).toBeTruthy();
 
     // M3: Pricing
@@ -102,11 +102,11 @@ describe('M2 + M3 Integration', () => {
     expect(pricingResult.quoteRef).toMatch(/^SR-\d{4}-\d{8}$/);
     expect(pricingResult.quoteDate).toBeTruthy();
     expect(pricingResult.quoteValidUntil).toBeTruthy();
-    expect(['premium', 'standard', 'centralized']).toContain(pricingResult.recommended);
+    expect(pricingResult.recommended === null || ['premiumStandalone', 'premiumCentralized', 'ecoStandalone', 'ecoCentralized'].includes(pricingResult.recommended!)).toBe(true);
 
     // Verify pricing was applied
-    if (pricingResult.tiers.premium) {
-      const detLine = pricingResult.tiers.premium.bomLines.find(l => l.code === selResult.tiers.premium!.detector.code);
+    if (pricingResult.tiers.premiumStandalone) {
+      const detLine = pricingResult.tiers.premiumStandalone.bomLines.find(l => l.code === selResult.tiers.premiumStandalone!.detector.code);
       expect(detLine).toBeDefined();
       expect(detLine!.discountPct).toBe(40);
       expect(detLine!.netTotal).toBeLessThan(detLine!.listPrice * detLine!.qty);
@@ -133,9 +133,9 @@ describe('M2 + M3 Integration', () => {
       accessories: [],
     });
 
-    expect(selResult.tiers.premium).not.toBeNull();
-    expect(selResult.tiers.standard).toBeNull(); // no cheaper alternative
-    expect(selResult.tiers.centralized).toBeNull(); // only 1 detector
+    expect(selResult.tiers.premiumStandalone).not.toBeNull();
+    expect(selResult.tiers.premiumCentralized).toBeNull(); // only 1 detector
+    expect(selResult.tiers.ecoStandalone).toBeNull(); // only 1 product, no cheaper alternative
 
     const pricingResult = calculatePricing({
       tiers: selResult.tiers,
@@ -144,8 +144,8 @@ describe('M2 + M3 Integration', () => {
       priceDb: makePriceDb([{ code: '10-100', price: 500 }]),
     });
 
-    expect(pricingResult.tiers.premium).not.toBeNull();
-    expect(pricingResult.tiers.premium!.summary.totalHt).toBe(500); // no discount for NO group
+    expect(pricingResult.tiers.premiumStandalone).not.toBeNull();
+    expect(pricingResult.tiers.premiumStandalone!.summary.totalHt).toBe(500); // no discount for NO group
   });
 
   it('handles empty product catalog gracefully', () => {
@@ -164,9 +164,9 @@ describe('M2 + M3 Integration', () => {
       accessories: [],
     });
 
-    expect(selResult.tiers.premium).toBeNull();
-    expect(selResult.tiers.standard).toBeNull();
-    expect(selResult.tiers.centralized).toBeNull();
+    expect(selResult.tiers.premiumStandalone).toBeNull();
+    expect(selResult.tiers.premiumCentralized).toBeNull();
+    expect(selResult.tiers.ecoStandalone).toBeNull();
 
     const pricingResult = calculatePricing({
       tiers: selResult.tiers,
@@ -175,7 +175,7 @@ describe('M2 + M3 Integration', () => {
       priceDb: new Map(),
     });
 
-    expect(pricingResult.tiers.premium).toBeNull();
+    expect(pricingResult.tiers.premiumStandalone).toBeNull();
     expect(pricingResult.warnings).toHaveLength(0);
   });
 
@@ -205,7 +205,7 @@ describe('M2 + M3 Integration', () => {
     });
 
     expect(pricingResult.warnings.some(w => w.includes('PRICE_MISMATCH'))).toBe(true);
-    expect(pricingResult.tiers.premium!.priceValidation).toBe('MISMATCH');
+    expect(pricingResult.tiers.premiumStandalone!.priceValidation).toBe('MISMATCH');
   });
 
   it('Group F products get 0% discount always', () => {
@@ -235,7 +235,7 @@ describe('M2 + M3 Integration', () => {
       priceDb,
     });
 
-    const line = pricingResult.tiers.premium!.bomLines.find(l => l.code === '10-100')!;
+    const line = pricingResult.tiers.premiumStandalone!.bomLines.find(l => l.code === '10-100')!;
     expect(line.discountPct).toBe(0); // Group F always 0%
     expect(line.netTotal).toBe(500);
   });
@@ -266,7 +266,7 @@ describe('M2 + M3 Integration', () => {
       priceDb: makePriceDb([{ code: '10-100', price: 500, group: 'G' }]),
     });
 
-    const line = pricingResult.tiers.premium!.bomLines.find(l => l.code === '10-100')!;
+    const line = pricingResult.tiers.premiumStandalone!.bomLines.find(l => l.code === '10-100')!;
     expect(line.discountPct).toBe(55); // Override, not 40% from matrix
   });
 
@@ -298,8 +298,8 @@ describe('M2 + M3 Integration', () => {
       ]),
     });
 
-    if (pricingResult.comparison.savingsVsPremium.standard !== null) {
-      expect(pricingResult.comparison.savingsVsPremium.standard).toBe(50); // 50% savings
+    if (pricingResult.comparison.savingsVsPremium.ecoStandalone !== null) {
+      expect(pricingResult.comparison.savingsVsPremium.ecoStandalone).toBe(50); // 50% savings
     }
   });
 
@@ -320,12 +320,12 @@ describe('M2 + M3 Integration', () => {
       accessories: [],
     });
 
-    expect(selResult.tiers.premium).not.toBeNull();
-    expect(selResult.tiers.premium!.powerAccessories.length).toBeGreaterThan(0);
+    expect(selResult.tiers.premiumStandalone).not.toBeNull();
+    expect(selResult.tiers.premiumStandalone!.powerAccessories.length).toBeGreaterThan(0);
     // Total should include detector cost + power adapter cost
     const detCost = 500 * 3;
     const adapterCost = 99 * 3;
-    expect(selResult.tiers.premium!.totalBom).toBeGreaterThanOrEqual(detCost + adapterCost);
+    expect(selResult.tiers.premiumStandalone!.totalBom).toBeGreaterThanOrEqual(detCost + adapterCost);
   });
 
   it('rounding is correct (EUR cents)', () => {
@@ -352,9 +352,9 @@ describe('M2 + M3 Integration', () => {
       priceDb: makePriceDb([{ code: '10-100', price: 333 }]),
     });
 
-    const line = pricingResult.tiers.premium!.bomLines[0];
+    const line = pricingResult.tiers.premiumStandalone!.bomLines[0];
     // 333 * 3 = 999, 33% of 999 = 329.67, net = 669.33
     expect(line.netTotal).toBe(669.33);
-    expect(pricingResult.tiers.premium!.summary.totalHt).toBe(669.33);
+    expect(pricingResult.tiers.premiumStandalone!.summary.totalHt).toBe(669.33);
   });
 });

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { ProductRecord, DiscountRow } from '@/lib/m2-engine/types';
-import type { SelectionInput, SelectionResult, PricingInput, PricingResult, PricedTier } from '@/lib/engine-types';
+import type { SelectionInput, SelectionResult, PricingInput, PricingResult, PricedTier, TierSlot } from '@/lib/engine-types';
+import type { ProductRelation } from '@/lib/m2-engine/relation-types';
 import { toProductEntries } from '@/lib/m2-engine/parse-product';
 import { selectProducts, REF_RANGES } from '@/lib/m2-engine/selection-engine';
 import { calculatePricing } from '@/lib/m2-engine/pricing-engine';
@@ -65,20 +66,14 @@ const DEFAULT_INPUTS: SimInputs = {
   zoneAtex: false, mountingType: 'wall', customerGroup: 'EDC',
 };
 
-// ── Render helpers ───────────────────────────────────────────────────────
+const TIER_SLOTS: { key: TierSlot; label: string; color: string }[] = [
+  { key: 'premiumStandalone', label: 'Premium SA', color: '#E63946' },
+  { key: 'premiumCentralized', label: 'Premium Ctrl', color: '#c2185b' },
+  { key: 'ecoStandalone', label: 'Eco SA', color: '#2563eb' },
+  { key: 'ecoCentralized', label: 'Eco Ctrl', color: '#16a34a' },
+];
 
-function tierBadge(tier: string) {
-  const colors: Record<string, string> = {
-    premium: 'bg-red-100 text-red-800 border-red-300',
-    standard: 'bg-blue-100 text-blue-800 border-blue-300',
-    centralized: 'bg-green-100 text-green-800 border-green-300',
-  };
-  return (
-    <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold border ${colors[tier] ?? 'bg-gray-100 text-gray-700'}`}>
-      {tier.toUpperCase()}
-    </span>
-  );
-}
+// ── Render helpers ───────────────────────────────────────────────────────
 
 function scoreBadge(score: number) {
   const color = score >= 15 ? 'text-green-700 bg-green-50 border-green-200' : score >= 10 ? 'text-blue-700 bg-blue-50 border-blue-200' : 'text-gray-700 bg-gray-50 border-gray-200';
@@ -90,6 +85,7 @@ function scoreBadge(score: number) {
 export default function SimulatorM2Page() {
   const [rawProducts, setRawProducts] = useState<ProductRecord[]>([]);
   const [discountMatrix, setDiscountMatrix] = useState<DiscountRow[]>([]);
+  const [relations, setRelations] = useState<ProductRelation[]>([]);
   const [loading, setLoading] = useState(true);
   const [inputs, setInputs] = useState<SimInputs>(DEFAULT_INPUTS);
   const [history, setHistory] = useState<SimResult[]>([]);
@@ -99,9 +95,11 @@ export default function SimulatorM2Page() {
     Promise.all([
       fetch('/api/products?discontinued=false').then(r => r.json()),
       fetch('/api/discount-matrix').then(r => r.json()).catch(() => []),
-    ]).then(([prods, dm]) => {
+      fetch('/api/product-relations').then(r => r.json()).catch(() => []),
+    ]).then(([prods, dm, rels]) => {
       setRawProducts(prods);
       setDiscountMatrix(Array.isArray(dm) ? dm : []);
+      setRelations(Array.isArray(rels) ? rels : []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -118,9 +116,6 @@ export default function SimulatorM2Page() {
     setInputs(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  // Live results (recalculated on every input change).
-  // Note: performance.now() is technically impure but used only for a UI
-  // timing display; results themselves are deterministic functions of inputs.
   const liveResults = useMemo(() => {
     if (products.length === 0) return null;
     // eslint-disable-next-line react-hooks/purity
@@ -137,6 +132,7 @@ export default function SimulatorM2Page() {
       mountingType: inputs.mountingType,
       projectCountry: 'SE',
       products, controllers, accessories,
+      relations,
     };
     const selection = selectProducts(selInput);
     const pricingInput: PricingInput = {
@@ -148,7 +144,7 @@ export default function SimulatorM2Page() {
     // eslint-disable-next-line react-hooks/purity
     const runMs = Math.round(performance.now() - start);
     return { selection, pricing, runMs };
-  }, [products, controllers, accessories, inputs, discountMatrix, priceDb]);
+  }, [products, controllers, accessories, inputs, discountMatrix, priceDb, relations]);
 
   const applyPreset = useCallback((p: Preset) => {
     setInputs({
@@ -199,6 +195,7 @@ export default function SimulatorM2Page() {
         zoneType: app, zoneAtex: atex, outputRequired: 'any',
         sitePowerVoltage: volt, mountingType: 'wall', projectCountry: 'SE',
         products, controllers, accessories,
+        relations,
       };
       const selection = selectProducts(selInput);
       const pricing = calculatePricing({
@@ -212,7 +209,7 @@ export default function SimulatorM2Page() {
     }
     setHistory(prev => [...entries.reverse(), ...prev]);
     setNextId(id);
-  }, [products, controllers, accessories, discountMatrix, priceDb, nextId]);
+  }, [products, controllers, accessories, discountMatrix, priceDb, nextId, relations]);
 
   const exportCsv = useCallback(() => {
     if (history.length === 0) return;
@@ -223,19 +220,23 @@ export default function SimulatorM2Page() {
     };
     const header = [
       '#', 'Time', 'Refrigerant', 'Application', 'Detectors', 'Voltage', 'Output', 'ATEX', 'Customer Group',
-      'Premium Detector', 'Premium Score', 'Premium Gross', 'Premium Net',
-      'Standard Detector', 'Standard Score', 'Standard Gross', 'Standard Net',
-      'Centralized Detector', 'Centralized Score', 'Centralized Gross', 'Centralized Net',
+      'PremSA Det', 'PremSA Score', 'PremSA Gross', 'PremSA Net',
+      'PremCtrl Det', 'PremCtrl Score', 'PremCtrl Gross', 'PremCtrl Net',
+      'EcoSA Det', 'EcoSA Score', 'EcoSA Gross', 'EcoSA Net',
+      'EcoCtrl Det', 'EcoCtrl Score', 'EcoCtrl Gross', 'EcoCtrl Net',
       'Recommended', 'Warnings', 'Run (ms)',
     ].join(',');
     const rows = history.map((h, i) => {
-      const pt = (t: PricedTier | null) => t ? [q(h.selection.tiers[t.tier.toLowerCase() as 'premium' | 'standard' | 'centralized']?.detector.name ?? ''), t.solutionScore, t.summary.totalBeforeDiscount.toFixed(2), t.summary.totalHt.toFixed(2)] : ['', '', '', ''];
+      const pt = (t: PricedTier | null, slotKey: TierSlot) => t ? [q(h.selection.tiers[slotKey]?.detector.name ?? ''), t.solutionScore, t.summary.totalBeforeDiscount.toFixed(2), t.summary.totalHt.toFixed(2)] : ['', '', '', ''];
       return [
         i + 1, new Date(h.timestamp).toLocaleString(),
         h.inputs.refrigerant, h.inputs.zoneType, h.inputs.totalDetectors,
         h.inputs.voltage, h.inputs.outputRequired, h.inputs.zoneAtex, h.inputs.customerGroup,
-        ...pt(h.pricing.tiers.premium), ...pt(h.pricing.tiers.standard), ...pt(h.pricing.tiers.centralized),
-        h.pricing.recommended, h.pricing.warnings.length, h.runMs,
+        ...pt(h.pricing.tiers.premiumStandalone, 'premiumStandalone'),
+        ...pt(h.pricing.tiers.premiumCentralized, 'premiumCentralized'),
+        ...pt(h.pricing.tiers.ecoStandalone, 'ecoStandalone'),
+        ...pt(h.pricing.tiers.ecoCentralized, 'ecoCentralized'),
+        h.pricing.recommended ?? '-', h.pricing.warnings.length, h.runMs,
       ].join(',');
     });
     const csv = [header, ...rows].join('\n');
@@ -328,6 +329,18 @@ export default function SimulatorM2Page() {
               </select>
             </div>
 
+            <div className="mt-2">
+              <label className="block text-xs text-gray-500 mb-0.5">Mounting</label>
+              <div className="flex flex-wrap gap-1">
+                {[{v:'wall',l:'Wall'},{v:'pipe',l:'Pipe'},{v:'duct',l:'Duct'},{v:'flush',l:'Flush'},{v:'surface',l:'Surface'}].map(m => (
+                  <button key={m.v} onClick={() => set('mountingType', m.v)}
+                    className={`px-2 py-1 text-xs rounded border transition-colors ${inputs.mountingType === m.v ? 'bg-[#16354B] text-white border-[#16354B]' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}>
+                    {m.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="mt-2 space-y-1.5">
               <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                 <input type="checkbox" checked={inputs.zoneAtex} onChange={e => set('zoneAtex', e.target.checked)} className="rounded border-gray-300 text-[#E63946]" />
@@ -362,11 +375,11 @@ export default function SimulatorM2Page() {
           {liveResults && (
             <div className="p-3 bg-gray-50 rounded border border-gray-200 text-xs space-y-1">
               <div className="font-semibold text-[#16354B] mb-1">Live Summary ({liveResults.runMs}ms)</div>
-              {(['premium', 'standard', 'centralized'] as const).map(key => {
+              {TIER_SLOTS.map(({ key, label }) => {
                 const t = liveResults.pricing.tiers[key];
                 return (
                   <div key={key} className="flex justify-between items-center">
-                    <span className="text-gray-500 capitalize">{key}</span>
+                    <span className="text-gray-500">{label}</span>
                     {t ? (
                       <span className="font-mono">
                         {scoreBadge(t.solutionScore)}
@@ -378,10 +391,6 @@ export default function SimulatorM2Page() {
                   </div>
                 );
               })}
-              <div className="flex justify-between items-center pt-1 border-t border-gray-200">
-                <span className="text-gray-700 font-semibold">Recommended</span>
-                {tierBadge(liveResults.pricing.recommended)}
-              </div>
             </div>
           )}
         </div>
@@ -396,11 +405,11 @@ export default function SimulatorM2Page() {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* 3-Tier Comparison Table */}
+              {/* 4-Solution Comparison Table */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="bg-[#16354B] text-white px-5 py-3 flex items-center justify-between">
                   <div>
-                    <h2 className="text-base font-bold">3-Tier Product Comparison</h2>
+                    <h2 className="text-base font-bold">2x2 Product Comparison</h2>
                     <p className="text-xs text-gray-300 mt-0.5">
                       {inputs.refrigerant} &middot; {inputs.zoneType.replace(/_/g, ' ')} &middot; {inputs.totalDetectors} det &middot; {inputs.voltage} &middot; {inputs.customerGroup || 'no group'}
                     </p>
@@ -411,53 +420,47 @@ export default function SimulatorM2Page() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-200 text-left text-xs text-gray-500 uppercase tracking-wider">
-                        <th className="px-4 py-2 w-40">Metric</th>
-                        <th className="px-4 py-2 text-red-600">Premium</th>
-                        <th className="px-4 py-2 text-blue-600">Standard</th>
-                        <th className="px-4 py-2 text-green-600">Centralized</th>
+                        <th className="px-4 py-2 w-36">Metric</th>
+                        <th className="px-4 py-2 text-red-600">Premium SA</th>
+                        <th className="px-4 py-2 text-pink-600">Premium Ctrl</th>
+                        <th className="px-4 py-2 text-blue-600">Eco SA</th>
+                        <th className="px-4 py-2 text-green-600">Eco Ctrl</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {liveResults.pricing.comparison.rows.map((row, i) => (
                         <tr key={i} className={i % 2 === 1 ? 'bg-gray-50/50' : ''}>
                           <td className="px-4 py-2 font-medium text-gray-700">{row.label}</td>
-                          <td className="px-4 py-2">{row.premium}</td>
-                          <td className="px-4 py-2">{row.standard}</td>
-                          <td className="px-4 py-2">{row.centralized}</td>
+                          <td className="px-4 py-2">{row.premiumStandalone}</td>
+                          <td className="px-4 py-2">{row.premiumCentralized}</td>
+                          <td className="px-4 py-2">{row.ecoStandalone}</td>
+                          <td className="px-4 py-2">{row.ecoCentralized}</td>
                         </tr>
                       ))}
-                      {/* Extra rows from selection comparison */}
                       {liveResults.selection.comparison.rows.filter(r => !liveResults.pricing.comparison.rows.some(pr => pr.label === r.label)).map((row, i) => (
                         <tr key={`sel-${i}`} className="bg-gray-50/50">
                           <td className="px-4 py-2 font-medium text-gray-700">{row.label}</td>
-                          <td className="px-4 py-2">{row.premium}</td>
-                          <td className="px-4 py-2">{row.standard}</td>
-                          <td className="px-4 py-2">{row.centralized}</td>
+                          <td className="px-4 py-2">{row.premiumStandalone}</td>
+                          <td className="px-4 py-2">{row.premiumCentralized}</td>
+                          <td className="px-4 py-2">{row.ecoStandalone}</td>
+                          <td className="px-4 py-2">{row.ecoCentralized}</td>
                         </tr>
                       ))}
-                      <tr className="bg-blue-50 font-semibold">
-                        <td className="px-4 py-2 text-gray-700">Recommended</td>
-                        <td className="px-4 py-2" colSpan={3}>{tierBadge(liveResults.pricing.recommended)}</td>
-                      </tr>
                     </tbody>
                   </table>
                 </div>
               </div>
 
               {/* BOM per tier */}
-              {(['premium', 'standard', 'centralized'] as const).map(key => {
+              {TIER_SLOTS.map(({ key, label, color }) => {
                 const tier = liveResults.pricing.tiers[key];
                 const selTier = liveResults.selection.tiers[key];
                 if (!tier) return null;
-                const isRec = liveResults.pricing.recommended === key;
-                const colors: Record<string, string> = { premium: '#E63946', standard: '#2563eb', centralized: '#16a34a' };
                 return (
-                  <div key={key} className={`bg-white rounded-lg border overflow-hidden ${isRec ? 'border-2 ring-1' : 'border-gray-200'}`}
-                    style={isRec ? { borderColor: colors[key], ringColor: colors[key] + '33' } as React.CSSProperties : undefined}>
-                    <div className="px-5 py-3 flex items-center justify-between" style={{ background: colors[key] }}>
+                  <div key={key} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="px-5 py-3 flex items-center justify-between" style={{ background: color }}>
                       <div className="flex items-center gap-3">
-                        <h3 className="text-white font-bold capitalize">{key}</h3>
-                        {isRec && <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Recommended</span>}
+                        <h3 className="text-white font-bold">{label}</h3>
                         <span className="text-white/70 text-xs">Score: {tier.solutionScore}/21</span>
                       </div>
                       <span className="text-white font-bold text-lg">{tier.summary.totalHt.toFixed(2)} EUR</span>
@@ -563,10 +566,10 @@ export default function SimulatorM2Page() {
                           <th className="px-3 py-2">App</th>
                           <th className="px-3 py-2">Det</th>
                           <th className="px-3 py-2">Group</th>
-                          <th className="px-3 py-2">Premium</th>
-                          <th className="px-3 py-2">Standard</th>
-                          <th className="px-3 py-2">Centralized</th>
-                          <th className="px-3 py-2">Rec</th>
+                          <th className="px-3 py-2">Prem SA</th>
+                          <th className="px-3 py-2">Prem Ctrl</th>
+                          <th className="px-3 py-2">Eco SA</th>
+                          <th className="px-3 py-2">Eco Ctrl</th>
                           <th className="px-3 py-2">ms</th>
                           <th className="px-3 py-2">Actions</th>
                         </tr>
@@ -579,10 +582,10 @@ export default function SimulatorM2Page() {
                             <td className="px-3 py-2">{h.inputs.zoneType.replace(/_/g, ' ')}</td>
                             <td className="px-3 py-2">{h.inputs.totalDetectors}</td>
                             <td className="px-3 py-2">{h.inputs.customerGroup || '-'}</td>
-                            <td className="px-3 py-2 font-mono">{h.pricing.tiers.premium ? `${h.pricing.tiers.premium.summary.totalHt.toFixed(0)}` : '-'}</td>
-                            <td className="px-3 py-2 font-mono">{h.pricing.tiers.standard ? `${h.pricing.tiers.standard.summary.totalHt.toFixed(0)}` : '-'}</td>
-                            <td className="px-3 py-2 font-mono">{h.pricing.tiers.centralized ? `${h.pricing.tiers.centralized.summary.totalHt.toFixed(0)}` : '-'}</td>
-                            <td className="px-3 py-2">{tierBadge(h.pricing.recommended)}</td>
+                            <td className="px-3 py-2 font-mono">{h.pricing.tiers.premiumStandalone ? `${h.pricing.tiers.premiumStandalone.summary.totalHt.toFixed(0)}` : '-'}</td>
+                            <td className="px-3 py-2 font-mono">{h.pricing.tiers.premiumCentralized ? `${h.pricing.tiers.premiumCentralized.summary.totalHt.toFixed(0)}` : '-'}</td>
+                            <td className="px-3 py-2 font-mono">{h.pricing.tiers.ecoStandalone ? `${h.pricing.tiers.ecoStandalone.summary.totalHt.toFixed(0)}` : '-'}</td>
+                            <td className="px-3 py-2 font-mono">{h.pricing.tiers.ecoCentralized ? `${h.pricing.tiers.ecoCentralized.summary.totalHt.toFixed(0)}` : '-'}</td>
                             <td className="px-3 py-2 text-gray-400">{h.runMs}</td>
                             <td className="px-3 py-2">
                               <button onClick={() => setInputs(h.inputs)} className="text-[#E63946] hover:underline font-medium">Reload</button>

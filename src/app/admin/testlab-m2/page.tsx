@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { ProductRecord, DiscountRow } from '@/lib/m2-engine/types';
-import type { SelectionInput, SelectionResult, PricingInput, PricingResult, TierSolution, PricedTier } from '@/lib/engine-types';
+import type { SelectionInput, SelectionResult, PricingInput, PricingResult, TierSolution, PricedTier, TierSlot } from '@/lib/engine-types';
+import type { ProductRelation } from '@/lib/m2-engine/relation-types';
 import { toProductEntries } from '@/lib/m2-engine/parse-product';
 import { selectProducts, REF_RANGES } from '@/lib/m2-engine/selection-engine';
 import { calculatePricing } from '@/lib/m2-engine/pricing-engine';
@@ -45,7 +46,14 @@ const OUTPUTS = [
 
 const CUSTOMER_GROUPS = ['', 'EDC', 'OEM', '1Fo', '2Fo', '3Fo', '1Contractor', '2Contractor', '3Contractor', 'AKund', 'BKund', 'NO'];
 
-// ── Shared UI components (same as M1 TestLab) ────────────────────────────
+const TIER_SLOTS: { key: TierSlot; label: string; icon: string; color: { border: string; accent: string; bg: string } }[] = [
+  { key: 'premiumStandalone', label: 'Premium SA', icon: 'PS', color: { border: 'border-red-600', accent: 'text-red-400', bg: 'bg-red-600/20' } },
+  { key: 'premiumCentralized', label: 'Premium Ctrl', icon: 'PC', color: { border: 'border-pink-600', accent: 'text-pink-400', bg: 'bg-pink-600/20' } },
+  { key: 'ecoStandalone', label: 'Eco SA', icon: 'ES', color: { border: 'border-blue-600', accent: 'text-blue-400', bg: 'bg-blue-600/20' } },
+  { key: 'ecoCentralized', label: 'Eco Ctrl', icon: 'EC', color: { border: 'border-green-600', accent: 'text-green-400', bg: 'bg-green-600/20' } },
+];
+
+// ── Shared UI components ────────────────────────────────────────────────
 
 function Section({ title, icon, defaultOpen = true, accent, children }: {
   title: string; icon: string; defaultOpen?: boolean; accent?: string; children: React.ReactNode;
@@ -103,44 +111,10 @@ function JsonViewer({ data }: { data: unknown }) {
   );
 }
 
-// ── Score breakdown bar ──────────────────────────────────────────────────
-
-function ScoreBar({ score }: { score: { tierPriority: number; applicationFit: number; outputMatch: number; simplicity: number; maintenanceCost: number; featureRichness: number; total: number } }) {
-  const segments = [
-    { label: 'Tier', value: score.tierPriority, max: 5, color: 'bg-purple-500' },
-    { label: 'App Fit', value: score.applicationFit, max: 3, color: 'bg-blue-500' },
-    { label: 'Output', value: score.outputMatch, max: 3, color: 'bg-cyan-500' },
-    { label: 'Simple', value: score.simplicity, max: 2, color: 'bg-green-500' },
-    { label: 'Maint.', value: score.maintenanceCost, max: 2, color: 'bg-amber-500' },
-    { label: 'Features', value: score.featureRichness, max: 6, color: 'bg-red-500' },
-  ];
-
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-0.5 h-6 rounded overflow-hidden bg-[#0f1117]">
-        {segments.map(s => (
-          <div key={s.label} className={`${s.color} h-full transition-all`}
-            style={{ width: `${(s.value / 21) * 100}%`, minWidth: s.value > 0 ? '2px' : '0' }}
-            title={`${s.label}: ${s.value}/${s.max}`} />
-        ))}
-      </div>
-      <div className="flex justify-between text-[9px] text-gray-600">
-        {segments.map(s => (
-          <span key={s.label} className={s.value > 0 ? 'text-gray-400' : ''}>
-            {s.label} {s.value}
-          </span>
-        ))}
-        <span className="text-white font-bold">{score.total}/21</span>
-      </div>
-    </div>
-  );
-}
-
-// ── Decision Banner (M2 version) ─────────────────────────────────────────
+// ── Decision Banner ─────────────────────────────────────────────────────
 
 function M2DecisionBanner({ selResult, pricingResult }: { selResult: SelectionResult; pricingResult: PricingResult }) {
-  const hasTiers = [selResult.tiers.premium, selResult.tiers.standard, selResult.tiers.centralized].filter(Boolean).length;
-  const recTier = pricingResult.tiers[pricingResult.recommended];
+  const hasTiers = [selResult.tiers.premiumStandalone, selResult.tiers.premiumCentralized, selResult.tiers.ecoStandalone, selResult.tiers.ecoCentralized].filter(Boolean).length;
 
   return (
     <div className={`rounded-lg border-2 p-6 text-center ${
@@ -149,13 +123,6 @@ function M2DecisionBanner({ selResult, pricingResult }: { selResult: SelectionRe
       <div className={`text-3xl font-black tracking-widest ${hasTiers > 0 ? 'text-green-400' : 'text-red-400'}`}>
         {hasTiers > 0 ? `${hasTiers} SOLUTION${hasTiers > 1 ? 'S' : ''} FOUND` : 'NO COMPATIBLE PRODUCTS'}
       </div>
-      {recTier && (
-        <div className="text-gray-400 text-sm mt-3 max-w-xl mx-auto leading-relaxed">
-          Recommended: <strong className="text-white">{pricingResult.recommended.toUpperCase()}</strong> &mdash;
-          Score {recTier.solutionScore}/21 &mdash;
-          <strong className="text-green-400 ml-1">{recTier.summary.totalHt.toFixed(2)} EUR HT</strong>
-        </div>
-      )}
       <div className="flex items-center justify-center gap-4 mt-4 text-xs text-gray-500">
         <span>Quote: <strong className="text-gray-300">{pricingResult.quoteRef}</strong></span>
         <span>Valid: <strong className="text-gray-300">{pricingResult.quoteValidUntil}</strong></span>
@@ -167,31 +134,20 @@ function M2DecisionBanner({ selResult, pricingResult }: { selResult: SelectionRe
 
 // ── Tier Card ────────────────────────────────────────────────────────────
 
-function TierCard({ tierKey, selTier, pricedTier, isRec }: {
-  tierKey: string; selTier: TierSolution | null; pricedTier: PricedTier | null; isRec: boolean;
+function TierCard({ tierKey, selTier, pricedTier }: {
+  tierKey: TierSlot; selTier: TierSolution | null; pricedTier: PricedTier | null;
 }) {
   if (!selTier || !pricedTier) return null;
-  const colors: Record<string, { border: string; accent: string; bg: string }> = {
-    premium: { border: 'border-red-600', accent: 'text-red-400', bg: 'bg-red-600/20' },
-    standard: { border: 'border-blue-600', accent: 'text-blue-400', bg: 'bg-blue-600/20' },
-    centralized: { border: 'border-green-600', accent: 'text-green-400', bg: 'bg-green-600/20' },
-  };
-  const c = colors[tierKey] ?? colors.standard;
+  const slot = TIER_SLOTS.find(s => s.key === tierKey);
+  const c = slot?.color ?? { border: 'border-gray-600', accent: 'text-gray-400', bg: 'bg-gray-600/20' };
 
   return (
     <Section
-      title={`${tierKey.toUpperCase()} — ${selTier.label}`}
-      icon={tierKey === 'premium' ? 'P' : tierKey === 'standard' ? 'S' : 'C'}
-      defaultOpen={isRec}
+      title={`${slot?.label ?? tierKey} — ${selTier.label}`}
+      icon={slot?.icon ?? '?'}
+      defaultOpen={tierKey === 'premiumStandalone'}
       accent={c.accent}
     >
-      {/* Rec badge */}
-      {isRec && (
-        <div className="mb-3 inline-flex items-center gap-2 bg-green-600/20 border border-green-600 rounded-lg px-3 py-1.5">
-          <span className="text-green-400 font-bold text-sm">RECOMMENDED</span>
-        </div>
-      )}
-
       {/* Detector summary */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
@@ -208,16 +164,6 @@ function TierCard({ tierKey, selTier, pricedTier, isRec }: {
             {selTier.controller ? `${selTier.controller.qty}x ${selTier.controller.name}` : 'Standalone — no controller'}
           </div>
         </div>
-      </div>
-
-      {/* Score bar */}
-      <div className="mb-4">
-        <div className="text-xs text-gray-500 mb-1">Score Breakdown</div>
-        <ScoreBar score={{
-          tierPriority: 0, applicationFit: 0, outputMatch: 0,
-          simplicity: 0, maintenanceCost: 0, featureRichness: 0,
-          total: pricedTier.solutionScore,
-        }} />
       </div>
 
       {/* BOM table */}
@@ -269,6 +215,7 @@ function TierCard({ tierKey, selTier, pricedTier, isRec }: {
 export default function TestLabM2Page() {
   const [rawProducts, setRawProducts] = useState<ProductRecord[]>([]);
   const [discountMatrix, setDiscountMatrix] = useState<DiscountRow[]>([]);
+  const [relations, setRelations] = useState<ProductRelation[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Form state
@@ -292,9 +239,11 @@ export default function TestLabM2Page() {
     Promise.all([
       fetch('/api/products?discontinued=false').then(r => r.json()),
       fetch('/api/discount-matrix').then(r => r.json()).catch(() => []),
-    ]).then(([prods, dm]) => {
+      fetch('/api/product-relations').then(r => r.json()).catch(() => []),
+    ]).then(([prods, dm, rels]) => {
       setRawProducts(prods);
       setDiscountMatrix(Array.isArray(dm) ? dm : []);
+      setRelations(Array.isArray(rels) ? rels : []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -346,6 +295,7 @@ export default function TestLabM2Page() {
         products,
         controllers,
         accessories,
+        relations,
       };
 
       const sel = selectProducts(input);
@@ -363,7 +313,7 @@ export default function TestLabM2Page() {
       setRunTime(Math.round(performance.now() - start));
       setRunning(false);
     }, 50);
-  }, [totalDetectors, refrigerant, selectedRange, zoneType, zoneAtex, outputRequired, voltage, mountingType, products, controllers, accessories, customerGroup, discountMatrix, priceDb]);
+  }, [totalDetectors, refrigerant, selectedRange, zoneType, zoneAtex, outputRequired, voltage, mountingType, products, controllers, accessories, customerGroup, discountMatrix, priceDb, relations]);
 
   // ═══════════════════════════════════════════════════════════════════════
   // RENDER
@@ -460,6 +410,19 @@ export default function TestLabM2Page() {
             </div>
           </div>
 
+          {/* Mounting */}
+          <div>
+            <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Mounting</div>
+            <div className="flex flex-wrap gap-1">
+              {[{v:'wall',l:'Wall'},{v:'pipe',l:'Pipe'},{v:'duct',l:'Duct'},{v:'flush',l:'Flush'},{v:'surface',l:'Surface'}].map(m => (
+                <button key={m.v} onClick={() => setMountingType(m.v)}
+                  className={`px-2 py-1 text-xs rounded border transition-colors ${mountingType === m.v ? 'bg-blue-600 text-white border-blue-600' : 'bg-[#0f1117] text-gray-400 border-[#2a2e3d] hover:border-gray-500'}`}>
+                  {m.l}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Toggles */}
           <div>
             <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Flags</div>
@@ -498,7 +461,7 @@ export default function TestLabM2Page() {
               <h2 className="text-xl text-gray-600 font-semibold">M2 Selection + M3 Pricing</h2>
               <p className="text-gray-700 text-sm mt-2 max-w-md">
                 Configure the parameters on the left panel and click{' '}
-                <span className="text-green-500 font-semibold">RUN M2 + M3</span> to see filter pipeline, scoring, 3-tier BOM, and pricing.
+                <span className="text-green-500 font-semibold">RUN M2 + M3</span> to see filter pipeline, scoring, 2x2 matrix BOM, and pricing.
               </p>
             </div>
           </div>
@@ -569,11 +532,7 @@ export default function TestLabM2Page() {
                     </thead>
                     <tbody>
                       {[...selectionResult.trace.scored].sort((a, b) => b.score.total - a.score.total).map(s => {
-                        const isPicked = [
-                          selectionResult.trace?.tierPicks[0]?.picked,
-                          selectionResult.trace?.tierPicks[1]?.picked,
-                          selectionResult.trace?.tierPicks[2]?.picked,
-                        ].includes(s.id);
+                        const isPicked = selectionResult.trace?.tierPicks.some(tp => tp.picked === s.id) ?? false;
                         return (
                           <tr key={s.id} className={`border-t border-[#2a2e3d] ${isPicked ? 'bg-blue-900/20' : ''}`}>
                             <td className="py-1.5 px-2 font-mono text-white">{s.code}</td>
@@ -624,13 +583,12 @@ export default function TestLabM2Page() {
             )}
 
             {/* 5 — Tier Solutions (BOM + Pricing) */}
-            {(['premium', 'standard', 'centralized'] as const).map(key => (
+            {TIER_SLOTS.map(({ key }) => (
               <TierCard
                 key={key}
                 tierKey={key}
                 selTier={selectionResult.tiers[key]}
                 pricedTier={pricingResult.tiers[key]}
-                isRec={pricingResult.recommended === key}
               />
             ))}
 
@@ -641,18 +599,20 @@ export default function TestLabM2Page() {
                   <thead>
                     <tr className="text-gray-500 uppercase tracking-wider border-b border-[#2a2e3d]">
                       <th className="text-left py-2 px-2 w-[140px]">Criteria</th>
-                      <th className="text-center py-2 px-2 text-red-400">Premium</th>
-                      <th className="text-center py-2 px-2 text-blue-400">Standard</th>
-                      <th className="text-center py-2 px-2 text-green-400">Centralized</th>
+                      <th className="text-center py-2 px-2 text-red-400">Prem SA</th>
+                      <th className="text-center py-2 px-2 text-pink-400">Prem Ctrl</th>
+                      <th className="text-center py-2 px-2 text-blue-400">Eco SA</th>
+                      <th className="text-center py-2 px-2 text-green-400">Eco Ctrl</th>
                     </tr>
                   </thead>
                   <tbody>
                     {pricingResult.comparison.rows.map((row, i) => (
                       <tr key={i} className="border-t border-[#2a2e3d]">
                         <td className="py-2 px-2 text-gray-400 font-medium">{row.label}</td>
-                        <td className="py-2 px-2 text-center text-gray-200">{row.premium}</td>
-                        <td className="py-2 px-2 text-center text-gray-200">{row.standard}</td>
-                        <td className="py-2 px-2 text-center text-gray-200">{row.centralized}</td>
+                        <td className="py-2 px-2 text-center text-gray-200">{row.premiumStandalone}</td>
+                        <td className="py-2 px-2 text-center text-gray-200">{row.premiumCentralized}</td>
+                        <td className="py-2 px-2 text-center text-gray-200">{row.ecoStandalone}</td>
+                        <td className="py-2 px-2 text-center text-gray-200">{row.ecoCentralized}</td>
                       </tr>
                     ))}
                   </tbody>

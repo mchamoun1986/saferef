@@ -1,6 +1,8 @@
 // engine/types.ts — SafeRef unified type definitions
 // All types for multi-regulation engine (EN 378, ASHRAE 15, ISO 5149)
 
+import type { ProductRelation } from '../m2-engine/relation-types';
+
 // ─── Regulation Identifier ───────────────────────────────────────────
 export type RegulationId = 'en378' | 'ashrae15' | 'iso5149';
 
@@ -58,6 +60,14 @@ export interface ExtraRequirement {
   description: string;
   clause: string;
   mandatory: boolean;
+}
+
+// ─── Engine Query (lightweight input for threshold/alarm/ventilation) ─
+// Any RegulationInput satisfies EngineQuery, so callers can pass either.
+export interface EngineQuery {
+  refrigerant: RefrigerantV5;
+  charge: number;
+  roomVolume?: number;
 }
 
 // ─── M1 — Regulation Engine Input ────────────────────────────────────
@@ -272,8 +282,10 @@ export interface BomLine {
   reason?: string;
 }
 
+export type TierKey = 'PREMIUM_STANDALONE' | 'PREMIUM_CENTRALIZED' | 'ECO_STANDALONE' | 'ECO_CENTRALIZED';
+
 export interface TierSolution {
-  tier: 'PREMIUM' | 'STANDARD' | 'CENTRALIZED';
+  tier: TierKey;
   label: string;
   solutionScore: number;
   detector: {
@@ -312,9 +324,11 @@ export interface TierSolution {
   totalBom: number;
 }
 
+export type TierSlot = 'premiumStandalone' | 'premiumCentralized' | 'ecoStandalone' | 'ecoCentralized';
+
 export interface ComparisonTable {
-  rows: { label: string; premium: string; standard: string; centralized: string }[];
-  recommendation: 'premium' | 'standard' | 'centralized';
+  rows: { label: string; premiumStandalone: string; premiumCentralized: string; ecoStandalone: string; ecoCentralized: string }[];
+  recommendation: TierSlot | null;
   recommendationReason: string;
 }
 
@@ -335,6 +349,7 @@ export interface SelectionInput {
   alertAccessory?: string;
   appProductFamilies?: string[];
   appDefaultRanges?: Record<string, string>;
+  relations?: ProductRelation[];
 }
 
 export interface FilterStep {
@@ -390,9 +405,10 @@ export interface SelectionTrace {
 
 export interface SelectionResult {
   tiers: {
-    premium: TierSolution | null;
-    standard: TierSolution | null;
-    centralized: TierSolution | null;
+    premiumStandalone: TierSolution | null;
+    premiumCentralized: TierSolution | null;
+    ecoStandalone: TierSolution | null;
+    ecoCentralized: TierSolution | null;
   };
   comparison: ComparisonTable;
   trace?: SelectionTrace;
@@ -446,14 +462,15 @@ export interface PricingResult {
   quoteValidUntil: string;
   priceListVersion: string;
   tiers: {
-    premium: PricedTier | null;
-    standard: PricedTier | null;
-    centralized: PricedTier | null;
+    premiumStandalone: PricedTier | null;
+    premiumCentralized: PricedTier | null;
+    ecoStandalone: PricedTier | null;
+    ecoCentralized: PricedTier | null;
   };
   comparison: {
-    rows: { label: string; premium: string; standard: string; centralized: string }[];
-    savingsVsPremium: { standard: number | null; centralized: number | null };
+    rows: { label: string; premiumStandalone: string; premiumCentralized: string; ecoStandalone: string; ecoCentralized: string }[];
+    savingsVsPremium: { premiumCentralized: number | null; ecoStandalone: number | null; ecoCentralized: number | null };
   };
-  recommended: 'premium' | 'standard' | 'centralized';
+  recommended: TierSlot | null;
   warnings: string[];
 }

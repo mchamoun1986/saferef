@@ -4,6 +4,7 @@
 import type { RuleSet, DetectionEvaluation, ThresholdResult } from '../engine/rule-set';
 import type {
   RegulationInput,
+  EngineQuery,
   RefrigerantV5,
   AlarmThresholds,
   VentilationResult,
@@ -205,9 +206,9 @@ export const ashrae15RuleSet: RuleSet = {
    * NH3 > 50 kg → two-level (500/30000 ppm).
    */
   calculateThreshold(
-    ref: RefrigerantV5,
-    charge: number,
+    query: EngineQuery,
   ): { threshold: ThresholdResult; stage2Ppm: number | null; actions: string[] } {
+    const { refrigerant: ref, charge } = query;
     const isNh3TwoLevel = normalizeRefId(ref.id) === 'R-717' && charge > 50;
 
     if (isNh3TwoLevel) {
@@ -282,9 +283,10 @@ export const ashrae15RuleSet: RuleSet = {
    * Non-flammable (A1/B1):
    *   alarm1 = 25% RCL (threshold), alarm2 = 50% RCL, cutoff = 100% RCL
    */
-  getAlarmThresholds(ref: RefrigerantV5, charge?: number): AlarmThresholds {
+  getAlarmThresholds(query: EngineQuery): AlarmThresholds {
+    const { refrigerant: ref, charge = 0 } = query;
     // NH3 > 50 kg: special two-level alarm
-    if (normalizeRefId(ref.id) === 'R-717' && (charge ?? 0) > 50) {
+    if (normalizeRefId(ref.id) === 'R-717' && charge > 50) {
       return {
         alarm1: { ppm: 500, kgM3: ppmToKgM3(500, ref.molecularMass), basis: 'NH3_pre_alarm' },
         alarm2: { ppm: 30000, kgM3: ppmToKgM3(30000, ref.molecularMass), basis: 'NH3_main_alarm' },
@@ -313,7 +315,7 @@ export const ashrae15RuleSet: RuleSet = {
     }
 
     // Non-flammable: RCL-based (same approach as EN 378)
-    const { threshold } = ashrae15RuleSet.calculateThreshold(ref, 0);
+    const { threshold } = ashrae15RuleSet.calculateThreshold({ refrigerant: ref, charge: 0 });
     const alarm1Ppm = threshold.ppm;
     const alarm1KgM3 = threshold.kgM3;
     const alarm2Ppm = alarm1Ppm * 2;
@@ -336,10 +338,9 @@ export const ashrae15RuleSet: RuleSet = {
    * Note: A2L refrigerants require EDVC method (Tables 8-3) — flagged for manual review
    */
   getEmergencyVentilation(
-    chargeKg: number,
-    _roomVolumeM3: number,
-    ref: RefrigerantV5,
+    query: EngineQuery,
   ): VentilationResult {
+    const { refrigerant: ref, charge: chargeKg } = query;
     const chargeLbs = chargeKg * 2.2046;
     const cfm = 100 * Math.sqrt(chargeLbs);
     const flowRateM3s = cfm * 0.000472; // cfm to m³/s
@@ -362,9 +363,9 @@ export const ashrae15RuleSet: RuleSet = {
    * ASHRAE 15 extra requirements based on safety group and occupancy
    */
   getExtraRequirements(
-    ref: RefrigerantV5,
     input: RegulationInput,
   ): ExtraRequirement[] {
+    const ref = input.refrigerant;
     const extras: ExtraRequirement[] = [];
 
     // B-group: return air detector

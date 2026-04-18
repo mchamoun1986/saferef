@@ -1,5 +1,5 @@
-// selection-engine.ts — M2 Product Selection Engine V2
-// Full filter pipeline F0-F9, 3-tier output, scoring /21, controller combo
+// selection-engine.ts — M2 Product Selection Engine V3
+// Full filter pipeline F0-F9, 2x2 matrix output (4 solutions), scoring /21, controller combo
 // Adapted from DetectBuilder for SafeRef
 
 import type {
@@ -11,11 +11,20 @@ import type {
   TierPickTrace,
   BomFunctionTrace,
   TierSolution,
+  TierKey,
   ProductEntry,
   BomLine,
   AlertAccessory,
   ComparisonTable,
 } from '../engine-types';
+
+import type { ProductRelation } from './relation-types';
+import {
+  getRelationsFor,
+  conditionMatches,
+  calculateQty,
+} from './relation-types';
+import { selectControllerFromRelations } from './select-controller';
 
 // ─── Reference Data ──────────────────────────────────────────────────────────
 
@@ -82,7 +91,7 @@ const APP_DEFAULTS: Record<string, { products: string[] }> = {
   water_brine:     { products: ['AQUIS'] },
 };
 
-// ─── Alert Catalog ───────────────────────────────────────────────────────────
+// ─── Alert Catalog (LEGACY — used as fallback when no relations provided) ────
 
 export const ALERT_ACCESSORIES: AlertAccessory[] = [
   { key: 'fl_rl_r', code: '40-440', name: 'FL-RL-R Combined light+siren Red', type: 'combined', price: 150, power: '18-28V DC', ip: 'IP65' },
@@ -96,6 +105,7 @@ export const ALERT_ACCESSORIES: AlertAccessory[] = [
   { key: 'led_sign', code: '6100-0002', name: 'LED sign "Refrigerant Alarm"', type: 'none', price: 0, power: '230V/24V', ip: 'IP54' },
 ];
 
+// LEGACY — used as fallback when no relations provided; prefer actual product price from relations
 const POWER_ADAPTER_PRICE = 99;
 
 // ─── Family Detection ────────────────────────────────────────────────────────
@@ -245,9 +255,9 @@ function f5_mounting(products: ProductEntry[], mountingType: string): ProductEnt
     return filtered.length > 0 ? filtered : products;
   }
 
-  if (mountingType === 'pipe_valve') {
-    // Pipe/valve: MIDI remote + native pipe products (e.g. Aquis)
-    // X5 remote stays ambient-only — not suitable for pipe
+  if (mountingType === 'pipe_valve' || mountingType === 'pipe') {
+    // Pipe mounting requires remote sensor head (MIDI remote) + pipe adapter accessory
+    // Native pipe products (e.g. Aquis) also qualify
     const filtered = products.filter(p => {
       if (p.remote === true && p.family === 'MIDI') return true;
       if (p.mount && p.mount.includes('pipe')) return true;
@@ -478,50 +488,126 @@ function buildTierBom(
   totalDets: number,
   input: SelectionInput,
   controllers: ProductEntry[],
+  skipController = false,
 ): {
   controller: TierSolution['controller'];
   controllerSpecs: TierSolution['controllerSpecs'];
+  baseUnit: BomLine | null;
   powerAccessories: BomLine[];
   alertAccessories: BomLine[];
   mountingAccessories: BomLine[];
   serviceTools: BomLine[];
   spareSensors: BomLine[];
+  suggestedAccessories: BomLine[];
   mpuCount: number;
   controllerCost: number;
   bomTrace: BomFunctionTrace[];
 } {
   const voltage = input.sitePowerVoltage;
   const family = getFamily(detector);
+  const relations = input.relations;
+  const hasRelations = relations && relations.length > 0;
   let controllerInfo: TierSolution['controller'] = null;
   let controllerSpecs: TierSolution['controllerSpecs'] = null;
+  let baseUnit: BomLine | null = null;
   let mpuCount = 0;
   let controllerCost = 0;
 
-  if (!detector.standalone) {
-    const detPower = detector.power ?? 2;
-    const controllerResult = f7_cheapestControllerCombo(totalDets, detPower, controllers, voltage, detector.connectTo);
-    if (controllerResult && controllerResult.controllers.length > 0) {
-      mpuCount = controllerResult.controllers.reduce((s, c) => s + c.qty, 0);
-      controllerCost = controllerResult.total;
-      const main = controllerResult.controllers[controllerResult.controllers.length - 1];
-      const matchedCtrl = controllers.find(c => c.code === main.code);
+  // ─── Controller selection ─────────────────────────────────────────────
+  // Two separate concerns:
+  //   1. requires_base (e.g. X5 sensor → X5 Transmitter) — ALWAYS included, even in standalone tier
+  //   2. compatible_controller (e.g. MIDI → Controller 10) — only in centralized tier (skipController = false)
+  const hasCtrlRelations = hasRelations && getRelationsFor(relations, detector.code, 'compatible_controller').length > 0;
+  const hasBaseRelations = hasRelations && getRelationsFor(relations, detector.code, 'requires_base').length > 0;
+  const needsController = !skipController && (!detector.standalone || hasCtrlRelations);
 
-      controllerInfo = {
-        code: main.code, name: main.name, qty: mpuCount,
-        channels: main.channels, maxPower: main.maxPower,
-        price: main.price, subtotal: controllerCost,
-      };
-      controllerSpecs = {
-        voltage: matchedCtrl?.voltage ?? (voltage === '230V' ? '230V AC' : '24V AC/DC'),
-        powerToSensors: main.maxPower,
-        relayOutputs: matchedCtrl?.relay ?? null,
-        ip: matchedCtrl?.ip ?? 'IP20',
-        analogIn: matchedCtrl?.analog ?? null,
-        analogOut: null, rs485: matchedCtrl?.modbus ?? false,
-        displayType: null, tempRange: '-10 to +55C',
-        mounting: 'DIN rail or wall', cableMax: '500m per channel',
-        failsafe: true, features: matchedCtrl?.features ?? null,
-      };
+  if (hasBaseRelations || needsController) {
+    if (hasRelations) {
+      // ── Relation-based controller selection ──
+      const relResult = selectControllerFromRelations(detector, totalDets, voltage, controllers, relations);
+
+      // Add base unit (e.g. X5 transmitter) — ALWAYS, even for standalone tier
+      if (relResult.base) {
+        const baseSub = relResult.baseQty * relResult.base.price;
+        baseUnit = {
+          code: relResult.base.code, name: relResult.base.name,
+          qty: relResult.baseQty, price: relResult.base.price,
+          subtotal: baseSub,
+          reason: `Required base unit for ${detector.code} (${relResult.baseQty} x ${relResult.base.channels ?? 1}ch)`,
+        };
+        controllerCost += baseSub;
+        mpuCount += relResult.baseQty;
+      }
+
+      // Add centralized controller — only when NOT skipping controller
+      if (!skipController && relResult.controller) {
+        const ctrlSub = relResult.controllerQty * relResult.controller.price;
+        controllerCost += ctrlSub;
+        mpuCount += relResult.controllerQty;
+        controllerInfo = {
+          code: relResult.controller.code, name: relResult.controller.name,
+          qty: relResult.controllerQty,
+          channels: relResult.controller.channels, maxPower: relResult.controller.maxPower,
+          price: relResult.controller.price, subtotal: ctrlSub,
+        };
+        controllerSpecs = {
+          voltage: relResult.controller.voltage ?? (voltage === '230V' ? '230V AC' : '24V AC/DC'),
+          powerToSensors: relResult.controller.maxPower,
+          relayOutputs: relResult.controller.relay ?? null,
+          ip: relResult.controller.ip ?? 'IP20',
+          analogIn: relResult.controller.analog ?? null,
+          analogOut: null, rs485: relResult.controller.modbus ?? false,
+          displayType: null, tempRange: '-10 to +55C',
+          mounting: 'DIN rail or wall', cableMax: '500m per channel',
+          failsafe: true, features: relResult.controller.features ?? null,
+        };
+      } else if (relResult.base) {
+        // Base acts as the "controller" for display purposes
+        controllerInfo = {
+          code: relResult.base.code, name: relResult.base.name,
+          qty: relResult.baseQty,
+          channels: relResult.base.channels, maxPower: relResult.base.maxPower,
+          price: relResult.base.price, subtotal: relResult.baseQty * relResult.base.price,
+        };
+        controllerSpecs = {
+          voltage: relResult.base.voltage ?? (voltage === '230V' ? '230V AC' : '24V AC/DC'),
+          powerToSensors: relResult.base.maxPower,
+          relayOutputs: relResult.base.relay ?? null,
+          ip: relResult.base.ip ?? 'IP20',
+          analogIn: relResult.base.analog ?? null,
+          analogOut: null, rs485: relResult.base.modbus ?? false,
+          displayType: null, tempRange: '-10 to +55C',
+          mounting: 'DIN rail or wall', cableMax: '500m per channel',
+          failsafe: true, features: relResult.base.features ?? null,
+        };
+      }
+    } else {
+      // ── Legacy controller selection (f7_cheapestControllerCombo) ──
+      const detPower = detector.power ?? 2;
+      const controllerResult = f7_cheapestControllerCombo(totalDets, detPower, controllers, voltage, detector.connectTo);
+      if (controllerResult && controllerResult.controllers.length > 0) {
+        mpuCount = controllerResult.controllers.reduce((s, c) => s + c.qty, 0);
+        controllerCost = controllerResult.total;
+        const main = controllerResult.controllers[controllerResult.controllers.length - 1];
+        const matchedCtrl = controllers.find(c => c.code === main.code);
+
+        controllerInfo = {
+          code: main.code, name: main.name, qty: mpuCount,
+          channels: main.channels, maxPower: main.maxPower,
+          price: main.price, subtotal: controllerCost,
+        };
+        controllerSpecs = {
+          voltage: matchedCtrl?.voltage ?? (voltage === '230V' ? '230V AC' : '24V AC/DC'),
+          powerToSensors: main.maxPower,
+          relayOutputs: matchedCtrl?.relay ?? null,
+          ip: matchedCtrl?.ip ?? 'IP20',
+          analogIn: matchedCtrl?.analog ?? null,
+          analogOut: null, rs485: matchedCtrl?.modbus ?? false,
+          displayType: null, tempRange: '-10 to +55C',
+          mounting: 'DIN rail or wall', cableMax: '500m per channel',
+          failsafe: true, features: matchedCtrl?.features ?? null,
+        };
+      }
     }
   }
 
@@ -531,30 +617,101 @@ function buildTierBom(
     return cf.includes('ALL') || cf.includes(family);
   }
 
-  // F10: Power accessories
+  const condCtx = { voltage, mount: input.mountingType, atex: input.zoneAtex };
+  const qtyCounts = { detectors: totalDets, controllers: Math.max(1, mpuCount) };
+
+  // ─── F10: Power accessories ───────────────────────────────────────────
   const powerAccessories: BomLine[] = [];
-  if (voltage === '230V') {
-    const powerAccs = allAccessories.filter(a => a.subCategory === 'power' && isCompatible(a) && a.code !== '40-420');
-    if (powerAccs.length > 0) {
-      for (const pa of powerAccs) {
+  if (hasRelations) {
+    // Relation-based: query required_accessory with voltage condition
+    const powerRels = getRelationsFor(relations, detector.code, 'required_accessory')
+      .filter(r => conditionMatches(r.condition, condCtx));
+    for (const rel of powerRels) {
+      // Only include power-related accessories (condition contains voltage)
+      if (rel.condition && rel.condition.startsWith('voltage:')) {
+        const accProduct = allAccessories.find(a => a.code === rel.toCode);
+        if (accProduct && accProduct.price > 0) {
+          const qty = calculateQty(rel.qtyRule, qtyCounts);
+          powerAccessories.push({
+            code: accProduct.code, name: accProduct.name, qty, price: accProduct.price,
+            subtotal: qty * accProduct.price,
+            reason: rel.reason ?? `Required accessory for ${detector.code} (${rel.condition})`,
+          });
+        }
+      }
+    }
+    // Also pick up unconditional required_accessory that are power subCategory
+    const uncondPowerRels = getRelationsFor(relations, detector.code, 'required_accessory')
+      .filter(r => !r.condition);
+    for (const rel of uncondPowerRels) {
+      const accProduct = allAccessories.find(a => a.code === rel.toCode && a.subCategory === 'power');
+      if (accProduct && accProduct.price > 0 && !powerAccessories.some(p => p.code === accProduct.code)) {
+        const qty = calculateQty(rel.qtyRule, qtyCounts);
         powerAccessories.push({
-          code: pa.code, name: pa.name, qty: totalDets, price: pa.price,
-          subtotal: totalDets * pa.price,
-          reason: `1 per detector - ${pa.name} (230V site)`,
+          code: accProduct.code, name: accProduct.name, qty, price: accProduct.price,
+          subtotal: qty * accProduct.price,
+          reason: rel.reason ?? `Required power accessory for ${detector.code}`,
         });
       }
-    } else if (isMidiFamily(detector)) {
-      powerAccessories.push({
-        code: '4000-0002', name: 'Power Adapter 230V-24V', qty: totalDets,
-        price: POWER_ADAPTER_PRICE, subtotal: totalDets * POWER_ADAPTER_PRICE,
-        reason: '1 per MIDI detector - Power Adapter (230V site, fallback)',
-      });
+    }
+  } else {
+    // Legacy power accessory logic
+    if (voltage === '230V') {
+      const powerAccs = allAccessories.filter(a => a.subCategory === 'power' && isCompatible(a) && a.code !== '40-420');
+      if (powerAccs.length > 0) {
+        for (const pa of powerAccs) {
+          powerAccessories.push({
+            code: pa.code, name: pa.name, qty: totalDets, price: pa.price,
+            subtotal: totalDets * pa.price,
+            reason: `1 per detector - ${pa.name} (230V site)`,
+          });
+        }
+      } else if (isMidiFamily(detector)) {
+        powerAccessories.push({
+          code: '4000-0002', name: 'Power Adapter 230V-24V', qty: totalDets,
+          price: POWER_ADAPTER_PRICE, subtotal: totalDets * POWER_ADAPTER_PRICE,
+          reason: '1 per MIDI detector - Power Adapter (230V site, fallback)',
+        });
+      }
     }
   }
 
-  // F11: Alert accessories (EN 378)
+  // ─── F11: Alert accessories (EN 378) ──────────────────────────────────
   const alertAccessories: BomLine[] = [];
-  {
+  if (hasRelations) {
+    // Relation-based: query alert_device relations for this detector
+    const alertRels = getRelationsFor(relations, detector.code, 'alert_device')
+      .filter(r => conditionMatches(r.condition, condCtx));
+
+    for (const rel of alertRels) {
+      const alertProduct = allAccessories.find(a => a.code === rel.toCode);
+      if (alertProduct && alertProduct.price > 0) {
+        // Qty logic: if controller present → per_controller (alerts on controller); else per_detector (standalone)
+        const effectiveQtyRule = mpuCount > 0 ? 'per_controller' : 'per_detector';
+        const qty = calculateQty(effectiveQtyRule, qtyCounts);
+        if (qty > 0) {
+          alertAccessories.push({
+            code: alertProduct.code, name: alertProduct.name, qty,
+            price: alertProduct.price, subtotal: qty * alertProduct.price,
+            reason: mpuCount > 0 ? '1 per controller — centralized alarm (EN 378)' : '1 per detector — standalone alarm (EN 378)',
+          });
+        }
+      }
+    }
+    // 230V socket for alerts
+    if (voltage === '230V' && alertAccessories.length > 0) {
+      const sock230 = allAccessories.find(a => a.code === '40-420');
+      if (sock230) {
+        const alertQty = alertAccessories[0]?.qty ?? 1;
+        alertAccessories.push({
+          code: sock230.code, name: sock230.name, qty: alertQty,
+          price: sock230.price, subtotal: alertQty * sock230.price,
+          reason: '230V site - required per alert',
+        });
+      }
+    }
+  } else {
+    // Legacy alert logic
     const alertAccs = allAccessories.filter(a => a.subCategory === 'alert' && isCompatible(a));
     const alertKey = (input.alertAccessory && input.alertAccessory !== 'none') ? input.alertAccessory : 'fl_rl_r';
     let selectedAlert = alertAccs.find(a => ALERT_ACCESSORIES.some(aa => aa.key === alertKey && aa.code === a.code));
@@ -583,9 +740,40 @@ function buildTierBom(
     }
   }
 
-  // F13: Mounting accessories
+  // ─── F13: Mounting accessories ────────────────────────────────────────
   const mountingAccessories: BomLine[] = [];
-  {
+  if (hasRelations) {
+    // Relation-based: query required_accessory with mount condition
+    const mountRels = getRelationsFor(relations, detector.code, 'required_accessory')
+      .filter(r => {
+        if (!r.condition) return false;
+        if (r.condition.startsWith('mount:')) return conditionMatches(r.condition, condCtx);
+        return false;
+      });
+    for (const rel of mountRels) {
+      const accProduct = allAccessories.find(a => a.code === rel.toCode);
+      if (accProduct && accProduct.price >= 0 && !powerAccessories.some(p => p.code === accProduct.code)) {
+        const qty = calculateQty(rel.qtyRule, qtyCounts);
+        mountingAccessories.push({
+          code: accProduct.code, name: accProduct.name, qty, price: accProduct.price,
+          subtotal: qty * accProduct.price,
+          reason: rel.reason ?? `Mounting accessory for ${detector.code} (${rel.condition})`,
+        });
+      }
+    }
+    // Fallback: also include compatible mounting accessories from subCategory
+    if (mountingAccessories.length === 0) {
+      const mountAccs = allAccessories.filter(a => a.subCategory === 'mounting' && isCompatible(a) && a.code !== '40-415' && a.code !== '40-420' && a.code !== '40-420-ND');
+      for (const ma of mountAccs) {
+        mountingAccessories.push({
+          code: ma.code, name: ma.name, qty: totalDets, price: ma.price,
+          subtotal: totalDets * ma.price,
+          reason: `1 per detector - ${ma.name} (recommended)`,
+        });
+      }
+    }
+  } else {
+    // Legacy mounting logic
     const mountAccs = allAccessories.filter(a => a.subCategory === 'mounting' && isCompatible(a) && a.code !== '40-415' && a.code !== '40-420' && a.code !== '40-420-ND');
     for (const ma of mountAccs) {
       mountingAccessories.push({
@@ -596,7 +784,7 @@ function buildTierBom(
     }
   }
 
-  // F14: Service tools (1 per project)
+  // ─── F14: Service tools (1 per project) ───────────────────────────────
   const serviceTools: BomLine[] = [];
   {
     const serviceAccs = allAccessories.filter(a => a.subCategory === 'service' && isCompatible(a));
@@ -609,7 +797,7 @@ function buildTierBom(
     }
   }
 
-  // F15: Spare sensors
+  // ─── F15: Spare sensors ───────────────────────────────────────────────
   const spareSensors: BomLine[] = [];
   {
     const spareAccs = allAccessories.filter(a => a.subCategory === 'spare' && isCompatible(a));
@@ -630,13 +818,37 @@ function buildTierBom(
     }
   }
 
+  // ─── F16: Suggested accessories (relations only — new feature) ────────
+  const suggestedAccessories: BomLine[] = [];
+  if (hasRelations) {
+    const suggestedRels = getRelationsFor(relations, detector.code, 'suggested_accessory')
+      .filter(r => conditionMatches(r.condition, condCtx));
+    for (const rel of suggestedRels) {
+      const accProduct = allAccessories.find(a => a.code === rel.toCode);
+      if (accProduct && accProduct.price >= 0) {
+        const qty = calculateQty(rel.qtyRule, qtyCounts);
+        suggestedAccessories.push({
+          code: accProduct.code, name: accProduct.name, qty, price: accProduct.price,
+          subtotal: qty * accProduct.price,
+          reason: rel.reason ?? `Suggested for ${detector.code} (optional)`,
+        });
+      }
+    }
+  }
+
+  // ─── Trace ────────────────────────────────────────────────────────────
   const tierLabel = detector.standalone ? 'standalone' : 'controller';
   const bomTrace: BomFunctionTrace[] = [
     { name: 'F7_controller', tier: tierLabel, applied: !detector.standalone && controllerInfo !== null,
-      reason: detector.standalone ? 'Standalone - no controller needed' : `${mpuCount} controller(s) selected via connectTo: ${detector.connectTo || 'any'}`,
-      items: controllerInfo ? [{ code: controllerInfo.code, name: controllerInfo.name, qty: controllerInfo.qty, subtotal: controllerCost }] : [] },
+      reason: detector.standalone ? 'Standalone - no controller needed' :
+        hasRelations ? `${mpuCount} unit(s) selected via relations` :
+        `${mpuCount} controller(s) selected via connectTo: ${detector.connectTo || 'any'}`,
+      items: [
+        ...(baseUnit ? [{ code: baseUnit.code, name: baseUnit.name, qty: baseUnit.qty, subtotal: baseUnit.subtotal }] : []),
+        ...(controllerInfo ? [{ code: controllerInfo.code, name: controllerInfo.name, qty: controllerInfo.qty, subtotal: controllerInfo.subtotal }] : []),
+      ] },
     { name: 'F10_power', tier: tierLabel, applied: powerAccessories.length > 0,
-      reason: powerAccessories.length > 0 ? '230V MIDI needs Power Adapter' : `No power adapter needed (${voltage})`,
+      reason: powerAccessories.length > 0 ? (hasRelations ? 'Power accessories from relations' : '230V MIDI needs Power Adapter') : `No power adapter needed (${voltage})`,
       items: powerAccessories.map(a => ({ code: a.code, name: a.name, qty: a.qty, subtotal: a.subtotal })) },
     { name: 'F11_alert', tier: tierLabel, applied: alertAccessories.length > 0,
       reason: 'EN 378 - audible+visual alarm required',
@@ -650,22 +862,35 @@ function buildTierBom(
     { name: 'F15_spares', tier: tierLabel, applied: spareSensors.length > 0,
       reason: spareSensors.length > 0 ? `Calibration gas for ${detector.gas?.[0] ?? 'unknown'}` : 'No spare sensors for this family/gas',
       items: spareSensors.map(a => ({ code: a.code, name: a.name, qty: a.qty, subtotal: a.subtotal })) },
+    ...(suggestedAccessories.length > 0 ? [{
+      name: 'F16_suggested', tier: tierLabel, applied: true,
+      reason: 'Optional accessories from relations',
+      items: suggestedAccessories.map(a => ({ code: a.code, name: a.name, qty: a.qty, subtotal: a.subtotal })),
+    }] : []),
   ];
 
-  return { controller: controllerInfo, controllerSpecs, powerAccessories, alertAccessories, mountingAccessories, serviceTools, spareSensors, mpuCount, controllerCost, bomTrace };
+  return { controller: controllerInfo, controllerSpecs, baseUnit, powerAccessories, alertAccessories, mountingAccessories, serviceTools, spareSensors, suggestedAccessories, mpuCount, controllerCost, bomTrace };
 }
 
 // ─── Tier Assignment ─────────────────────────────────────────────────────────
 
+const TIER_LABELS: Record<TierKey, string> = {
+  PREMIUM_STANDALONE: 'Premium — Standalone',
+  PREMIUM_CENTRALIZED: 'Premium — Centralized',
+  ECO_STANDALONE: 'Economical — Standalone',
+  ECO_CENTRALIZED: 'Economical — Centralized',
+};
+
 function buildSolution(
-  tierLabel: 'PREMIUM' | 'STANDARD' | 'CENTRALIZED',
+  tierLabel: TierKey,
   detector: ProductEntry,
   totalDets: number,
   input: SelectionInput,
   controllers: ProductEntry[],
   scoring: ScoreBreakdown,
+  skipController = false,
 ): { solution: TierSolution; bomTrace: BomFunctionTrace[] } {
-  const bom = buildTierBom(detector, totalDets, input, controllers);
+  const bom = buildTierBom(detector, totalDets, input, controllers, skipController);
 
   const detSubtotal = detector.price * totalDets;
   const powerCost = bom.powerAccessories.reduce((s, a) => s + a.subtotal, 0);
@@ -677,7 +902,7 @@ function buildSolution(
 
   return { bomTrace: taggedBomTrace, solution: {
     tier: tierLabel,
-    label: tierLabel === 'PREMIUM' ? 'Best technology' : tierLabel === 'STANDARD' ? 'Balanced' : 'With controller',
+    label: TIER_LABELS[tierLabel],
     solutionScore: scoring.total,
     detector: {
       code: detector.code, name: detector.name, qty: totalDets,
@@ -708,62 +933,64 @@ function estimateTotalCost(
   input: SelectionInput, controllers: ProductEntry[],
 ): number {
   let cost = detector.price * totalDets;
-  if (!detector.standalone) {
-    const combo = f7_cheapestControllerCombo(totalDets, detector.power ?? 2, controllers, input.sitePowerVoltage, detector.connectTo);
-    if (combo) cost += combo.total;
+  const relations = input.relations;
+  const hasRelations = relations && relations.length > 0;
+
+  const hasCtrlRels = hasRelations && getRelationsFor(relations, detector.code, 'compatible_controller').length > 0;
+  if (!detector.standalone || hasCtrlRels) {
+    if (hasRelations) {
+      const relResult = selectControllerFromRelations(detector, totalDets, input.sitePowerVoltage, controllers, relations);
+      if (relResult.base) cost += relResult.baseQty * relResult.base.price;
+      if (relResult.controller) cost += relResult.controllerQty * relResult.controller.price;
+    } else {
+      const combo = f7_cheapestControllerCombo(totalDets, detector.power ?? 2, controllers, input.sitePowerVoltage, detector.connectTo);
+      if (combo) cost += combo.total;
+    }
   }
-  if (input.sitePowerVoltage === '230V' && isMidiFamily(detector)) {
+
+  if (!hasRelations && input.sitePowerVoltage === '230V' && isMidiFamily(detector)) {
     cost += totalDets * POWER_ADAPTER_PRICE;
   }
+  // When relations exist, power cost is handled in buildTierBom via relation lookups
+  // For estimateTotalCost (used for tier ranking), we approximate with relation data
+  if (hasRelations && input.sitePowerVoltage === '230V') {
+    const powerRels = getRelationsFor(relations, detector.code, 'required_accessory')
+      .filter(r => r.condition === `voltage:${input.sitePowerVoltage}`);
+    for (const rel of powerRels) {
+      const acc = (input.accessories || []).find(a => a.code === rel.toCode);
+      if (acc) {
+        const qty = calculateQty(rel.qtyRule, { detectors: totalDets, controllers: 1 });
+        cost += qty * acc.price;
+      }
+    }
+  }
+
   return cost;
 }
 
 // ─── Comparison Table ────────────────────────────────────────────────────────
 
 function buildComparisonTable(
-  premium: TierSolution | null,
-  standard: TierSolution | null,
-  centralized: TierSolution | null,
+  premiumStandalone: TierSolution | null,
+  premiumCentralized: TierSolution | null,
+  ecoStandalone: TierSolution | null,
+  ecoCentralized: TierSolution | null,
 ): ComparisonTable {
   const val = (t: TierSolution | null, fn: (t: TierSolution) => string): string =>
     t ? fn(t) : '-';
 
   const rows = [
-    { label: 'Detector', premium: val(premium, t => t.detector.name), standard: val(standard, t => t.detector.name), centralized: val(centralized, t => t.detector.name) },
-    { label: 'Qty', premium: val(premium, t => `${t.detector.qty}`), standard: val(standard, t => `${t.detector.qty}`), centralized: val(centralized, t => `${t.detector.qty}`) },
-    { label: 'Sensor Tech', premium: val(premium, t => t.detector.sensorTech ?? '-'), standard: val(standard, t => t.detector.sensorTech ?? '-'), centralized: val(centralized, t => t.detector.sensorTech ?? '-') },
-    { label: 'Sensor Life', premium: val(premium, t => t.detector.sensorLife ?? '-'), standard: val(standard, t => t.detector.sensorLife ?? '-'), centralized: val(centralized, t => t.detector.sensorLife ?? '-') },
-    { label: 'Controller', premium: val(premium, t => t.controller ? `${t.controller.qty}x ${t.controller.name}` : 'None (standalone)'), standard: val(standard, t => t.controller ? `${t.controller.qty}x ${t.controller.name}` : 'None (standalone)'), centralized: val(centralized, t => t.controller ? `${t.controller.qty}x ${t.controller.name}` : 'None (standalone)') },
-    { label: 'Score', premium: val(premium, t => `${t.solutionScore}/21`), standard: val(standard, t => `${t.solutionScore}/21`), centralized: val(centralized, t => `${t.solutionScore}/21`) },
-    { label: 'Total BOM', premium: val(premium, t => `${t.totalBom.toLocaleString()} EUR`), standard: val(standard, t => `${t.totalBom.toLocaleString()} EUR`), centralized: val(centralized, t => `${t.totalBom.toLocaleString()} EUR`) },
+    { label: 'Detector', premiumStandalone: val(premiumStandalone, t => t.detector.name), premiumCentralized: val(premiumCentralized, t => t.detector.name), ecoStandalone: val(ecoStandalone, t => t.detector.name), ecoCentralized: val(ecoCentralized, t => t.detector.name) },
+    { label: 'Qty', premiumStandalone: val(premiumStandalone, t => `${t.detector.qty}`), premiumCentralized: val(premiumCentralized, t => `${t.detector.qty}`), ecoStandalone: val(ecoStandalone, t => `${t.detector.qty}`), ecoCentralized: val(ecoCentralized, t => `${t.detector.qty}`) },
+    { label: 'Sensor Tech', premiumStandalone: val(premiumStandalone, t => t.detector.sensorTech ?? '-'), premiumCentralized: val(premiumCentralized, t => t.detector.sensorTech ?? '-'), ecoStandalone: val(ecoStandalone, t => t.detector.sensorTech ?? '-'), ecoCentralized: val(ecoCentralized, t => t.detector.sensorTech ?? '-') },
+    { label: 'Sensor Life', premiumStandalone: val(premiumStandalone, t => t.detector.sensorLife ?? '-'), premiumCentralized: val(premiumCentralized, t => t.detector.sensorLife ?? '-'), ecoStandalone: val(ecoStandalone, t => t.detector.sensorLife ?? '-'), ecoCentralized: val(ecoCentralized, t => t.detector.sensorLife ?? '-') },
+    { label: 'Controller', premiumStandalone: val(premiumStandalone, t => t.controller ? `${t.controller.qty}x ${t.controller.name}` : 'None (standalone)'), premiumCentralized: val(premiumCentralized, t => t.controller ? `${t.controller.qty}x ${t.controller.name}` : 'None (standalone)'), ecoStandalone: val(ecoStandalone, t => t.controller ? `${t.controller.qty}x ${t.controller.name}` : 'None (standalone)'), ecoCentralized: val(ecoCentralized, t => t.controller ? `${t.controller.qty}x ${t.controller.name}` : 'None (standalone)') },
+    { label: 'Score', premiumStandalone: val(premiumStandalone, t => `${t.solutionScore}/21`), premiumCentralized: val(premiumCentralized, t => `${t.solutionScore}/21`), ecoStandalone: val(ecoStandalone, t => `${t.solutionScore}/21`), ecoCentralized: val(ecoCentralized, t => `${t.solutionScore}/21`) },
+    { label: 'Total BOM', premiumStandalone: val(premiumStandalone, t => `${t.totalBom.toLocaleString()} EUR`), premiumCentralized: val(premiumCentralized, t => `${t.totalBom.toLocaleString()} EUR`), ecoStandalone: val(ecoStandalone, t => `${t.totalBom.toLocaleString()} EUR`), ecoCentralized: val(ecoCentralized, t => `${t.totalBom.toLocaleString()} EUR`) },
   ];
 
-  const tiers = [
-    { key: 'premium' as const, sol: premium },
-    { key: 'standard' as const, sol: standard },
-    { key: 'centralized' as const, sol: centralized },
-  ].filter(t => t.sol !== null);
-
-  let rec: 'premium' | 'standard' | 'centralized' = 'premium';
-  let recReason = 'Best technology and features';
-
-  if (tiers.length > 0) {
-    tiers.sort((a, b) => {
-      const as2 = a.sol!.solutionScore;
-      const bs2 = b.sol!.solutionScore;
-      if (as2 !== bs2) return bs2 - as2;
-      return a.sol!.totalBom - b.sol!.totalBom;
-    });
-    rec = tiers[0].key;
-    const best = tiers[0].sol!;
-    if (best.solutionScore >= 15) {
-      recReason = `Highest score (${best.solutionScore}/21) with best technology`;
-    } else {
-      recReason = `Best balance of score (${best.solutionScore}/21) and price`;
-    }
-  }
-
-  return { rows, recommendation: rec, recommendationReason: recReason };
+  // No recommendation badge for now
+  return { rows, recommendation: null, recommendationReason: '' };
 }
 
 // ─── Main Export ─────────────────────────────────────────────────────────────
@@ -806,93 +1033,110 @@ export function selectProducts(input: SelectionInput): SelectionResult {
     tier: getProductTier(p),
   }));
 
-  // Pick 3 tiers
-  const autonomeCandidates = scored.filter(s => s.product.standalone).sort((a, b) => b.score.total - a.score.total);
-  const economiqueCandidates = [...scored].sort((a, b) => {
+  // ═══════════════════════════════════════════════════════════════════════
+  // TIER SELECTION — 2×2 matrix (4 solutions):
+  //   premiumStandalone   → best detector by score, no controller
+  //   premiumCentralized  → same detector + controller (if totalDets > 1 + has relations)
+  //   ecoStandalone       → cheapest detector (different from premium), no controller
+  //   ecoCentralized      → same eco detector + controller (if totalDets > 1 + has relations)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  const tierPicks: TierPickTrace[] = [];
+  let premiumStandaloneSol: TierSolution | null = null;
+  let premiumCentralizedSol: TierSolution | null = null;
+  let ecoStandaloneSol: TierSolution | null = null;
+  let ecoCentralizedSol: TierSolution | null = null;
+  const allBomTraces: BomFunctionTrace[] = [];
+
+  // ── 1. PREMIUM STANDALONE — Best detector by score, skipController=true ──
+  const allCandidatesByScore = [...scored].sort((a, b) => b.score.total - a.score.total);
+  const premiumPick = allCandidatesByScore[0];
+  if (premiumPick) {
+    const r = buildSolution('PREMIUM_STANDALONE', premiumPick.product, totalDetectors, input, controllers, premiumPick.score, true);
+    premiumStandaloneSol = r.solution; allBomTraces.push(...r.bomTrace);
+  }
+  tierPicks.push({
+    tier: 'PREMIUM_STANDALONE', candidateCount: allCandidatesByScore.length,
+    candidates: allCandidatesByScore.slice(0, 5).map(s => ({ id: s.product.id, code: s.product.code, score: s.score.total, price: s.product.price })),
+    picked: premiumPick?.product.id ?? null,
+    reason: premiumPick ? `Best by score (${premiumPick.score.total}/21)` : 'No products after filters',
+  });
+
+  // ── 2. PREMIUM CENTRALIZED — Same detector + controller ──
+  // Only when: totalDetectors > 1 AND detector has compatible_controller relations
+  if (premiumPick && totalDetectors > 1) {
+    const ctrlRels = input.relations ? getRelationsFor(input.relations, premiumPick.product.code, 'compatible_controller') : [];
+    if (ctrlRels.length > 0) {
+      const r = buildSolution('PREMIUM_CENTRALIZED', premiumPick.product, totalDetectors, input, controllers, premiumPick.score, false);
+      premiumCentralizedSol = r.solution; allBomTraces.push(...r.bomTrace);
+    }
+    tierPicks.push({
+      tier: 'PREMIUM_CENTRALIZED', candidateCount: ctrlRels.length > 0 ? 1 : 0,
+      candidates: premiumPick ? [{ id: premiumPick.product.id, code: premiumPick.product.code, score: premiumPick.score.total, price: premiumPick.product.price }] : [],
+      picked: premiumCentralizedSol ? premiumPick.product.id : null,
+      reason: premiumCentralizedSol ? `Same detector + Controller (${premiumPick.product.code})` : (totalDetectors <= 1 ? 'Only 1 detector — centralized not applicable' : 'No compatible controller relation found'),
+    });
+  } else {
+    tierPicks.push({
+      tier: 'PREMIUM_CENTRALIZED', candidateCount: 0, candidates: [], picked: null,
+      reason: totalDetectors <= 1 ? 'Only 1 detector — centralized not applicable' : 'No premium detector selected',
+    });
+  }
+
+  // ── 3. ECO STANDALONE — Cheapest total cost, different from premium pick ──
+  const cheapestCandidates = [...scored].sort((a, b) => {
     const aCost = estimateTotalCost(a.product, totalDetectors, input, controllers);
     const bCost = estimateTotalCost(b.product, totalDetectors, input, controllers);
     return aCost - bCost || b.score.total - a.score.total;
   });
-  const centralizedCandidates = totalDetectors > 1
-    ? scored.filter(s => !s.product.standalone).sort((a, b) => {
-        const aCost = estimateTotalCost(a.product, totalDetectors, input, controllers);
-        const bCost = estimateTotalCost(b.product, totalDetectors, input, controllers);
-        return aCost - bCost || b.score.total - a.score.total;
-      })
-    : [];
 
-  const usedIds = new Set<string>();
-  const tierPicks: TierPickTrace[] = [];
-  let premiumSolution: TierSolution | null = null;
-  let standardSolution: TierSolution | null = null;
-  let centralizedSolution: TierSolution | null = null;
-  const allBomTraces: BomFunctionTrace[] = [];
+  const premiumCostEstimate = premiumPick ? estimateTotalCost(premiumPick.product, totalDetectors, input, controllers) : Infinity;
+  const ecoPick = cheapestCandidates.find(s => {
+    if (premiumPick && s.product.id === premiumPick.product.id) return false;
+    const cost = estimateTotalCost(s.product, totalDetectors, input, controllers);
+    return cost < premiumCostEstimate;
+  });
 
-  // PREMIUM (best standalone by score)
-  const autoPick = autonomeCandidates[0];
-  if (autoPick) {
-    usedIds.add(autoPick.product.id);
-    const r = buildSolution('PREMIUM', autoPick.product, totalDetectors, input, controllers, autoPick.score);
-    premiumSolution = r.solution; allBomTraces.push(...r.bomTrace);
-  }
-  tierPicks.push({ tier: 'PREMIUM', candidateCount: autonomeCandidates.length, candidates: autonomeCandidates.slice(0, 5).map(s => ({ id: s.product.id, code: s.product.code, score: s.score.total, price: s.product.price })), picked: autoPick?.product.id ?? null, reason: autoPick ? `Best standalone by score (${autoPick.score.total}/21)` : 'No standalone products after filters' });
-
-  // STANDARD (cheapest, strictly cheaper than premium)
-  const autoCostRef = autoPick ? estimateTotalCost(autoPick.product, totalDetectors, input, controllers) : Infinity;
-  let ecoPick: typeof economiqueCandidates[0] | undefined;
-  if (autoCostRef < Infinity) {
-    for (const s of economiqueCandidates) {
-      if (s.product.id === autoPick?.product.id) continue;
-      const ecoCost = estimateTotalCost(s.product, totalDetectors, input, controllers);
-      if (ecoCost >= autoCostRef) continue;
-      ecoPick = s;
-      break;
-    }
-  } else {
-    ecoPick = economiqueCandidates[0];
-  }
   if (ecoPick) {
-    usedIds.add(ecoPick.product.id);
-    const r = buildSolution('STANDARD', ecoPick.product, totalDetectors, input, controllers, ecoPick.score);
-    standardSolution = r.solution; allBomTraces.push(...r.bomTrace);
+    const r = buildSolution('ECO_STANDALONE', ecoPick.product, totalDetectors, input, controllers, ecoPick.score, true);
+    ecoStandaloneSol = r.solution; allBomTraces.push(...r.bomTrace);
   }
-  tierPicks.push({ tier: 'STANDARD', candidateCount: economiqueCandidates.length, candidates: economiqueCandidates.slice(0, 5).map(s => ({ id: s.product.id, code: s.product.code, score: s.score.total, price: s.product.price })), picked: ecoPick?.product.id ?? null, reason: ecoPick ? `Cheapest total cost (score ${ecoPick.score.total}/21)` : 'No products after filters' });
+  tierPicks.push({
+    tier: 'ECO_STANDALONE', candidateCount: cheapestCandidates.length,
+    candidates: cheapestCandidates.slice(0, 5).map(s => ({ id: s.product.id, code: s.product.code, score: s.score.total, price: s.product.price })),
+    picked: ecoPick?.product.id ?? null,
+    reason: ecoPick ? `Cheapest total cost (${ecoPick.product.code}, score ${ecoPick.score.total}/21)` : 'No cheaper alternative available',
+  });
 
-  // CENTRALIZED (non-standalone + MPU)
-  const ctrlPick = centralizedCandidates.find(s => !usedIds.has(s.product.id));
-  if (ctrlPick) {
-    usedIds.add(ctrlPick.product.id);
-    const r3 = buildSolution('CENTRALIZED', ctrlPick.product, totalDetectors, input, controllers, ctrlPick.score);
-    centralizedSolution = r3.solution; allBomTraces.push(...r3.bomTrace);
+  // ── 4. ECO CENTRALIZED — Same eco detector + controller ──
+  // Only when: totalDetectors > 1 AND eco detector has compatible_controller relations
+  if (ecoPick && totalDetectors > 1) {
+    const ctrlRels = input.relations ? getRelationsFor(input.relations, ecoPick.product.code, 'compatible_controller') : [];
+    if (ctrlRels.length > 0) {
+      const r = buildSolution('ECO_CENTRALIZED', ecoPick.product, totalDetectors, input, controllers, ecoPick.score, false);
+      ecoCentralizedSol = r.solution; allBomTraces.push(...r.bomTrace);
+    }
+    tierPicks.push({
+      tier: 'ECO_CENTRALIZED', candidateCount: ctrlRels.length > 0 ? 1 : 0,
+      candidates: ecoPick ? [{ id: ecoPick.product.id, code: ecoPick.product.code, score: ecoPick.score.total, price: ecoPick.product.price }] : [],
+      picked: ecoCentralizedSol ? ecoPick.product.id : null,
+      reason: ecoCentralizedSol ? `Same detector + Controller (${ecoPick.product.code})` : (totalDetectors <= 1 ? 'Only 1 detector — centralized not applicable' : 'No compatible controller relation found'),
+    });
+  } else {
+    tierPicks.push({
+      tier: 'ECO_CENTRALIZED', candidateCount: 0, candidates: [], picked: null,
+      reason: !ecoPick ? 'No eco detector selected' : 'Only 1 detector — centralized not applicable',
+    });
   }
-  tierPicks.push({ tier: 'CENTRALIZED', candidateCount: centralizedCandidates.length, candidates: centralizedCandidates.slice(0, 5).map(s => ({ id: s.product.id, code: s.product.code, score: s.score.total, price: s.product.price })), picked: ctrlPick?.product.id ?? null, reason: ctrlPick ? `Cheapest centralized with MPU (score ${ctrlPick.score.total}/21)` : (totalDetectors <= 1 ? 'Only 1 detector - centralized not applicable' : 'No non-standalone products after filters') });
 
-  // Fallbacks
-  if (!premiumSolution) {
-    const fallback = scored.sort((a, b) => b.score.total - a.score.total).find(s => !usedIds.has(s.product.id));
+  // ── Fallback: if no premium found, pick best overall ──
+  if (!premiumStandaloneSol) {
+    const fallback = scored.sort((a, b) => b.score.total - a.score.total)[0];
     if (fallback) {
-      usedIds.add(fallback.product.id);
-      const rf1 = buildSolution('PREMIUM', fallback.product, totalDetectors, input, controllers, fallback.score);
-      premiumSolution = rf1.solution; allBomTraces.push(...rf1.bomTrace);
+      const rf1 = buildSolution('PREMIUM_STANDALONE', fallback.product, totalDetectors, input, controllers, fallback.score, true);
+      premiumStandaloneSol = rf1.solution; allBomTraces.push(...rf1.bomTrace);
       tierPicks[0].picked = fallback.product.id;
       tierPicks[0].reason = `Fallback: best remaining by score (${fallback.score.total}/21)`;
-    }
-  }
-  if (!standardSolution) {
-    const fallback = scored.sort((a, b) => a.product.price - b.product.price).find(s => {
-      if (usedIds.has(s.product.id)) return false;
-      if (autoCostRef < Infinity) {
-        const fbCost = estimateTotalCost(s.product, totalDetectors, input, controllers);
-        if (fbCost >= autoCostRef) return false;
-      }
-      return true;
-    });
-    if (fallback) {
-      usedIds.add(fallback.product.id);
-      const rf2 = buildSolution('STANDARD', fallback.product, totalDetectors, input, controllers, fallback.score);
-      standardSolution = rf2.solution; allBomTraces.push(...rf2.bomTrace);
-      tierPicks[1].picked = fallback.product.id;
-      tierPicks[1].reason = `Fallback: cheapest remaining (${fallback.product.price} EUR)`;
     }
   }
 
@@ -907,7 +1151,16 @@ export function selectProducts(input: SelectionInput): SelectionResult {
     tierPicks, bomFunctions: allBomTraces,
   };
 
-  const comparison = buildComparisonTable(premiumSolution, standardSolution, centralizedSolution);
+  const comparison = buildComparisonTable(premiumStandaloneSol, premiumCentralizedSol, ecoStandaloneSol, ecoCentralizedSol);
 
-  return { tiers: { premium: premiumSolution, standard: standardSolution, centralized: centralizedSolution }, comparison, trace };
+  return {
+    tiers: {
+      premiumStandalone: premiumStandaloneSol,
+      premiumCentralized: premiumCentralizedSol,
+      ecoStandalone: ecoStandaloneSol,
+      ecoCentralized: ecoCentralizedSol,
+    },
+    comparison,
+    trace,
+  };
 }

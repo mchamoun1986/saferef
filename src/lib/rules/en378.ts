@@ -4,6 +4,7 @@
 import type { RuleSet, PathResult, DetectionEvaluation, ThresholdResult } from '../engine/rule-set';
 import type {
   RegulationInput,
+  EngineQuery,
   RefrigerantV5,
   AlarmThresholds,
   VentilationResult,
@@ -490,9 +491,9 @@ export const en378RuleSet: RuleSet = {
    * NH3 > 50kg → two-level (500/30000 ppm).
    */
   calculateThreshold(
-    ref: RefrigerantV5,
-    charge: number,
+    query: EngineQuery,
   ): { threshold: ThresholdResult; stage2Ppm: number | null; actions: string[] } {
+    const { refrigerant: ref, charge } = query;
     const isNh3TwoLevel = normalizeRefId(ref.id) === 'R-717' && charge > 50;
 
     // THR-NH3-001: R-717 > 50 kg special two-level
@@ -571,9 +572,10 @@ export const en378RuleSet: RuleSet = {
    * For non-flammable A1: RCL ≈ ATEL, so cutoff ≈ alarm2 naturally
    * For flammable A2L/A3: RCL (PL) can be << LFL, so we enforce cutoff ≥ alarm2
    */
-  getAlarmThresholds(ref: RefrigerantV5, charge?: number): AlarmThresholds {
+  getAlarmThresholds(query: EngineQuery): AlarmThresholds {
+    const { refrigerant: ref, charge = 0 } = query;
     // NH3 > 50 kg: special two-level alarm scheme (EN 378-3 Clause 9.3.3)
-    if (normalizeRefId(ref.id) === 'R-717' && (charge ?? 0) > 50) {
+    if (normalizeRefId(ref.id) === 'R-717' && charge > 50) {
       return {
         alarm1: { ppm: 500, kgM3: ppmToKgM3(500, ref.molecularMass), basis: 'NH3_pre_alarm' },
         alarm2: { ppm: 30000, kgM3: ppmToKgM3(30000, ref.molecularMass), basis: 'NH3_main_alarm' },
@@ -582,7 +584,7 @@ export const en378RuleSet: RuleSet = {
       };
     }
 
-    const { threshold } = en378RuleSet.calculateThreshold(ref, 0);
+    const { threshold } = en378RuleSet.calculateThreshold({ refrigerant: ref, charge: 0 });
 
     const alarm1Ppm = threshold.ppm;
     const alarm1KgM3 = threshold.kgM3;
@@ -630,11 +632,9 @@ export const en378RuleSet: RuleSet = {
    * EN 378-3:2016 Clause 6.4.4
    */
   getEmergencyVentilation(
-    chargeKg: number,
-    _roomVolumeM3: number,
-    _ref: RefrigerantV5,
+    query: EngineQuery,
   ): VentilationResult {
-    const flowRate = 0.14 * Math.sqrt(chargeKg);
+    const flowRate = 0.14 * Math.sqrt(query.charge);
     return {
       flowRateM3s: flowRate,
       formula: '0.14 × √m (m = charge in kg)',
@@ -646,7 +646,6 @@ export const en378RuleSet: RuleSet = {
    * EN 378 has no ASHRAE-style extra requirements.
    */
   getExtraRequirements(
-    _ref: RefrigerantV5,
     _input: RegulationInput,
   ): ExtraRequirement[] {
     return [];

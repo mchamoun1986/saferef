@@ -216,7 +216,7 @@ export default function EngineM2DocPage() {
             <span className="text-gray-400 font-normal">/ Product & Quote Engine</span>
           </h1>
           <p className="text-gray-400 text-sm mt-2">
-            Technical reference for the product selection pipeline (M2), 3-tier recommendation system,
+            Technical reference for the product selection pipeline (M2), 2x2 matrix recommendation system,
             and pricing engine (M3).
             <br />
             Covers filter chain F0-F9, scoring /21, BOM assembly, discount resolution, and quote generation.
@@ -466,9 +466,9 @@ total = sum(all components)
         {activeTab === 'selection' && (
           <div className="space-y-8">
             <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900">3-Tier Selection Rules</h2>
+              <h2 className="text-xl font-bold text-gray-900">2x2 Matrix Selection Rules</h2>
               <p className="text-gray-500 text-sm mt-1">
-                After filtering and scoring, the engine picks 3 tiers: Premium, Standard, and Centralized.
+                After filtering and scoring, the engine picks up to 4 solutions in a 2x2 matrix: Premium Standalone, Premium Centralized, Eco Standalone, Eco Centralized.
                 Source: <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">m2-engine/selection-engine.ts</code>
               </p>
             </div>
@@ -573,8 +573,8 @@ total = sum(all components)
 
             {/* Comparison Table */}
             <div className="mt-8">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">3-Tier Comparison</h2>
-              <p className="text-gray-500 text-sm mb-4">How the recommendation engine compares the 3 tiers and selects the winner.</p>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">2x2 Matrix Comparison</h2>
+              <p className="text-gray-500 text-sm mb-4">How the engine compares up to 4 solutions across the 2x2 matrix.</p>
 
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="overflow-x-auto">
@@ -739,14 +739,15 @@ reason = score >= 15
   quoteValidUntil:"2026-05-16" (30 days)
   priceListVersion: "2026-R2"
   tiers: {
-    premium:      PricedTier | null
-    standard:     PricedTier | null
-    centralized:  PricedTier | null
+    premiumStandalone:   PricedTier | null
+    premiumCentralized:  PricedTier | null
+    ecoStandalone:       PricedTier | null
+    ecoCentralized:      PricedTier | null
   }
   comparison: {
-    rows: [...], savingsVsPremium: { std, ctrl }
+    rows: [...], savingsVsPremium: { premiumCentralized, ecoStandalone, ecoCentralized }
   }
-  recommended: "premium" | "standard" | "centralized"
+  recommended: TierSlot | null
   warnings:    string[]  // PRICE_MISMATCH, etc.
 }`}</pre>
                 </div>
@@ -878,8 +879,8 @@ savingsStd = R(
               number="R"
               title="Recommendation Logic"
               description="Sort all non-null tiers by score descending, then totalHt ascending. The winner becomes the recommended tier. If score >= 15, label as best technology; otherwise label as best balance."
-              inputs={['PricedTier[] (premium, standard, centralized)']}
-              output="recommended: premium | standard | centralized"
+              inputs={['PricedTier[] (premiumStandalone, premiumCentralized, ecoStandalone, ecoCentralized)']}
+              output="recommended: TierSlot | null (no badge for now)"
               code={`// Final recommendation
 candidates = tiers.filter(t => t !== null);
 
@@ -955,7 +956,7 @@ recommended = candidates[0].key;
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Source Files</h3>
               <div className="grid md:grid-cols-2 gap-3">
                 {[
-                  { file: 'm2-engine/selection-engine.ts', desc: 'M2 full filter pipeline F0-F9, scoring /21, 3-tier selection, BOM builder' },
+                  { file: 'm2-engine/selection-engine.ts', desc: 'M2 full filter pipeline F0-F9, scoring /21, 2x2 matrix selection, BOM builder' },
                   { file: 'm2-engine/pricing-engine.ts', desc: 'M3 pricing: P1 lookup, P2 discount, P3 line calc, P5 totals, recommendation' },
                   { file: 'm2-engine/parse-product.ts', desc: 'Convert raw API ProductRecord to engine ProductEntry (JSON parse, defaults)' },
                   { file: 'engine-types.ts', desc: 'Unified type definitions: ProductEntry, TierSolution, PricedLine, PricingResult, etc.' },

@@ -7,6 +7,7 @@ import type {
   PricedTier,
   PricedLine,
   TierSolution,
+  TierSlot,
 } from '../engine-types';
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -165,68 +166,77 @@ export function calculatePricing(input: PricingInput): PricingResult {
   validUntil.setDate(validUntil.getDate() + 30);
   const quoteValidUntil = validUntil.toISOString().slice(0, 10);
 
-  let pricedPremium: PricedTier | null = null;
-  let pricedStandard: PricedTier | null = null;
-  let pricedCentralized: PricedTier | null = null;
+  let pricedPremiumStandalone: PricedTier | null = null;
+  let pricedPremiumCentralized: PricedTier | null = null;
+  let pricedEcoStandalone: PricedTier | null = null;
+  let pricedEcoCentralized: PricedTier | null = null;
 
-  if (input.tiers.premium) {
-    const result = priceTier(input.tiers.premium, input.customerGroup, input.discountCode, input.discountMatrix, input.customerOverrides, input.priceDb);
-    pricedPremium = result.pricedTier;
+  if (input.tiers.premiumStandalone) {
+    const result = priceTier(input.tiers.premiumStandalone, input.customerGroup, input.discountCode, input.discountMatrix, input.customerOverrides, input.priceDb);
+    pricedPremiumStandalone = result.pricedTier;
     warnings.push(...result.warnings);
   }
-  if (input.tiers.standard) {
-    const result = priceTier(input.tiers.standard, input.customerGroup, input.discountCode, input.discountMatrix, input.customerOverrides, input.priceDb);
-    pricedStandard = result.pricedTier;
+  if (input.tiers.premiumCentralized) {
+    const result = priceTier(input.tiers.premiumCentralized, input.customerGroup, input.discountCode, input.discountMatrix, input.customerOverrides, input.priceDb);
+    pricedPremiumCentralized = result.pricedTier;
     warnings.push(...result.warnings);
   }
-  if (input.tiers.centralized) {
-    const result = priceTier(input.tiers.centralized, input.customerGroup, input.discountCode, input.discountMatrix, input.customerOverrides, input.priceDb);
-    pricedCentralized = result.pricedTier;
+  if (input.tiers.ecoStandalone) {
+    const result = priceTier(input.tiers.ecoStandalone, input.customerGroup, input.discountCode, input.discountMatrix, input.customerOverrides, input.priceDb);
+    pricedEcoStandalone = result.pricedTier;
+    warnings.push(...result.warnings);
+  }
+  if (input.tiers.ecoCentralized) {
+    const result = priceTier(input.tiers.ecoCentralized, input.customerGroup, input.discountCode, input.discountMatrix, input.customerOverrides, input.priceDb);
+    pricedEcoCentralized = result.pricedTier;
     warnings.push(...result.warnings);
   }
 
-  const premiumHt = pricedPremium?.summary.totalHt ?? 0;
-  const standardHt = pricedStandard?.summary.totalHt ?? 0;
-  const centralizedHt = pricedCentralized?.summary.totalHt ?? 0;
+  const psHt = pricedPremiumStandalone?.summary.totalHt ?? 0;
+  const pcHt = pricedPremiumCentralized?.summary.totalHt ?? 0;
+  const esHt = pricedEcoStandalone?.summary.totalHt ?? 0;
+  const ecHt = pricedEcoCentralized?.summary.totalHt ?? 0;
 
-  const savingsStandard = pricedPremium && pricedStandard && premiumHt > 0
-    ? R(((premiumHt - standardHt) / premiumHt) * 100)
+  const savingsPC = pricedPremiumStandalone && pricedPremiumCentralized && psHt > 0
+    ? R(((psHt - pcHt) / psHt) * 100)
     : null;
-  const savingsCentralized = pricedPremium && pricedCentralized && premiumHt > 0
-    ? R(((premiumHt - centralizedHt) / premiumHt) * 100)
+  const savingsES = pricedPremiumStandalone && pricedEcoStandalone && psHt > 0
+    ? R(((psHt - esHt) / psHt) * 100)
+    : null;
+  const savingsEC = pricedPremiumStandalone && pricedEcoCentralized && psHt > 0
+    ? R(((psHt - ecHt) / psHt) * 100)
     : null;
 
   const fmtEur = (n: number) => `${n.toFixed(2)} EUR`;
 
   const comparisonRows = [
-    { label: 'Detector', premium: input.tiers.premium?.detector.name ?? '-', standard: input.tiers.standard?.detector.name ?? '-', centralized: input.tiers.centralized?.detector.name ?? '-' },
-    { label: 'Controller', premium: input.tiers.premium?.controller?.name ?? 'Standalone', standard: input.tiers.standard?.controller?.name ?? 'Standalone', centralized: input.tiers.centralized?.controller?.name ?? 'Standalone' },
-    { label: 'Technical Score', premium: pricedPremium ? `${pricedPremium.solutionScore}/21` : '-', standard: pricedStandard ? `${pricedStandard.solutionScore}/21` : '-', centralized: pricedCentralized ? `${pricedCentralized.solutionScore}/21` : '-' },
-    { label: 'Total HT', premium: pricedPremium ? fmtEur(premiumHt) : '-', standard: pricedStandard ? fmtEur(standardHt) : '-', centralized: pricedCentralized ? fmtEur(centralizedHt) : '-' },
-    { label: 'Savings vs Premium', premium: '-', standard: savingsStandard !== null ? `${savingsStandard.toFixed(1)}%` : '-', centralized: savingsCentralized !== null ? `${savingsCentralized.toFixed(1)}%` : '-' },
+    { label: 'Detector', premiumStandalone: input.tiers.premiumStandalone?.detector.name ?? '-', premiumCentralized: input.tiers.premiumCentralized?.detector.name ?? '-', ecoStandalone: input.tiers.ecoStandalone?.detector.name ?? '-', ecoCentralized: input.tiers.ecoCentralized?.detector.name ?? '-' },
+    { label: 'Controller', premiumStandalone: input.tiers.premiumStandalone?.controller?.name ?? 'Standalone', premiumCentralized: input.tiers.premiumCentralized?.controller?.name ?? 'Standalone', ecoStandalone: input.tiers.ecoStandalone?.controller?.name ?? 'Standalone', ecoCentralized: input.tiers.ecoCentralized?.controller?.name ?? 'Standalone' },
+    { label: 'Technical Score', premiumStandalone: pricedPremiumStandalone ? `${pricedPremiumStandalone.solutionScore}/21` : '-', premiumCentralized: pricedPremiumCentralized ? `${pricedPremiumCentralized.solutionScore}/21` : '-', ecoStandalone: pricedEcoStandalone ? `${pricedEcoStandalone.solutionScore}/21` : '-', ecoCentralized: pricedEcoCentralized ? `${pricedEcoCentralized.solutionScore}/21` : '-' },
+    { label: 'Total HT', premiumStandalone: pricedPremiumStandalone ? fmtEur(psHt) : '-', premiumCentralized: pricedPremiumCentralized ? fmtEur(pcHt) : '-', ecoStandalone: pricedEcoStandalone ? fmtEur(esHt) : '-', ecoCentralized: pricedEcoCentralized ? fmtEur(ecHt) : '-' },
+    { label: 'Savings vs Premium SA', premiumStandalone: '-', premiumCentralized: savingsPC !== null ? `${savingsPC.toFixed(1)}%` : '-', ecoStandalone: savingsES !== null ? `${savingsES.toFixed(1)}%` : '-', ecoCentralized: savingsEC !== null ? `${savingsEC.toFixed(1)}%` : '-' },
   ];
 
-  const candidates = [
-    { key: 'premium' as const, tier: pricedPremium },
-    { key: 'standard' as const, tier: pricedStandard },
-    { key: 'centralized' as const, tier: pricedCentralized },
-  ].filter(c => c.tier !== null);
-
-  let recommended: 'premium' | 'standard' | 'centralized' = 'standard';
-  if (candidates.length > 0) {
-    candidates.sort((a, b) => {
-      const sa = a.tier!.solutionScore; const sb = b.tier!.solutionScore;
-      if (sa !== sb) return sb - sa;
-      return a.tier!.summary.totalHt - b.tier!.summary.totalHt;
-    });
-    recommended = candidates[0].key;
-  }
+  // No recommendation badge for now
+  const recommended: PricingResult['recommended'] = null;
 
   return {
     quoteRef, quoteDate, quoteValidUntil,
     priceListVersion: '2026-R2',
-    tiers: { premium: pricedPremium, standard: pricedStandard, centralized: pricedCentralized },
-    comparison: { rows: comparisonRows, savingsVsPremium: { standard: savingsStandard, centralized: savingsCentralized } },
+    tiers: {
+      premiumStandalone: pricedPremiumStandalone,
+      premiumCentralized: pricedPremiumCentralized,
+      ecoStandalone: pricedEcoStandalone,
+      ecoCentralized: pricedEcoCentralized,
+    },
+    comparison: {
+      rows: comparisonRows,
+      savingsVsPremium: {
+        premiumCentralized: savingsPC,
+        ecoStandalone: savingsES,
+        ecoCentralized: savingsEC,
+      },
+    },
     recommended, warnings,
   };
 }

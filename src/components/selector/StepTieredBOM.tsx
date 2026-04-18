@@ -8,10 +8,12 @@ import { TIERED_BOM, t } from '@/lib/i18n-common';
 import { Download, Printer } from 'lucide-react';
 
 const TIER_COLORS: Record<string, string> = {
-  premium: '#E63946', standard: '#2563eb', centralized: '#16a34a',
+  premiumStandalone: '#E63946', premiumCentralized: '#c2185b',
+  ecoStandalone: '#2563eb', ecoCentralized: '#16a34a',
 };
 const TIER_LABELS: Record<string, string> = {
-  PREMIUM: 'Premium', STANDARD: 'Standard', CENTRALIZED: 'Centralized',
+  PREMIUM_STANDALONE: 'Premium — Standalone', PREMIUM_CENTRALIZED: 'Premium — Centralized',
+  ECO_STANDALONE: 'Economical — Standalone', ECO_CENTRALIZED: 'Economical — Centralized',
 };
 
 interface ProductImageMap {
@@ -74,11 +76,11 @@ export default function StepTieredBOM({
   });
   const [saving, setSaving] = useState(false);
 
-  const tierOrder = ['premium', 'standard', 'centralized'] as const;
+  const tierOrder = ['premiumStandalone', 'premiumCentralized', 'ecoStandalone', 'ecoCentralized'] as const;
   const availableTiers = tierOrder.filter(k => pricingResult.tiers[k] !== null);
 
-  // Grand total = recommended tier's net total
-  const recTier = pricingResult.tiers[pricingResult.recommended];
+  // Grand total = first available tier's net total (no recommendation badge for now)
+  const recTier = pricingResult.recommended ? pricingResult.tiers[pricingResult.recommended] : (availableTiers.length > 0 ? pricingResult.tiers[availableTiers[0]] : null);
   const grandTotal = recTier?.summary.totalHt ?? 0;
 
   const handleSaveQuote = useCallback(async () => {
@@ -233,7 +235,7 @@ export default function StepTieredBOM({
       if (!tier) continue;
       const selTier = selectionResult.tiers[tierKey];
       const isRec = pricingResult.recommended === tierKey;
-      const color = tierKey === 'premium' ? red : tierKey === 'standard' ? [37, 99, 235] as [number, number, number] : [22, 163, 74] as [number, number, number];
+      const color = tierKey === 'premiumStandalone' ? red : tierKey === 'premiumCentralized' ? [194, 24, 91] as [number, number, number] : tierKey === 'ecoStandalone' ? [37, 99, 235] as [number, number, number] : [22, 163, 74] as [number, number, number];
 
       // Check page space
       if (y > 240) { doc.addPage(); y = 15; }
@@ -487,18 +489,20 @@ export default function StepTieredBOM({
             <thead className="bg-gray-100">
               <tr>
                 <th className="text-left px-4 py-2 text-[10px] uppercase text-[#6b8da5]">{i.criteria}</th>
-                <th className="text-center px-4 py-2 text-[10px] uppercase" style={{ color: TIER_COLORS.premium }}>Premium</th>
-                <th className="text-center px-4 py-2 text-[10px] uppercase" style={{ color: TIER_COLORS.standard }}>Standard</th>
-                <th className="text-center px-4 py-2 text-[10px] uppercase" style={{ color: TIER_COLORS.centralized }}>Centralized</th>
+                <th className="text-center px-4 py-2 text-[10px] uppercase" style={{ color: TIER_COLORS.premiumStandalone }}>Prem SA</th>
+                <th className="text-center px-4 py-2 text-[10px] uppercase" style={{ color: TIER_COLORS.premiumCentralized }}>Prem Ctrl</th>
+                <th className="text-center px-4 py-2 text-[10px] uppercase" style={{ color: TIER_COLORS.ecoStandalone }}>Eco SA</th>
+                <th className="text-center px-4 py-2 text-[10px] uppercase" style={{ color: TIER_COLORS.ecoCentralized }}>Eco Ctrl</th>
               </tr>
             </thead>
             <tbody>
               {pricingResult.comparison.rows.map((row, ri) => (
                 <tr key={ri} className={`border-t ${ri % 2 === 0 ? '' : 'bg-gray-50'}`}>
                   <td className="px-4 py-2 font-medium text-xs">{row.label}</td>
-                  <td className="px-4 py-2 text-center text-xs">{row.premium}</td>
-                  <td className="px-4 py-2 text-center text-xs">{row.standard}</td>
-                  <td className="px-4 py-2 text-center text-xs">{row.centralized}</td>
+                  <td className="px-4 py-2 text-center text-xs">{row.premiumStandalone}</td>
+                  <td className="px-4 py-2 text-center text-xs">{row.premiumCentralized}</td>
+                  <td className="px-4 py-2 text-center text-xs">{row.ecoStandalone}</td>
+                  <td className="px-4 py-2 text-center text-xs">{row.ecoCentralized}</td>
                 </tr>
               ))}
             </tbody>

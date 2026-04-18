@@ -12,8 +12,9 @@ import { REFRIGERANTS_V5 } from "./seed-data/refrigerants-v5";
 import { GAS_CATEGORIES } from "./seed-data/gas-categories";
 import { APPLICATIONS } from "./seed-data/applications";
 import { SPACE_TYPES } from "./seed-data/space-types";
-import { PRODUCTS } from './seed-data/products';
+import { PRODUCTS, DISCONTINUED_CODES } from './seed-data/products';
 import { DISCOUNT_MATRIX } from './seed-data/discount-matrix';
+import { PRODUCT_RELATIONS } from './seed-data/product-relations';
 
 function createPrismaClient() {
   // DATABASE_URL from .env: "file:./saferef.db"
@@ -36,6 +37,7 @@ const prisma = createPrismaClient();
 async function main() {
   // ── Clear all tables ──
   console.log("Clearing existing data...");
+  await prisma.productRelation.deleteMany();
   await prisma.discountMatrix.deleteMany();
   await prisma.product.deleteMany();
   await prisma.calcSheet.deleteMany();
@@ -96,12 +98,28 @@ async function main() {
   }
   console.log('  Products:    ', PRODUCTS.length);
 
+  // Mark out-of-scope products as discontinued
+  for (const code of DISCONTINUED_CODES) {
+    await prisma.product.updateMany({
+      where: { code },
+      data: { discontinued: true },
+    });
+  }
+  console.log(`Marked ${DISCONTINUED_CODES.length} products as discontinued`);
+
   // Seed Discount Matrix
   await prisma.discountMatrix.deleteMany();
   for (const d of DISCOUNT_MATRIX) {
     await prisma.discountMatrix.create({ data: d });
   }
   console.log('  Discounts:   ', DISCOUNT_MATRIX.length);
+
+  // Seed Product Relations
+  await prisma.productRelation.deleteMany();
+  for (const r of PRODUCT_RELATIONS) {
+    await prisma.productRelation.create({ data: r });
+  }
+  console.log('  Relations:   ', PRODUCT_RELATIONS.length);
 
   console.log("\nSeed complete!");
   console.log(`  Refrigerants:   ${REFRIGERANTS_V5.length}`);
@@ -110,6 +128,7 @@ async function main() {
   console.log(`  Space Types:    ${SPACE_TYPES.length}`);
   console.log(`  Products:       ${PRODUCTS.length}`);
   console.log(`  Discounts:      ${DISCOUNT_MATRIX.length}`);
+  console.log(`  Relations:      ${PRODUCT_RELATIONS.length}`);
   console.log(`  Admin user:     admin@samon.com`);
 }
 

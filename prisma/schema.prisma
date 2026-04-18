@@ -185,3 +185,18 @@ model LoginLog {
   userAgent String?
   createdAt DateTime @default(now())
 }
+
+model ProductRelation {
+  id          String   @id @default(cuid())
+  fromCode    String
+  toCode      String
+  type        String
+  mandatory   Boolean  @default(false)
+  qtyRule     String   @default("per_detector")
+  condition   String?
+  reason      String?
+  priority    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@unique([fromCode, toCode, type])
+}

@@ -19,6 +19,7 @@ const ALL_LINKS: NavLink[] = [
   { href: '/admin/applications', label: 'Applications', roles: ['admin', 'management'] },
   { href: '/admin/space-types', label: 'Space Types', roles: ['admin', 'management'] },
   { href: '/admin/products', label: 'Products', roles: ['admin', 'management'] },
+  { href: '/admin/compatibility', label: 'Compatibility', roles: ['admin', 'management'] },
   { href: '/admin/discount-matrix', label: 'Discounts', roles: ['admin', 'management'] },
   { href: '/admin/calc-sheets', label: 'Calc Sheets', roles: ['admin', 'management'] },
   { href: '/admin/engine', label: 'Engine', roles: ['admin'] },

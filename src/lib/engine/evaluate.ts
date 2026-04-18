@@ -90,7 +90,7 @@ export function evaluateRegulation(
 
   // 3. Threshold
   const { threshold, stage2Ppm, actions: thresholdActions } =
-    ruleSet.calculateThreshold(ref, input.charge);
+    ruleSet.calculateThreshold(effectiveInput);
 
   // 3b. Safety guard: if threshold = INSUFFICIENT_DATA, downgrade YES to MANUAL_REVIEW
   if (threshold.basis === 'INSUFFICIENT_DATA' && detection.detectionRequired === 'YES') {
@@ -99,7 +99,7 @@ export function evaluateRegulation(
   }
 
   // 4. Alarm thresholds
-  const alarmThresholds = ruleSet.getAlarmThresholds(ref, input.charge);
+  const alarmThresholds = ruleSet.getAlarmThresholds(effectiveInput);
   alarmThresholds.stage2Ppm = stage2Ppm;
 
   // 5. Placement
@@ -118,11 +118,11 @@ export function evaluateRegulation(
 
   // 7. Ventilation — only applicable to machinery rooms (EN 378-3 Cl.6.4.4, ASHRAE 15 §8.11.5)
   const ventilation = input.isMachineryRoom
-    ? ruleSet.getEmergencyVentilation(input.charge, volume, ref)
+    ? ruleSet.getEmergencyVentilation(effectiveInput)
     : null;
 
   // 8. Extra requirements
-  const extraRequirements = ruleSet.getExtraRequirements(ref, effectiveInput);
+  const extraRequirements = ruleSet.getExtraRequirements(effectiveInput);
 
   // 9. Candidate zones
   const candidateZones = ruleSet.buildCandidateZones(effectiveInput);

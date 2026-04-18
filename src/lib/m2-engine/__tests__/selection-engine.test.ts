@@ -73,10 +73,10 @@ describe('selectProducts', () => {
 
     const result = selectProducts(input);
 
-    expect(result.tiers.premium).not.toBeNull();
-    expect(result.tiers.premium!.tier).toBe('PREMIUM');
-    expect(result.tiers.premium!.detector.code).toBeTruthy();
-    expect(result.tiers.premium!.solutionScore).toBeGreaterThan(0);
+    expect(result.tiers.premiumStandalone).not.toBeNull();
+    expect(result.tiers.premiumStandalone!.tier).toBe('PREMIUM_STANDALONE');
+    expect(result.tiers.premiumStandalone!.detector.code).toBeTruthy();
+    expect(result.tiers.premiumStandalone!.solutionScore).toBeGreaterThan(0);
     expect(result.comparison).toBeTruthy();
     expect(result.comparison.rows.length).toBeGreaterThan(0);
   });
@@ -86,8 +86,8 @@ describe('selectProducts', () => {
     const input = makeInput({ products: [det], controllers: [] });
 
     const result = selectProducts(input);
-    expect(result.tiers.premium).not.toBeNull();
-    const score = result.tiers.premium!.solutionScore;
+    expect(result.tiers.premiumStandalone).not.toBeNull();
+    const score = result.tiers.premiumStandalone!.solutionScore;
     expect(score).toBeGreaterThan(0);
     expect(score).toBeLessThanOrEqual(21);
 
@@ -128,10 +128,10 @@ describe('selectProducts', () => {
 
     // Only ATEX product should remain
     expect(result.trace!.afterFilters).toBe(1);
-    expect(result.tiers.premium?.detector.code).toBe(atexDet.code);
+    expect(result.tiers.premiumStandalone?.detector.code).toBe(atexDet.code);
   });
 
-  it('selects controller combo for non-standalone detectors', () => {
+  it('standalone tiers skip controller even for non-standalone detectors', () => {
     const det = makeDetector({ id: 'p1', standalone: false, connectTo: 'MPU', price: 100 });
     const premium = makeDetector({ id: 'p2', standalone: true, price: 800 });
     const ctrl4 = makeController({ id: 'c1', channels: 4, price: 1598 });
@@ -145,9 +145,9 @@ describe('selectProducts', () => {
 
     const result = selectProducts(input);
 
-    // Centralized tier should have controller
-    if (result.tiers.centralized) {
-      expect(result.tiers.centralized.controller).not.toBeNull();
+    // Standalone tiers use skipController=true, so no controller
+    if (result.tiers.ecoStandalone) {
+      expect(result.tiers.ecoStandalone.controller).toBeNull();
     }
   });
 
@@ -160,7 +160,7 @@ describe('selectProducts', () => {
 
     const result = selectProducts(input);
     // Fallback: range filter should be skipped, product still selected
-    expect(result.tiers.premium).not.toBeNull();
+    expect(result.tiers.premiumStandalone).not.toBeNull();
   });
 
   it('returns comparison table with recommendation', () => {
@@ -171,17 +171,19 @@ describe('selectProducts', () => {
     const result = selectProducts(input);
 
     expect(result.comparison.rows.length).toBeGreaterThanOrEqual(5);
-    expect(['premium', 'standard', 'centralized']).toContain(result.comparison.recommendation);
-    expect(result.comparison.recommendationReason).toBeTruthy();
+    expect(result.comparison.recommendation === null || ['premiumStandalone', 'premiumCentralized', 'ecoStandalone', 'ecoCentralized'].includes(result.comparison.recommendation!)).toBe(true);
+    // No recommendation badge for now; reason may be empty
+    expect(result.comparison.recommendationReason).toBeDefined();
   });
 
   it('handles empty product list gracefully', () => {
     const input = makeInput({ products: [], controllers: [] });
     const result = selectProducts(input);
 
-    expect(result.tiers.premium).toBeNull();
-    expect(result.tiers.standard).toBeNull();
-    expect(result.tiers.centralized).toBeNull();
+    expect(result.tiers.premiumStandalone).toBeNull();
+    expect(result.tiers.premiumCentralized).toBeNull();
+    expect(result.tiers.ecoStandalone).toBeNull();
+    expect(result.tiers.ecoCentralized).toBeNull();
   });
 
   it('applies voltage filter correctly for 230V', () => {
@@ -192,8 +194,8 @@ describe('selectProducts', () => {
     const result = selectProducts(input);
 
     // Only MIDI should survive F9
-    if (result.tiers.premium) {
-      expect(result.tiers.premium.detector.code).toBe(midi.code);
+    if (result.tiers.premiumStandalone) {
+      expect(result.tiers.premiumStandalone.detector.code).toBe(midi.code);
     }
   });
 });

@@ -81,7 +81,7 @@ describe('ASHRAE 15-2022 — Key Divergences from EN 378', () => {
   });
 
   it('R-32 alarm thresholds: alarm1=25% LFL, alarm2=50% LFL per ASHRAE 15 §7.4', () => {
-    const alarms = ashrae15RuleSet.getAlarmThresholds(R32);
+    const alarms = ashrae15RuleSet.getAlarmThresholds({ refrigerant: R32, charge: 0 });
     // alarm1 = 25% LFL = 0.25 × 0.306 = 0.0765 kg/m³
     expect(alarms.alarm1.kgM3).toBeCloseTo(0.0765, 3);
     expect(alarms.alarm1.basis).toBe('25%_LFL');
@@ -95,14 +95,14 @@ describe('ASHRAE 15-2022 — Key Divergences from EN 378', () => {
 
   it('Ventilation uses ASHRAE 15 §8.11.5: Q=100×√G (cfm, G in lbs)', () => {
     // 100 kg = 220.46 lbs → Q = 100 × √220.46 = 1484.9 cfm → 0.7009 m³/s
-    const vent = ashrae15RuleSet.getEmergencyVentilation(100, 200, R32);
+    const vent = ashrae15RuleSet.getEmergencyVentilation({ refrigerant: R32, charge: 100, roomVolume: 200 });
     expect(vent.flowRateM3s).toBeCloseTo(0.701, 2);
     expect(vent.clause).toContain('ASHRAE 15-2022');
   });
 
   it('Ventilation same formula for NH3 (ASHRAE 15 uses same Q=100×√G for all)', () => {
     // 100 kg = 220.46 lbs → Q = 100 × √220.46 = 1484.9 cfm → 0.7009 m³/s
-    const vent = ashrae15RuleSet.getEmergencyVentilation(100, 200, R717);
+    const vent = ashrae15RuleSet.getEmergencyVentilation({ refrigerant: R717, charge: 100, roomVolume: 200 });
     expect(vent.flowRateM3s).toBeCloseTo(0.701, 2);
   });
 
@@ -114,12 +114,12 @@ describe('ASHRAE 15-2022 — Key Divergences from EN 378', () => {
   });
 
   it('B-group gets return_air_detector extra requirement', () => {
-    const extras = ashrae15RuleSet.getExtraRequirements(R717, makeInput(R717));
+    const extras = ashrae15RuleSet.getExtraRequirements(makeInput(R717));
     expect(extras.some(e => e.id === 'return_air_detector')).toBe(true);
   });
 
   it('A2L in occupied space gets solenoid_interlock', () => {
-    const extras = ashrae15RuleSet.getExtraRequirements(R32, makeInput(R32, {
+    const extras = ashrae15RuleSet.getExtraRequirements(makeInput(R32, {
       isOccupiedSpace: true,
     }));
     expect(extras.some(e => e.id === 'solenoid_interlock')).toBe(true);

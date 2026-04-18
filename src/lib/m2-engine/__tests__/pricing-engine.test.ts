@@ -6,13 +6,14 @@ import type { PricingInput, TierSolution } from '../../engine-types';
 
 function makeTier(overrides: Partial<TierSolution> = {}): TierSolution {
   return {
-    tier: 'PREMIUM',
-    label: 'Best technology',
+    tier: 'PREMIUM_STANDALONE',
+    label: 'Premium — Standalone',
     solutionScore: 16,
     detector: {
       code: '10-100', name: 'MIDI-IR-R744', qty: 4, price: 500,
       gas: 'CO2', range: '0-10000ppm', sensorTech: 'IR',
       sensorLife: '15 years', ip: 'IP54', tempMin: -40, tempMax: 50,
+      image: null,
     },
     detectorSpecs: {
       power: 2, voltage: '24V AC/DC', relays: 2, relaySpec: null,
@@ -45,13 +46,14 @@ function makePriceDb(): Map<string, { price: number; productGroup: string; disco
 function makeInput(overrides: Partial<PricingInput> = {}): PricingInput {
   return {
     tiers: {
-      premium: makeTier(),
-      standard: makeTier({
-        tier: 'STANDARD', label: 'Balanced', solutionScore: 12,
-        detector: { code: '10-200', name: 'MIDI-SC-R744', qty: 4, price: 300, gas: 'CO2', range: '0-10000ppm', sensorTech: 'SC', sensorLife: '5 years', ip: 'IP54', tempMin: -40, tempMax: 50 },
+      premiumStandalone: makeTier(),
+      premiumCentralized: null,
+      ecoStandalone: makeTier({
+        tier: 'ECO_STANDALONE', label: 'Economical — Standalone', solutionScore: 12,
+        detector: { code: '10-200', name: 'MIDI-SC-R744', qty: 4, price: 300, gas: 'CO2', range: '0-10000ppm', sensorTech: 'SC', sensorLife: '5 years', ip: 'IP54', tempMin: -40, tempMax: 50, image: null },
         totalBom: 1800,
       }),
-      centralized: null,
+      ecoCentralized: null,
     },
     customerGroup: 'EDC',
     discountMatrix: [
@@ -76,7 +78,7 @@ describe('calculatePricing', () => {
 
   it('applies discount matrix to BOM lines', () => {
     const result = calculatePricing(makeInput());
-    const premium = result.tiers.premium!;
+    const premium = result.tiers.premiumStandalone!;
 
     // Detector: 500 * 4 = 2000, 40% discount = 800 off
     const detLine = premium.bomLines.find(l => l.code === '10-100')!;
@@ -93,7 +95,7 @@ describe('calculatePricing', () => {
 
   it('calculates tier totals correctly', () => {
     const result = calculatePricing(makeInput());
-    const premium = result.tiers.premium!;
+    const premium = result.tiers.premiumStandalone!;
 
     expect(premium.summary.totalBeforeDiscount).toBe(2600); // 2000 + 600
     expect(premium.summary.totalDiscount).toBe(920);         // 800 + 120
@@ -110,12 +112,12 @@ describe('calculatePricing', () => {
     priceDb.set('4000-0002', { price: 99, productGroup: 'F', discontinued: false });
 
     const input = makeInput({
-      tiers: { premium: tierWithGroupF, standard: null, centralized: null },
+      tiers: { premiumStandalone: tierWithGroupF, premiumCentralized: null, ecoStandalone: null, ecoCentralized: null },
       priceDb: priceDb,
     });
     const result = calculatePricing(input);
 
-    const powerLine = result.tiers.premium!.bomLines.find(l => l.code === '4000-0002')!;
+    const powerLine = result.tiers.premiumStandalone!.bomLines.find(l => l.code === '4000-0002')!;
     expect(powerLine.discountPct).toBe(0);
     expect(powerLine.netTotal).toBe(396); // 99 * 4, no discount on Group F
   });
@@ -124,16 +126,16 @@ describe('calculatePricing', () => {
     const result = calculatePricing(makeInput());
 
     expect(result.comparison.rows.length).toBeGreaterThanOrEqual(4);
-    expect(result.comparison.savingsVsPremium.standard).not.toBeNull();
-    // Standard should be cheaper => positive savings
-    if (result.comparison.savingsVsPremium.standard !== null) {
-      expect(result.comparison.savingsVsPremium.standard).toBeGreaterThan(0);
+    expect(result.comparison.savingsVsPremium.ecoStandalone).not.toBeNull();
+    // Eco should be cheaper => positive savings
+    if (result.comparison.savingsVsPremium.ecoStandalone !== null) {
+      expect(result.comparison.savingsVsPremium.ecoStandalone).toBeGreaterThan(0);
     }
   });
 
-  it('selects recommendation based on score then price', () => {
+  it('recommendation is null (no recommendation badge)', () => {
     const result = calculatePricing(makeInput());
-    expect(['premium', 'standard', 'centralized']).toContain(result.recommended);
+    expect(result.recommended).toBeNull();
   });
 
   it('warns on price mismatch between M2 and DB', () => {
@@ -144,7 +146,7 @@ describe('calculatePricing', () => {
     const result = calculatePricing(input);
 
     expect(result.warnings.some(w => w.includes('PRICE_MISMATCH'))).toBe(true);
-    expect(result.tiers.premium!.priceValidation).toBe('MISMATCH');
+    expect(result.tiers.premiumStandalone!.priceValidation).toBe('MISMATCH');
   });
 
   it('warns on discontinued products', () => {
@@ -175,7 +177,7 @@ describe('calculatePricing', () => {
     });
     const result = calculatePricing(input);
 
-    const detLine = result.tiers.premium!.bomLines.find(l => l.code === '10-100')!;
+    const detLine = result.tiers.premiumStandalone!.bomLines.find(l => l.code === '10-100')!;
     expect(detLine.discountPct).toBe(50); // Override takes precedence
   });
 });

@@ -4,6 +4,7 @@
 import type { RuleSet, DetectionEvaluation, ThresholdResult } from '../engine/rule-set';
 import type {
   RegulationInput,
+  EngineQuery,
   RefrigerantV5,
   AlarmThresholds,
   VentilationResult,
@@ -178,9 +179,9 @@ export const iso5149RuleSet: RuleSet = {
    * NH3 > 50 kg → two-level.
    */
   calculateThreshold(
-    ref: RefrigerantV5,
-    charge: number,
+    query: EngineQuery,
   ): { threshold: ThresholdResult; stage2Ppm: number | null; actions: string[] } {
+    const { refrigerant: ref, charge } = query;
     const isNh3TwoLevel = normalizeRefId(ref.id) === 'R-717' && charge > 50;
 
     if (isNh3TwoLevel) {
@@ -249,9 +250,10 @@ export const iso5149RuleSet: RuleSet = {
   /**
    * Alarm thresholds: same as EN 378 (25%/50%/100% RCL for all groups)
    */
-  getAlarmThresholds(ref: RefrigerantV5, charge?: number): AlarmThresholds {
+  getAlarmThresholds(query: EngineQuery): AlarmThresholds {
+    const { refrigerant: ref, charge = 0 } = query;
     // NH3 > 50 kg: special two-level alarm
-    if (normalizeRefId(ref.id) === 'R-717' && (charge ?? 0) > 50) {
+    if (normalizeRefId(ref.id) === 'R-717' && charge > 50) {
       return {
         alarm1: { ppm: 500, kgM3: ppmToKgM3(500, ref.molecularMass), basis: 'NH3_pre_alarm' },
         alarm2: { ppm: 30000, kgM3: ppmToKgM3(30000, ref.molecularMass), basis: 'NH3_main_alarm' },
@@ -260,7 +262,7 @@ export const iso5149RuleSet: RuleSet = {
       };
     }
 
-    const { threshold } = iso5149RuleSet.calculateThreshold(ref, 0);
+    const { threshold } = iso5149RuleSet.calculateThreshold({ refrigerant: ref, charge: 0 });
 
     const alarm1Ppm = threshold.ppm;
     const alarm1KgM3 = threshold.kgM3;
@@ -296,11 +298,9 @@ export const iso5149RuleSet: RuleSet = {
    * Emergency ventilation: 0.14 × √m (same as EN 378)
    */
   getEmergencyVentilation(
-    chargeKg: number,
-    _roomVolumeM3: number,
-    _ref: RefrigerantV5,
+    query: EngineQuery,
   ): VentilationResult {
-    const flowRate = 0.14 * Math.sqrt(chargeKg);
+    const flowRate = 0.14 * Math.sqrt(query.charge);
     return {
       flowRateM3s: flowRate,
       formula: '0.14 × √m (m = charge in kg)',
@@ -312,7 +312,6 @@ export const iso5149RuleSet: RuleSet = {
    * ISO 5149 has no extra requirements (same as EN 378).
    */
   getExtraRequirements(
-    _ref: RefrigerantV5,
     _input: RegulationInput,
   ): ExtraRequirement[] {
     return [];

@@ -51,20 +51,20 @@ describe('EN 378 — evaluateDetection', () => {
 
 describe('EN 378 — getAlarmThresholds', () => {
   it('R744 alarm1 basis = 50%_ATEL_ODL', () => {
-    const t = en378RuleSet.getAlarmThresholds(R744);
+    const t = en378RuleSet.getAlarmThresholds({ refrigerant: R744, charge: 0 });
     expect(t.alarm1.basis).toBe('50%_ATEL_ODL');
   });
   it('R32 alarm1 basis = 25%_LFL', () => {
-    const t = en378RuleSet.getAlarmThresholds(R32);
+    const t = en378RuleSet.getAlarmThresholds({ refrigerant: R32, charge: 0 });
     expect(t.alarm1.basis).toBe('25%_LFL');
   });
   it('alarm1 < alarm2 <= cutoff (escalation guaranteed)', () => {
-    const t = en378RuleSet.getAlarmThresholds(R32);
+    const t = en378RuleSet.getAlarmThresholds({ refrigerant: R32, charge: 0 });
     expect(t.alarm1.ppm).toBeLessThan(t.alarm2.ppm);
     expect(t.alarm2.ppm).toBeLessThanOrEqual(t.cutoff.ppm);
   });
   it('NH3 > 50 kg uses two-level 500/30000', () => {
-    const t = en378RuleSet.getAlarmThresholds(R717, 100);
+    const t = en378RuleSet.getAlarmThresholds({ refrigerant: R717, charge: 100 });
     expect(t.alarm1.ppm).toBe(500);
     expect(t.alarm2.ppm).toBe(30000);
   });
@@ -72,7 +72,7 @@ describe('EN 378 — getAlarmThresholds', () => {
 
 describe('EN 378 — ventilation', () => {
   it('0.14 × √m', () => {
-    expect(en378RuleSet.getEmergencyVentilation(100, 200, R744).flowRateM3s).toBeCloseTo(1.4, 1);
+    expect(en378RuleSet.getEmergencyVentilation({ refrigerant: R744, charge: 100, roomVolume: 200 }).flowRateM3s).toBeCloseTo(1.4, 1);
   });
 });
 

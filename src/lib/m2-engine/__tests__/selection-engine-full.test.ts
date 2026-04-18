@@ -280,64 +280,65 @@ describe('Scoring /21', () => {
 // TIER SELECTION TESTS
 // ═══════════════════════════════════════════════════════════════════════
 
-describe('3-Tier Selection', () => {
+describe('2x2 Matrix Selection', () => {
   it('premium is best standalone by score', () => {
     const best = det({ id: 'p1', sensorTech: 'IR', price: 800, standalone: true, code: '10-100' });
     const cheap = det({ id: 'p2', sensorTech: 'SC', price: 200, standalone: true, code: '10-200' });
     const result = selectProducts(inp({ products: [best, cheap] }));
-    expect(result.tiers.premium).not.toBeNull();
+    expect(result.tiers.premiumStandalone).not.toBeNull();
     // Best score should be premium
-    const premiumScore = result.tiers.premium!.solutionScore;
-    if (result.tiers.standard) {
-      expect(premiumScore).toBeGreaterThanOrEqual(result.tiers.standard.solutionScore);
+    const premiumScore = result.tiers.premiumStandalone!.solutionScore;
+    if (result.tiers.premiumCentralized) {
+      expect(premiumScore).toBeGreaterThanOrEqual(result.tiers.premiumCentralized.solutionScore);
     }
   });
 
-  it('standard must be strictly cheaper than premium', () => {
-    const premium = det({ id: 'p1', price: 800, standalone: true, code: '10-100', sensorTech: 'IR' });
-    const standard = det({ id: 'p2', price: 300, standalone: true, code: '10-200', sensorTech: 'SC' });
-    const result = selectProducts(inp({ products: [premium, standard] }));
-    if (result.tiers.premium && result.tiers.standard) {
-      expect(result.tiers.standard.totalBom).toBeLessThan(result.tiers.premium.totalBom);
+  it('centralized (standard slot) adds controller cost vs standalone (premium slot)', () => {
+    // Centralized uses same detector + controller → should cost MORE than standalone
+    const sa = det({ id: 'p1', price: 800, standalone: true, code: '10-100', sensorTech: 'IR' });
+    const c = ctrl();
+    const result = selectProducts(inp({
+      products: [sa], controllers: [c], totalDetectors: 4,
+      relations: [{ id: 'r1', fromCode: '10-100', toCode: '20-300', type: 'compatible_controller', mandatory: false, qtyRule: 'per_detector', condition: null, reason: 'test', priority: 0, createdAt: '' }],
+    }));
+    if (result.tiers.premiumStandalone && result.tiers.premiumCentralized) {
+      // Centralized (standard) should cost MORE than standalone (premium) due to controller
+      expect(result.tiers.premiumCentralized.totalBom).toBeGreaterThan(result.tiers.premiumStandalone.totalBom);
     }
   });
 
-  it('centralized only when totalDetectors > 1', () => {
-    // 3 different products so each tier gets a unique one
+  it('standard (centralized tier) only when totalDetectors > 1 and has controller relation', () => {
+    // standard slot = centralized solution (same detector + controller)
+    // Without relations, standalone detectors won't get a centralized solution
     const sa1 = det({ id: 'p1', standalone: true, price: 800, code: '10-100', sensorTech: 'IR' });
     const sa2 = det({ id: 'p2', standalone: true, price: 400, code: '10-200', sensorTech: 'SC' });
-    const ns = det({ id: 'p3', standalone: false, connectTo: 'MPU', price: 100, code: '10-300', family: 'MP', apps: ['supermarket', 'cold_room'] });
     const c = ctrl();
-    const result1 = selectProducts(inp({ products: [sa1, sa2, ns], controllers: [c], totalDetectors: 1 }));
-    const result4 = selectProducts(inp({ products: [sa1, sa2, ns], controllers: [c], totalDetectors: 4 }));
-    expect(result1.tiers.centralized).toBeNull(); // 1 detector -> no centralized
-    expect(result4.tiers.centralized).not.toBeNull(); // 4 detectors -> centralized available
+    const result1 = selectProducts(inp({ products: [sa1, sa2], controllers: [c], totalDetectors: 1 }));
+    const result4 = selectProducts(inp({ products: [sa1, sa2], controllers: [c], totalDetectors: 4 }));
+    expect(result1.tiers.premiumCentralized).toBeNull(); // 1 detector -> no centralized
+    expect(result4.tiers.premiumCentralized).toBeNull(); // 4 detectors but no compatible_controller relations → still null
   });
 
-  it('centralized has controller assigned', () => {
-    const ns = det({ id: 'p1', standalone: false, connectTo: 'MPU', price: 100 });
+  it('eco standalone tier skips controller even for non-standalone detectors', () => {
+    // Eco standalone always uses skipController=true
+    const ns = det({ id: 'p1', standalone: false, connectTo: 'MPU', price: 100, family: 'MP', apps: ['supermarket', 'cold_room'] });
     const sa = det({ id: 'p2', standalone: true, price: 800, code: '10-200' });
     const c = ctrl();
     const result = selectProducts(inp({ products: [ns, sa], controllers: [c], totalDetectors: 4 }));
-    if (result.tiers.centralized) {
-      expect(result.tiers.centralized.controller).not.toBeNull();
-      expect(result.tiers.centralized.controller!.code).toBeTruthy();
+    // eco standalone uses skipController=true
+    if (result.tiers.ecoStandalone) {
+      expect(result.tiers.ecoStandalone.controller).toBeNull();
     }
   });
 
-  it('each tier uses different product (no duplicates)', () => {
-    const p1 = det({ id: 'p1', price: 800, standalone: true, code: '10-100', sensorTech: 'IR' });
-    const p2 = det({ id: 'p2', price: 400, standalone: true, code: '10-200', sensorTech: 'SC' });
-    const p3 = det({ id: 'p3', price: 150, standalone: false, code: '10-300', connectTo: 'MPU' });
-    const c = ctrl();
-    const result = selectProducts(inp({ products: [p1, p2, p3], controllers: [c] }));
-    const codes = [
-      result.tiers.premium?.detector.code,
-      result.tiers.standard?.detector.code,
-      result.tiers.centralized?.detector.code,
-    ].filter(Boolean);
-    const unique = new Set(codes);
-    expect(unique.size).toBe(codes.length);
+  it('cheapest tier picks cheaper detector than standalone', () => {
+    // Cheapest (centralized slot) should use a cheaper detector than standalone (premium slot)
+    const expensive = det({ id: 'p1', price: 800, standalone: true, code: '10-100', sensorTech: 'IR' });
+    const cheap = det({ id: 'p2', price: 200, standalone: true, code: '10-200', sensorTech: 'SC', apps: ['supermarket', 'cold_room'] });
+    const result = selectProducts(inp({ products: [expensive, cheap] }));
+    if (result.tiers.premiumStandalone && result.tiers.ecoStandalone) {
+      expect(result.tiers.ecoStandalone.totalBom).toBeLessThan(result.tiers.premiumStandalone.totalBom);
+    }
   });
 
   it('fallback picks best remaining when no standalone', () => {
@@ -346,7 +347,7 @@ describe('3-Tier Selection', () => {
     const result = selectProducts(inp({ products: [ns], controllers: [c] }));
     // With only non-standalone products, should produce at least one tier via fallback
     // Either premium (fallback) or centralized should be non-null
-    const hasSomeTier = result.tiers.premium !== null || result.tiers.standard !== null || result.tiers.centralized !== null;
+    const hasSomeTier = result.tiers.premiumStandalone !== null || result.tiers.premiumCentralized !== null || result.tiers.ecoStandalone !== null || result.tiers.ecoCentralized !== null;
     expect(hasSomeTier).toBe(true);
   });
 });
@@ -355,27 +356,20 @@ describe('3-Tier Selection', () => {
 // CONTROLLER COMBO TESTS
 // ═══════════════════════════════════════════════════════════════════════
 
-describe('Controller Combo (F7)', () => {
-  it('uses hardcoded fallback when no controllers in DB', () => {
-    const ns = det({ id: 'p1', standalone: false, connectTo: 'MPU', price: 100 });
-    const sa = det({ id: 'p2', standalone: true, price: 800, code: '10-200' });
-    const result = selectProducts(inp({ products: [ns, sa], controllers: [], totalDetectors: 4 }));
-    if (result.tiers.centralized) {
-      expect(result.tiers.centralized.controller).not.toBeNull();
+describe('Eco Standalone Tier', () => {
+  it('cheapest tier is strictly cheaper than standalone', () => {
+    const expensive = det({ id: 'p1', standalone: true, price: 800, code: '10-100', sensorTech: 'IR' });
+    const cheap = det({ id: 'p2', standalone: true, price: 200, code: '10-200', sensorTech: 'SC', apps: ['supermarket', 'cold_room'] });
+    const result = selectProducts(inp({ products: [expensive, cheap], totalDetectors: 4 }));
+    if (result.tiers.ecoStandalone) {
+      expect(result.tiers.ecoStandalone.totalBom).toBeLessThan(result.tiers.premiumStandalone!.totalBom);
     }
   });
 
-  it('picks cheapest combo for 6 detectors', () => {
-    const ns = det({ id: 'p1', standalone: false, connectTo: 'MPU', price: 100, power: 2 });
-    const sa = det({ id: 'p2', standalone: true, price: 800, code: '10-200' });
-    const mpu4 = ctrl({ id: 'c1', code: '20-300', name: 'MPU4C', channels: 4, price: 1598 });
-    const mpu6 = ctrl({ id: 'c2', code: '20-305', name: 'MPU6C', channels: 6, price: 2004 });
-    const spu = ctrl({ id: 'c3', code: '20-350', name: 'SPU24', channels: 1, price: 424 });
-    const result = selectProducts(inp({ products: [ns, sa], controllers: [mpu4, mpu6, spu], totalDetectors: 6 }));
-    if (result.tiers.centralized?.controller) {
-      // Should pick MPU6C (2004) instead of 6x SPU (2544) or MPU4C+2xSPU (2446)
-      expect(result.tiers.centralized.controller.subtotal).toBeLessThanOrEqual(2544);
-    }
+  it('no cheapest tier when only one product available', () => {
+    const sa = det({ id: 'p1', standalone: true, price: 800, code: '10-100' });
+    const result = selectProducts(inp({ products: [sa], totalDetectors: 4 }));
+    expect(result.tiers.ecoStandalone).toBeNull();
   });
 });
 
@@ -388,17 +382,17 @@ describe('BOM Builder', () => {
     const sa = det({ id: 'p1', standalone: true, price: 500 });
     const alert = acc({ id: 'a1', code: '40-440', price: 150, subCategory: 'alert', compatibleFamilies: ['ALL'] });
     const result = selectProducts(inp({ products: [sa], accessories: [alert], totalDetectors: 2 }));
-    if (result.tiers.premium) {
-      expect(result.tiers.premium.alertAccessories.length).toBeGreaterThan(0);
+    if (result.tiers.premiumStandalone) {
+      expect(result.tiers.premiumStandalone.alertAccessories.length).toBeGreaterThan(0);
     }
   });
 
   it('adds power adapter for MIDI on 230V', () => {
     const midi = det({ id: 'p1', family: 'MIDI', standalone: true });
     const result = selectProducts(inp({ products: [midi], sitePowerVoltage: '230V', totalDetectors: 2 }));
-    if (result.tiers.premium) {
-      expect(result.tiers.premium.powerAccessories.length).toBeGreaterThan(0);
-      expect(result.tiers.premium.powerAccessories[0].code).toBe('4000-0002');
+    if (result.tiers.premiumStandalone) {
+      expect(result.tiers.premiumStandalone.powerAccessories.length).toBeGreaterThan(0);
+      expect(result.tiers.premiumStandalone.powerAccessories[0].code).toBe('4000-0002');
     }
   });
 
@@ -407,11 +401,11 @@ describe('BOM Builder', () => {
     const alert = acc({ id: 'a1', code: '40-440', price: 150, subCategory: 'alert', compatibleFamilies: ['ALL'] });
     const mount = acc({ id: 'a2', code: '40-500', price: 25, subCategory: 'mounting', compatibleFamilies: ['ALL'] });
     const result = selectProducts(inp({ products: [sa], accessories: [alert, mount], totalDetectors: 2 }));
-    if (result.tiers.premium) {
+    if (result.tiers.premiumStandalone) {
       const detCost = 500 * 2;
-      expect(result.tiers.premium.totalBom).toBeGreaterThanOrEqual(detCost);
+      expect(result.tiers.premiumStandalone.totalBom).toBeGreaterThanOrEqual(detCost);
       // Should include alert + mounting
-      expect(result.tiers.premium.totalBom).toBeGreaterThan(detCost);
+      expect(result.tiers.premiumStandalone.totalBom).toBeGreaterThan(detCost);
     }
   });
 });
@@ -431,13 +425,13 @@ describe('Comparison Table', () => {
   it('recommendation is one of premium/standard/centralized', () => {
     const p1 = det({ id: 'p1' });
     const result = selectProducts(inp({ products: [p1] }));
-    expect(['premium', 'standard', 'centralized']).toContain(result.comparison.recommendation);
+    expect(result.comparison.recommendation === null || ['premiumStandalone', 'premiumCentralized', 'ecoStandalone', 'ecoCentralized'].includes(result.comparison.recommendation!)).toBe(true);
   });
 
-  it('recommendation reason is non-empty', () => {
+  it('recommendation is null (no recommendation badge for now)', () => {
     const p1 = det({ id: 'p1' });
     const result = selectProducts(inp({ products: [p1] }));
-    expect(result.comparison.recommendationReason.length).toBeGreaterThan(0);
+    expect(result.comparison.recommendation).toBeNull();
   });
 });
 

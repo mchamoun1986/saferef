@@ -81,7 +81,7 @@ describe('ISO 5149-3:2014 — Key Divergences', () => {
   });
 
   it('Ventilation uses EN 378 formula (0.14 × √m)', () => {
-    const vent = iso5149RuleSet.getEmergencyVentilation(100, 200, R290);
+    const vent = iso5149RuleSet.getEmergencyVentilation({ refrigerant: R290, charge: 100, roomVolume: 200 });
     // 0.14 × √100 = 0.14 × 10 = 1.4
     expect(vent.flowRateM3s).toBeCloseTo(1.4, 2);
     expect(vent.clause).toContain('ISO 5149');
@@ -106,24 +106,24 @@ describe('ISO 5149-3:2014 — Key Divergences', () => {
   // ── Alarm threshold invariants (C-3 regression guards) ─────────────────
   describe('getAlarmThresholds invariants', () => {
     it('cutoff >= alarm2 for flammable A3 (R-290)', () => {
-      const t = iso5149RuleSet.getAlarmThresholds(R290, 2);
+      const t = iso5149RuleSet.getAlarmThresholds({ refrigerant: R290, charge: 2 });
       expect(t.cutoff.ppm).toBeGreaterThanOrEqual(t.alarm2.ppm);
       expect(t.cutoff.kgM3).toBeGreaterThanOrEqual(t.alarm2.kgM3);
     });
 
     it('cutoff >= alarm2 for flammable A2L (R-32)', () => {
-      const t = iso5149RuleSet.getAlarmThresholds(R32, 5);
+      const t = iso5149RuleSet.getAlarmThresholds({ refrigerant: R32, charge: 5 });
       expect(t.cutoff.ppm).toBeGreaterThanOrEqual(t.alarm2.ppm);
     });
 
     it('cutoff >= alarm2 for non-flammable A1 (R-744)', () => {
-      const t = iso5149RuleSet.getAlarmThresholds(R744, 15);
+      const t = iso5149RuleSet.getAlarmThresholds({ refrigerant: R744, charge: 15 });
       expect(t.cutoff.ppm).toBeGreaterThanOrEqual(t.alarm2.ppm);
     });
 
     it('alarm1 < alarm2 always (sanity)', () => {
       for (const ref of [R290, R32, R744]) {
-        const t = iso5149RuleSet.getAlarmThresholds(ref, 5);
+        const t = iso5149RuleSet.getAlarmThresholds({ refrigerant: ref, charge: 5 });
         expect(t.alarm1.ppm).toBeLessThan(t.alarm2.ppm);
       }
     });
