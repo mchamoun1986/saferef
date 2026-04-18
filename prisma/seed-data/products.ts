@@ -59,11 +59,11 @@ function det(
   standalone: boolean, atex: boolean, mount: string[], remote: boolean,
   price: number | null, sensorLife: string, tier: string, productGroup: string,
   apps: string[],
-  extra: Partial<{powerDesc:string; relaySpec:string; analogType:string; modbusType:string; connectTo:string; features:string}> = {}
+  extra: Partial<{powerDesc:string; relaySpec:string; analogType:string; modbusType:string; connectTo:string; features:string; image:string}> = {}
 ): SeedProduct {
   return {
     type: 'detector', family, name, code, price: price ?? 0,
-    image: null,
+    image: extra.image ?? null,
     specs: JSON.stringify({ tech, ip, tempMin, tempMax, power, voltage, relay, analog, modbus, standalone, atex, mount, remote, sensorLife, ...extra }),
     tier, productGroup,
     gas: JSON.stringify(gas), refs: JSON.stringify(refs), apps: JSON.stringify(apps),
@@ -83,21 +83,21 @@ function ctrl(
   id: string, name: string, code: string,
   channels: number, maxPower: number, voltage: string, ip: string, price: number,
   tier: string, productGroup: string,
-  extra: Partial<{relaySpec:string; analogType:string; modbusType:string; connectTo:string; features:string; powerDesc:string; relayOutputs:number; rs485:boolean; display:boolean; mounting:string}> = {}
+  extra: Partial<{relaySpec:string; analogType:string; modbusType:string; connectTo:string; features:string; powerDesc:string; relayOutputs:number; rs485:boolean; display:boolean; mounting:string; image:string; atex:boolean; tempMin:number; tempMax:number}> = {}
 ): SeedProduct {
   return {
     type: 'controller', family: 'Controller', name, code, price,
-    image: null,
+    image: extra.image ?? null,
     specs: JSON.stringify({ channels, maxPower, voltage, ip, ...extra }),
     tier, productGroup,
     gas: '[]', refs: '[]', apps: '[]',
     range: null, sensorTech: null, sensorLife: null,
     power: null, voltage, ip,
-    tempMin: null, tempMax: null,
+    tempMin: extra.tempMin ?? null, tempMax: extra.tempMax ?? null,
     relay: extra.relayOutputs ?? 0,
     analog: extra.analogType ?? null,
     modbus: extra.rs485 ?? false,
-    standalone: false, atex: false,
+    standalone: false, atex: extra.atex ?? false,
     mount: JSON.stringify([extra.mounting ?? 'DIN rail']),
     remote: false,
     features: extra.features ?? null, connectTo: extra.connectTo ?? null,
@@ -113,11 +113,11 @@ function acc(
   name: string, code: string, price: number | null, productGroup: string,
   subCat: 'alert' | 'mounting' | 'power' | 'service' | 'spare' | 'signage',
   compat: string[],
-  extra: Partial<{features:string; ip:string; voltage:string; power:string; type:string}> = {}
+  extra: Partial<{features:string; ip:string; voltage:string; power:string; type:string; image:string}> = {}
 ): SeedProduct {
   return {
     type: 'accessory', family: 'Accessory', name, code, price: price ?? 0,
-    image: null,
+    image: extra.image ?? null,
     specs: JSON.stringify(extra),
     tier: 'standard', productGroup,
     gas: '[]', refs: '[]', apps: '[]',
@@ -204,49 +204,7 @@ export const PRODUCTS: SeedProduct[] = [
     {powerDesc:'2W max',relaySpec:'1 alarm relay',features:'Flush-mount aesthetic for hotels, requires KAP045/KAP046 backbox'}),
 
   // ── X5 ──
-  det('X5_NH3_100','X5 + NH3 0-100ppm','3500-0001+0002','X5',['NH3'],['R717'],'IONIC','0-100ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1830,'5y','premium','G',
-    ['machinery_room','cold_storage','ice_rink','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to any PLC/controller, or standalone',features:'ATEX certified, digital display, dual sensor option, 5-year ionic NH3 sensor, non-depleting'}),
-
-  det('X5_NH3_500','X5 + NH3 0-500ppm','3500-0001+0003','X5',['NH3'],['R717'],'IONIC','0-500ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1830,'5y','premium','G',
-    ['machinery_room','cold_storage','ice_rink','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'ATEX, digital display, dual sensor, ionic NH3'}),
-
-  det('X5_NH3_1000','X5 + NH3 0-1000ppm','3500-0001+0095','X5',['NH3'],['R717'],'IONIC','0-1000ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1830,'5y','premium','G',
-    ['machinery_room','cold_storage','ice_rink','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'ATEX, digital display, dual sensor, ionic NH3'}),
-
-  det('X5_NH3_5000','X5 + NH3 0-5000ppm','3500-0001+0004','X5',['NH3'],['R717'],'IONIC','0-5000ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1830,'5y','premium','G',
-    ['machinery_room','cold_storage','ice_rink','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'ATEX, digital display, dual sensor, ionic NH3'}),
-
-  det('X5_CO2_5000','X5 + CO2 0-5000ppm','3500-0001+0005','X5',['CO2'],['R744'],'IR','0-5000ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1841,'7-10y','premium','G',
-    ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/controller',features:'ATEX, digital display, dual sensor'}),
-
-  det('X5_CO2_5pct','X5 + CO2 0-5%vol','3500-0001+0006','X5',['CO2'],['R744'],'IR','0-5%vol','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1841,'7-10y','premium','G',
-    ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/controller',features:'ATEX, digital display, high range CO2'}),
-
-  det('X5_CO','X5 + CO 0-100ppm','3500-0001+0096','X5',['CO'],['CO'],'EC','0-100ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1424,'2-3y','standard','G',
-    ['parking'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/BMS',features:'ATEX, parking garages, dual sensor: combine CO+NO2'}),
-
-  det('X5_O2','X5 + O2 0-25%vol','3500-0001+0097','X5',['O2'],['O2'],'EC','0-25%vol','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1500,'2-3y','standard','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/BMS',features:'ATEX, O2 depletion monitoring'}),
-
-  det('X5_NO2','X5 + NO2 0-5ppm','3500-0001+0098','X5',['NO2'],['NO2'],'EC','0-5ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1809,'2-3y','standard','G',
-    ['parking'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/BMS',features:'ATEX, parking/tunnels'}),
-
-  det('X5_HFC_IRR','X5 + IRR HFC 0-2000ppm','3500-0001+IRR','X5',['HFC1','HFC2'],_ALL_HFC,'IR','0-2000ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2200,'7-10y','premium','G',
-    ['machinery_room','cold_storage','supermarket','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/controller',features:'ATEX, gas-specific IR sensor, digital display'}),
-
-  det('X5_R290','X5 + R290 SC 0-10000ppm','3500-0001+R2','X5',['R290'],_HC,'SC','0-10000ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1600,'~5y','standard','G',
-    ['machinery_room','heat_pump','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/controller',features:'ATEX, digital display, SC sensor'}),
+  // (X5 sensor modules, remote modules, and accessories are in the 3500-series section below)
 
   // ── Aquis ──
   det('AQUIS500','Aquis 500 NH3 in water','35-210','AQUIS',['NH3W'],['NH3W'],'pH','0.01-9999ppm','IP65',0,50,5,'230V',0,'4-20mA',false,true,false,['pipe'],false,0,'~2y','standard','A',
@@ -254,299 +212,313 @@ export const PRODUCTS: SeedProduct[] = [
     {powerDesc:'230V AC',analogType:'4-20mA output',connectTo:'4-20mA to PLC/BMS',features:'NH3 in water/brine monitoring, pH electrode, specify brine type'}),
 
   // ── X5 individual products (3500-series) ──
-  // X5 base unit
-  acc('X5 Base Unit (no sensor)','3500-0001',822,'G','spare',['X5'],
-    {features:'X5 base unit without sensor module, requires separate sensor'}),
+  // X5 ATEX Transmitter (controller)
+  ctrl('X5_CTRL','GLACIAR X5 ATEX Transmitter with display','3500-0001',2,10,'18-32V','IP66',822,'premium','G',
+    {relayOutputs:3,relaySpec:'2x alarm + 1x fault',analogType:'4-20mA',rs485:false,display:true,mounting:'wall or pole',atex:true,tempMin:-20,tempMax:55,image:'glaciar-x5.png',features:'ATEX certified, 1 or 2 sensor channels, analogue output, incl 1 wand, 1 gland, 3 plugs'}),
 
-  // X5 sensor modules
-  acc('X5 Sensor Module NH3 0-100ppm','3500-0002',1008,'G','spare',['X5'],
-    {features:'X5 ionic NH3 sensor module 0-100ppm, 5-year life'}),
-
-  acc('X5 Sensor Module NH3 0-500ppm','3500-0003',1008,'G','spare',['X5'],
-    {features:'X5 ionic NH3 sensor module 0-500ppm, 5-year life'}),
-
-  acc('X5 Sensor Module NH3 0-5000ppm','3500-0004',1008,'G','spare',['X5'],
-    {features:'X5 ionic NH3 sensor module 0-5000ppm, 5-year life'}),
-
-  acc('X5 Sensor Module CO2 0-5000ppm','3500-0005',1019,'G','spare',['X5'],
-    {features:'X5 IR CO2 sensor module 0-5000ppm'}),
-
-  acc('X5 Sensor Module CO2 0-5%vol','3500-0006',1019,'G','spare',['X5'],
-    {features:'X5 IR CO2 sensor module 0-5%vol'}),
-
-  // X5 DUAL sensor combos
-  det('X5_DUAL_NH3_CO2','X5 DUAL NH3+CO2','3500-0022','X5',['NH3','CO2'],['R717','R744'],'IONIC+IR','0-100ppm NH3 + 0-5000ppm CO2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1205,'5y','premium','G',
+  // ── X5 Sensor Modules (direct-mount, remote=false) ──
+  det('X5_SEN_NH3_100','GLACIAR X5 NH3 0-100 ppm sensor module','3500-0002','X5',['NH3'],['R717'],'IONIC','0-100ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,1008,'5y','premium','G',
     ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'ATEX, dual sensor NH3+CO2, digital display'}),
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  det('X5_DUAL_CO_NO2','X5 DUAL CO+NO2','3500-0023','X5',['CO','NO2'],['CO','NO2'],'EC','0-100ppm CO + 0-5ppm NO2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1424,'2-3y','premium','G',
-    ['parking'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/BMS',features:'ATEX, dual sensor CO+NO2 for parking'}),
-
-  det('X5_DUAL_NH3_O2','X5 DUAL NH3+O2','3500-0024','X5',['NH3','O2'],['R717','O2'],'IONIC+EC','0-100ppm NH3 + 0-25%vol O2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1205,'5y','premium','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'ATEX, dual sensor NH3+O2'}),
-
-  det('X5_DUAL_CO2_O2','X5 DUAL CO2+O2','3500-0025','X5',['CO2','O2'],['R744','O2'],'IR+EC','0-5000ppm CO2 + 0-25%vol O2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1096,'5y','premium','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'ATEX, dual sensor CO2+O2'}),
-
-  det('X5_DUAL_HFC_O2','X5 DUAL HFC+O2','3500-0026','X5',['HFC1','HFC2','O2'],['R404A','O2'],'IR+EC','0-2000ppm HFC + 0-25%vol O2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1287,'5y','premium','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'ATEX, dual sensor HFC+O2'}),
-
-  // X5 accessories
-  acc('X5 Weather Shield','3500-0029',104,'G','mounting',['X5'],
-    {features:'Outdoor weather protection shield for X5'}),
-
-  acc('X5 Mounting Bracket','3500-0030',77,'G','mounting',['X5'],
-    {features:'Wall/pole mounting bracket for X5'}),
-
-  acc('X5 Cable Gland','3500-0031',19,'G','mounting',['X5'],
-    {features:'Cable gland for X5 wiring entry'}),
-
-  // X5 PRE-CONFIGURED kits (3500-0032 to 0051)
-  det('X5_KIT_NH3_100','X5 Kit NH3 0-100ppm','3500-0032','X5',['NH3'],['R717'],'IONIC','0-100ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'5y','premium','G',
-    ['machinery_room','cold_storage','ice_rink','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'Pre-configured kit: X5 + NH3 100ppm sensor + accessories'}),
-
-  det('X5_KIT_NH3_500','X5 Kit NH3 0-500ppm','3500-0033','X5',['NH3'],['R717'],'IONIC','0-500ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'5y','premium','G',
-    ['machinery_room','cold_storage','ice_rink','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'Pre-configured kit: X5 + NH3 500ppm sensor + accessories'}),
-
-  det('X5_KIT_NH3_1000','X5 Kit NH3 0-1000ppm','3500-0034','X5',['NH3'],['R717'],'IONIC','0-1000ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'5y','premium','G',
-    ['machinery_room','cold_storage','ice_rink','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'Pre-configured kit: X5 + NH3 1000ppm sensor + accessories'}),
-
-  det('X5_KIT_NH3_5000','X5 Kit NH3 0-5000ppm','3500-0035','X5',['NH3'],['R717'],'IONIC','0-5000ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'5y','premium','G',
-    ['machinery_room','cold_storage','ice_rink','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'Pre-configured kit: X5 + NH3 5000ppm sensor + accessories'}),
-
-  det('X5_KIT_CO2_5000','X5 Kit CO2 0-5000ppm','3500-0036','X5',['CO2'],['R744'],'IR','0-5000ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'7-10y','premium','G',
+  det('X5_SEN_NH3_500','GLACIAR X5 NH3 0-500 ppm sensor module','3500-0003','X5',['NH3'],['R717'],'IONIC','0-500ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,1008,'5y','premium','G',
     ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/controller',features:'Pre-configured kit: X5 + CO2 5000ppm sensor + accessories'}),
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  det('X5_KIT_CO2_5pct','X5 Kit CO2 0-5%vol','3500-0037','X5',['CO2'],['R744'],'IR','0-5%vol','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'7-10y','premium','G',
+  det('X5_SEN_NH3_1000','GLACIAR X5 NH3 0-1000 ppm sensor module','3500-0095','X5',['NH3'],['R717'],'IONIC','0-1000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,1008,'5y','premium','G',
     ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/controller',features:'Pre-configured kit: X5 + CO2 5%vol sensor + accessories'}),
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  det('X5_KIT_CO','X5 Kit CO 0-100ppm','3500-0038','X5',['CO'],['CO'],'EC','0-100ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'2-3y','standard','G',
-    ['parking'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/BMS',features:'Pre-configured kit: X5 + CO sensor + accessories'}),
-
-  det('X5_KIT_O2','X5 Kit O2 0-25%vol','3500-0039','X5',['O2'],['O2'],'EC','0-25%vol','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'2-3y','standard','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/BMS',features:'Pre-configured kit: X5 + O2 sensor + accessories'}),
-
-  det('X5_KIT_NO2','X5 Kit NO2 0-5ppm','3500-0040','X5',['NO2'],['NO2'],'EC','0-5ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'2-3y','standard','G',
-    ['parking'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/BMS',features:'Pre-configured kit: X5 + NO2 sensor + accessories'}),
-
-  det('X5_KIT_10','X5 Kit Variant 10','3500-0041','X5',['NH3'],['R717'],'IONIC','0-100ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'5y','premium','G',
+  det('X5_SEN_NH3_5000','GLACIAR X5 NH3 0-5000 ppm sensor module','3500-0004','X5',['NH3'],['R717'],'IONIC','0-5000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,1008,'5y','premium','G',
     ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/controller',features:'Pre-configured X5 kit variant 10'}),
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  det('X5_KIT_11','X5 Kit Variant 11','3500-0042','X5',['NH3'],['R717'],'IONIC','0-500ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'5y','premium','G',
+  det('X5_SEN_CO2_5000','GLACIAR X5 CO2 0-5000 ppm sensor module','3500-0005','X5',['CO2'],['R744'],'IR','0-5000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,1019,'7-10y','premium','G',
     ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/controller',features:'Pre-configured X5 kit variant 11'}),
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  det('X5_KIT_12','X5 Kit Variant 12','3500-0043','X5',['NH3'],['R717'],'IONIC','0-1000ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'5y','premium','G',
+  det('X5_SEN_CO2_5pct','GLACIAR X5 CO2 0-5% vol sensor module','3500-0006','X5',['CO2'],['R744'],'IR','0-5%vol','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,1019,'7-10y','premium','G',
     ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/controller',features:'Pre-configured X5 kit variant 12'}),
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  det('X5_KIT_13','X5 Kit Variant 13','3500-0044','X5',['NH3'],['R717'],'IONIC','0-5000ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'5y','premium','G',
+  det('X5_SEN_CO','GLACIAR X5 CO 0-100ppm sensor module','3500-0096','X5',['CO'],['CO'],'EC','0-100ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,602,'2-3y','premium','G',
     ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/controller',features:'Pre-configured X5 kit variant 13'}),
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  det('X5_KIT_14','X5 Kit Variant 14','3500-0045','X5',['CO2'],['R744'],'IR','0-5000ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'7-10y','premium','G',
+  det('X5_SEN_O2','GLACIAR X5 O2 0-25% vol sensor module','3500-0097','X5',['O2'],['O2'],'EC','0-25%vol','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,876,'2-3y','premium','G',
     ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/controller',features:'Pre-configured X5 kit variant 14'}),
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  det('X5_KIT_15','X5 Kit Variant 15','3500-0046','X5',['CO2'],['R744'],'IR','0-5%vol','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'7-10y','premium','G',
+  det('X5_SEN_NO2','GLACIAR X5 NO2 0-5ppm sensor module','3500-0098','X5',['NO2'],['NO2'],'EC','0-5ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,987,'2-3y','premium','G',
     ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/controller',features:'Pre-configured X5 kit variant 15'}),
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  det('X5_KIT_16','X5 Kit Variant 16','3500-0047','X5',['CO'],['CO'],'EC','0-100ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'2-3y','standard','G',
-    ['parking'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/BMS',features:'Pre-configured X5 kit variant 16'}),
-
-  det('X5_KIT_17','X5 Kit Variant 17','3500-0048','X5',['O2'],['O2'],'EC','0-25%vol','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'2-3y','standard','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/BMS',features:'Pre-configured X5 kit variant 17'}),
-
-  det('X5_KIT_18','X5 Kit Variant 18','3500-0049','X5',['NO2'],['NO2'],'EC','0-5ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'2-3y','standard','G',
-    ['parking'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/BMS',features:'Pre-configured X5 kit variant 18'}),
-
-  det('X5_KIT_19','X5 Kit Variant 19','3500-0050','X5',['HFC1','HFC2'],_ALL_HFC,'IR','0-2000ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'7-10y','premium','G',
-    ['machinery_room','cold_storage','supermarket','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/controller',features:'Pre-configured X5 kit variant 19'}),
-
-  det('X5_KIT_20','X5 Kit Variant 20','3500-0051','X5',['R290'],_HC,'SC','0-10000ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2339,'~5y','standard','G',
-    ['machinery_room','heat_pump','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x 4-20mA',connectTo:'4-20mA to PLC/controller',features:'Pre-configured X5 kit variant 20'}),
-
-  // X5 DUAL PRE-CONFIGURED kits (3500-0065 to 0084)
-  det('X5_DKIT_01','X5 DUAL Kit NH3+CO2 v1','3500-0065','X5',['NH3','CO2'],['R717','R744'],'IONIC+IR','0-100ppm NH3 + 0-5000ppm CO2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
+  det('X5_SEN_ETHANOL','GLACIAR X5 Ethanol 0-100%LEL sensor module IR','3500-0103','X5',['Ethanol'],['Ethanol'],'IR','0-100%LEL','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,1338,'7-10y','premium','G',
     ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit: NH3+CO2 variant 1'}),
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  det('X5_DKIT_02','X5 DUAL Kit NH3+CO2 v2','3500-0066','X5',['NH3','CO2'],['R717','R744'],'IONIC+IR','0-500ppm NH3 + 0-5000ppm CO2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
+  // ── X5 Sensor Modules — gas-specific IR (direct-mount, remote=false) ──
+  det('X5_SEN_R22','GLACIAR X5 R22 0-2000 ppm sensor module','3500-0065','X5',['HFC1'],['R22'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
     ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit: NH3+CO2 variant 2'}),
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  det('X5_DKIT_03','X5 DUAL Kit NH3+O2 v1','3500-0067','X5',['NH3','O2'],['R717','O2'],'IONIC+EC','0-100ppm NH3 + 0-25%vol O2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit: NH3+O2 variant 1'}),
-
-  det('X5_DKIT_04','X5 DUAL Kit NH3+O2 v2','3500-0068','X5',['NH3','O2'],['R717','O2'],'IONIC+EC','0-500ppm NH3 + 0-25%vol O2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit: NH3+O2 variant 2'}),
-
-  det('X5_DKIT_05','X5 DUAL Kit CO+NO2 v1','3500-0069','X5',['CO','NO2'],['CO','NO2'],'EC','0-100ppm CO + 0-5ppm NO2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'2-3y','premium','G',
-    ['parking'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/BMS',features:'DUAL pre-configured kit: CO+NO2 variant 1'}),
-
-  det('X5_DKIT_06','X5 DUAL Kit CO+NO2 v2','3500-0070','X5',['CO','NO2'],['CO','NO2'],'EC','0-100ppm CO + 0-5ppm NO2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'2-3y','premium','G',
-    ['parking'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/BMS',features:'DUAL pre-configured kit: CO+NO2 variant 2'}),
-
-  det('X5_DKIT_07','X5 DUAL Kit CO2+O2 v1','3500-0071','X5',['CO2','O2'],['R744','O2'],'IR+EC','0-5000ppm CO2 + 0-25%vol O2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit: CO2+O2 variant 1'}),
-
-  det('X5_DKIT_08','X5 DUAL Kit CO2+O2 v2','3500-0072','X5',['CO2','O2'],['R744','O2'],'IR+EC','0-5%vol CO2 + 0-25%vol O2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit: CO2+O2 variant 2'}),
-
-  det('X5_DKIT_09','X5 DUAL Kit HFC+O2','3500-0073','X5',['HFC1','HFC2','O2'],['R404A','O2'],'IR+EC','0-2000ppm HFC + 0-25%vol O2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit: HFC+O2'}),
-
-  det('X5_DKIT_10','X5 DUAL Kit Variant 10','3500-0074','X5',['NH3','CO2'],['R717','R744'],'IONIC+IR','0-1000ppm NH3 + 0-5000ppm CO2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
+  det('X5_SEN_R32','GLACIAR X5 R32 0-2000 ppm sensor module','3500-0066','X5',['HFC1'],['R32'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
     ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit variant 10'}),
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  det('X5_DKIT_11','X5 DUAL Kit Variant 11','3500-0075','X5',['NH3','CO2'],['R717','R744'],'IONIC+IR','0-5000ppm NH3 + 0-5000ppm CO2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
+  det('X5_SEN_R123','GLACIAR X5 R123 0-2000 ppm sensor module','3500-0067','X5',['HFC2'],['R123'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
     ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit variant 11'}),
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  det('X5_DKIT_12','X5 DUAL Kit Variant 12','3500-0076','X5',['NH3','O2'],['R717','O2'],'IONIC+EC','0-1000ppm NH3 + 0-25%vol O2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit variant 12'}),
-
-  det('X5_DKIT_13','X5 DUAL Kit Variant 13','3500-0077','X5',['NH3','O2'],['R717','O2'],'IONIC+EC','0-5000ppm NH3 + 0-25%vol O2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit variant 13'}),
-
-  det('X5_DKIT_14','X5 DUAL Kit Variant 14','3500-0078','X5',['CO2','O2'],['R744','O2'],'IR+EC','0-5000ppm CO2 + 0-25%vol O2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit variant 14'}),
-
-  det('X5_DKIT_15','X5 DUAL Kit Variant 15','3500-0079','X5',['CO2','O2'],['R744','O2'],'IR+EC','0-5%vol CO2 + 0-25%vol O2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit variant 15'}),
-
-  det('X5_DKIT_16','X5 DUAL Kit Variant 16','3500-0080','X5',['HFC1','HFC2','O2'],['R404A','O2'],'IR+EC','0-2000ppm HFC + 0-25%vol O2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
-    ['machinery_room','cold_storage'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit variant 16'}),
-
-  det('X5_DKIT_17','X5 DUAL Kit Variant 17','3500-0081','X5',['CO','NO2'],['CO','NO2'],'EC','0-100ppm CO + 0-5ppm NO2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'2-3y','premium','G',
-    ['parking'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/BMS',features:'DUAL pre-configured kit variant 17'}),
-
-  det('X5_DKIT_18','X5 DUAL Kit Variant 18','3500-0082','X5',['CO','NO2'],['CO','NO2'],'EC','0-300ppm CO + 0-20ppm NO2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'2-3y','premium','G',
-    ['parking'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/BMS',features:'DUAL pre-configured kit variant 18'}),
-
-  det('X5_DKIT_19','X5 DUAL Kit Variant 19','3500-0083','X5',['NH3','CO2'],['R717','R744'],'IONIC+IR','0-100ppm NH3 + 0-5%vol CO2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
+  det('X5_SEN_R125','GLACIAR X5 R125 0-2000 ppm sensor module','3500-0068','X5',['HFC1'],['R125'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
     ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit variant 19'}),
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  det('X5_DKIT_20','X5 DUAL Kit Variant 20','3500-0084','X5',['NH3','CO2'],['R717','R744'],'IONIC+IR','0-500ppm NH3 + 0-5%vol CO2','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,2500,'5y','premium','G',
+  det('X5_SEN_R134A','GLACIAR X5 R134A 0-2000 ppm sensor module','3500-0069','X5',['HFC2'],['R134a'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
     ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'DUAL pre-configured kit variant 20'}),
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  // X5 spare parts & accessories (3500-0085 to 0094)
-  acc('X5 Sensor Guard','3500-0085',186,'G','spare',['X5'],
-    {features:'Protective guard for X5 sensor module'}),
+  det('X5_SEN_R227','GLACIAR X5 R227 0-2000 ppm sensor module','3500-0070','X5',['HFC1'],['R227'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  acc('X5 Display Module','3500-0086',383,'G','spare',['X5'],
-    {features:'Replacement display module for X5'}),
+  det('X5_SEN_R404A','GLACIAR X5 R404A 0-2000 ppm sensor module','3500-0071','X5',['HFC2'],['R404A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  acc('X5 Mounting Plate','3500-0087',77,'G','spare',['X5'],
-    {features:'Replacement mounting plate for X5'}),
+  det('X5_SEN_R407A','GLACIAR X5 R407A 0-2000 ppm sensor module','3500-0072','X5',['HFC1'],['R407A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  acc('X5 Terminal Block','3500-0088',88,'G','spare',['X5'],
-    {features:'Replacement terminal block for X5'}),
+  det('X5_SEN_R407F','GLACIAR X5 R407F 0-2000 ppm sensor module','3500-0073','X5',['HFC1'],['R407F'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  acc('X5 Gasket Set','3500-0089',11,'G','spare',['X5'],
-    {features:'Replacement gasket set for X5 enclosure'}),
+  det('X5_SEN_R410A','GLACIAR X5 R410A 0-2000 ppm sensor module','3500-0074','X5',['HFC1'],['R410A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  acc('X5 PCB Board','3500-0090',98,'G','spare',['X5'],
-    {features:'Replacement main PCB for X5'}),
+  det('X5_SEN_R417A','GLACIAR X5 R417A 0-2000 ppm sensor module','3500-0075','X5',['HFC1'],['R417A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  acc('X5 Relay Module','3500-0091',439,'G','spare',['X5'],
-    {features:'Replacement relay output module for X5'}),
+  det('X5_SEN_R442D','GLACIAR X5 R442D 0-2000 ppm sensor module','3500-0076','X5',['HFC1'],['R442D'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  acc('X5 Analog Module','3500-0092',274,'G','spare',['X5'],
-    {features:'Replacement 4-20mA analog output module for X5'}),
+  det('X5_SEN_R448A','GLACIAR X5 R448A 0-2000 ppm sensor module','3500-0077','X5',['HFC1'],['R448A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  acc('X5 Communication Module','3500-0093',493,'G','spare',['X5'],
-    {features:'Replacement communication module for X5'}),
+  det('X5_SEN_R449A','GLACIAR X5 R449A 0-2000 ppm sensor module','3500-0078','X5',['HFC1'],['R449A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
-  acc('X5 Calibration Kit','3500-0094',657,'G','spare',['X5'],
+  det('X5_SEN_R452B','GLACIAR X5 R452B 0-2000 ppm sensor module','3500-0079','X5',['HFC1'],['R452B'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_SEN_R507','GLACIAR X5 R507 0-2000 ppm sensor module','3500-0080','X5',['HFC1'],['R507A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_SEN_R513A','GLACIAR X5 R513A 0-2000 ppm sensor module','3500-0081','X5',['HFC2'],['R513A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_SEN_R1233zd','GLACIAR X5 R1233zd 0-2000 ppm sensor module','3500-0082','X5',['HFC2'],['R1233zd'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_SEN_R1234yf','GLACIAR X5 R1234yf 0-2000 ppm sensor module','3500-0083','X5',['HFC2'],['R1234yf'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_SEN_R1234ze','GLACIAR X5 R1234ze 0-2000 ppm sensor module','3500-0084','X5',['HFC2'],['R1234ze'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  // ── X5 Remote Sensor Modules (remote=true) ──
+  det('X5_REM_NH3_1000','GLACIAR X5 NH3 0-1000 ppm Remote sensor module','3500-0022','X5',['NH3'],['R717'],'IONIC','0-1000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1205,'5y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_NH3_100','GLACIAR X5 NH3 0-100 ppm Remote sensor module','3500-0023','X5',['NH3'],['R717'],'IONIC','0-100ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1424,'5y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_NH3_500','GLACIAR X5 NH3 0-500 ppm Remote sensor module','3500-0024','X5',['NH3'],['R717'],'IONIC','0-500ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1205,'5y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_NH3_5000','GLACIAR X5 NH3 0-5000 ppm Remote sensor module','3500-0025','X5',['NH3'],['R717'],'IONIC','0-5000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1096,'5y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_CO2_5pct','GLACIAR X5 CO2 0-5% vol Remote sensor module','3500-0026','X5',['CO2'],['R744'],'IR','0-5%vol','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1287,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_CO','GLACIAR X5 CO 0-100ppm Remote sensor module','3500-0099','X5',['CO'],['CO'],'EC','0-100ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,876,'2-3y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_O2','GLACIAR X5 O2 0-25% vol Remote sensor module','3500-0100','X5',['O2'],['O2'],'EC','0-25%vol','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,931,'2-3y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_NO2','GLACIAR X5 NO2 0-5ppm Remote sensor module','3500-0101','X5',['NO2'],['NO2'],'EC','0-5ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1041,'2-3y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_CO2_5000','GLACIAR X5 CO2 0-5000ppm Remote sensor module IR','3500-0109','X5',['CO2'],['R744'],'IR','0-5000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1287,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R290','GLACIAR X5 R290 0-100%LEL Remote sensor module IR','3500-0117','X5',['R290'],['R290','R50','R600a','R1150','R1270'],'IR','0-100%LEL','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1277,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  // ── X5 Remote Sensor Modules — gas-specific IR (remote=true) ──
+  det('X5_REM_R22','GLACIAR X5 R22 0-2000 ppm Remote sensor module','3500-0032','X5',['HFC1'],['R22'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R32','GLACIAR X5 R32 0-2000 ppm Remote sensor module','3500-0033','X5',['HFC1'],['R32'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R123','GLACIAR X5 R123 0-2000 ppm Remote sensor module','3500-0034','X5',['HFC2'],['R123'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R125','GLACIAR X5 R125 0-2000 ppm Remote sensor module','3500-0035','X5',['HFC1'],['R125'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R134A','GLACIAR X5 R134A 0-2000 ppm Remote sensor module','3500-0036','X5',['HFC2'],['R134a'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R227','GLACIAR X5 R227 0-2000 ppm Remote sensor module','3500-0037','X5',['HFC1'],['R227'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R404A','GLACIAR X5 R404A 0-2000 ppm Remote sensor module','3500-0038','X5',['HFC2'],['R404A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R407A','GLACIAR X5 R407A 0-2000 ppm Remote sensor module','3500-0039','X5',['HFC1'],['R407A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R407F','GLACIAR X5 R407F 0-2000 ppm Remote sensor module','3500-0040','X5',['HFC1'],['R407F'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R410A','GLACIAR X5 R410A 0-2000 ppm Remote sensor module','3500-0041','X5',['HFC1'],['R410A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R417A','GLACIAR X5 R417A 0-2000 ppm Remote sensor module','3500-0042','X5',['HFC1'],['R417A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R422D','GLACIAR X5 R422D 0-2000 ppm Remote sensor module','3500-0043','X5',['HFC1'],['R422D'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R448A','GLACIAR X5 R448A 0-2000 ppm Remote sensor module','3500-0044','X5',['HFC1'],['R448A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R449A','GLACIAR X5 R449A 0-2000 ppm Remote sensor module','3500-0045','X5',['HFC1'],['R449A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R452B','GLACIAR X5 R452B 0-2000 ppm Remote sensor module','3500-0046','X5',['HFC1'],['R452B'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R507','GLACIAR X5 R507 0-2000 ppm Remote sensor module','3500-0047','X5',['HFC1'],['R507A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R513A','GLACIAR X5 R513A 0-2000 ppm Remote sensor module','3500-0048','X5',['HFC2'],['R513A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R1233zd','GLACIAR X5 R1233zd 0-2000 ppm Remote sensor module','3500-0049','X5',['HFC2'],['R1233zd'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R1234yf','GLACIAR X5 R1234yf 0-2000 ppm Remote sensor module','3500-0050','X5',['HFC2'],['R1234yf'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_R1234ze','GLACIAR X5 R1234ze 0-2000 ppm Remote sensor module','3500-0051','X5',['HFC2'],['R1234ze'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  det('X5_REM_ETHANOL','GLACIAR X5 Ethanol 0-100%LEL Remote sensor module','3500-0115','X5',['Ethanol'],['Ethanol'],'IR','0-100%LEL','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1701,'7-10y','premium','G',
+    ['machinery_room','cold_storage','atex_zone'],
+    {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
+
+  // ── X5 Components (accessories) ──
+  acc('GLACIAR X5 D44 Power Filter','3500-0029',104,'G','spare',['X5'],
+    {features:'D44 power filter for X5 transmitter'}),
+
+  acc('GLACIAR X5 Cable Gland EXd II C','3500-0030',77,'G','mounting',['X5'],
+    {features:'ATEX cable gland EXd II C for X5'}),
+
+  acc('GLACIAR X5 Stopping Plug M20','3500-0031',19,'G','mounting',['X5'],
+    {features:'M20 stopping plug for X5'}),
+
+  // ── X5 Accessories ──
+  acc('GLACIAR X5 Sun Shade','3500-0085',186,'G','mounting',['X5'],
+    {features:'Sun shade for outdoor X5 installations'}),
+
+  acc('GLACIAR X5 Pole Clamp','3500-0086',383,'G','mounting',['X5'],
+    {features:'Pole clamp for X5 mounting'}),
+
+  acc('GLACIAR X5 Tool Kit (Magnetic Wand)','3500-0087',77,'G','service',['X5'],
+    {features:'Magnetic wand tool kit for X5'}),
+
+  acc('GLACIAR X5 Gas Collector Cone','3500-0088',88,'G','spare',['X5'],
+    {features:'Gas collector cone for X5'}),
+
+  acc('GLACIAR X5 Protection Filter Disk','3500-0089',11,'G','spare',['X5'],
+    {features:'Protection filter disk for X5 sensor'}),
+
+  acc('GLACIAR X5 ATEX Splash Guard','3500-0090',98,'G','spare',['X5'],
+    {features:'ATEX splash guard for X5'}),
+
+  acc('GLACIAR X5 Spare Plug in PCB set','3500-0091',439,'G','spare',['X5'],
+    {features:'Spare plug-in PCB set for X5'}),
+
+  acc('GLACIAR X5 Replacement Base','3500-0092',274,'G','spare',['X5'],
+    {features:'Replacement base for X5'}),
+
+  acc('GLACIAR X5 Spare ATEX Housing','3500-0093',493,'G','spare',['X5'],
+    {features:'Spare ATEX housing for X5'}),
+
+  acc('GLACIAR X5 Calibration Kit','3500-0094',657,'G','service',['X5'],
     {features:'Calibration kit for X5 detectors'}),
 
-  // X5 additional individual sensors and expansion modules (3500-0095 to 0118)
-  acc('X5 Sensor Module NH3 0-1000ppm','3500-0095',1008,'G','spare',['X5'],
-    {features:'X5 ionic NH3 sensor module 0-1000ppm'}),
+  acc('GLACIAR X5 Type 5 Duct Adaptor BSP','3500-0104',602,'G','mounting',['X5'],
+    {features:'Type 5 duct adaptor BSP for X5'}),
 
-  acc('X5 Sensor Module CO 0-100ppm','3500-0096',602,'G','spare',['X5'],
-    {features:'X5 EC CO sensor module 0-100ppm'}),
+  acc('GLACIAR X5 Pipe Adapter & Silencer','3500-0105',98,'G','mounting',['X5'],
+    {features:'Pipe adapter and silencer for X5'}),
 
-  acc('X5 Sensor Module O2 0-25%vol','3500-0097',876,'G','spare',['X5'],
-    {features:'X5 EC O2 sensor module 0-25%vol'}),
+  acc('GLACIAR X5 Calibration Adapter','3500-0106',65,'G','service',['X5'],
+    {features:'Calibration adapter for X5'}),
 
-  acc('X5 Sensor Module NO2 0-5ppm','3500-0098',987,'G','spare',['X5'],
-    {features:'X5 EC NO2 sensor module 0-5ppm'}),
+  acc('GLACIAR X5 Pipe Adapter kit','3500-0110',1085,'G','mounting',['X5'],
+    {features:'Pipe adapter kit for X5'}),
 
-  acc('X5 Sensor Module O2 variant','3500-0099',876,'G','spare',['X5'],
-    {features:'X5 EC O2 sensor module variant'}),
-
-  acc('X5 Sensor Module CO variant','3500-0100',931,'G','spare',['X5'],
-    {features:'X5 EC CO sensor module variant'}),
-
-  acc('X5 Sensor Module NO2 variant','3500-0101',1041,'G','spare',['X5'],
-    {features:'X5 EC NO2 sensor module variant'}),
-
-  acc('X5 Expansion Module IRR HFC','3500-0103',1338,'G','spare',['X5'],
-    {features:'X5 IR refrigerant expansion sensor module'}),
-
-  acc('X5 Expansion Module CO spare','3500-0104',602,'G','spare',['X5'],
-    {features:'X5 EC CO expansion module spare'}),
-
-  acc('X5 Sensor Cover','3500-0105',98,'G','spare',['X5'],
-    {features:'Replacement sensor cover for X5'}),
-
-  acc('X5 Cable Entry Kit','3500-0106',65,'G','spare',['X5'],
-    {features:'Cable entry accessory kit for X5'}),
-
-  acc('X5 Dual Sensor Module HFC+O2','3500-0109',1287,'G','spare',['X5'],
-    {features:'X5 dual sensor module HFC+O2 IR+EC'}),
-
-  acc('X5 Analog Output Expansion','3500-0110',1085,'G','spare',['X5'],
-    {features:'Additional 4-20mA analog output expansion for X5'}),
-
-  det('X5_KIT_PRECONF','X5 Pre-configured Advanced','3500-0115','X5',['NH3'],['R717'],'IONIC','0-100ppm','IP66',-20,55,2,'18-32V',3,'4-20mA x2',false,true,true,['wall','pole'],false,1701,'5y','premium','G',
-    ['machinery_room','cold_storage','atex_zone'],
-    {relaySpec:'2 alarm + 1 fault relay',analogType:'2x independent 4-20mA',connectTo:'4-20mA to PLC/controller',features:'Advanced pre-configured X5 kit'}),
-
-  acc('X5 Modbus Expansion Module','3500-0117',1277,'G','spare',['X5'],
-    {features:'Modbus RTU communication expansion module for X5'}),
-
-  acc('X5 Replacement Sensor HC','3500-0118',161,'G','spare',['X5'],
-    {features:'X5 SC HC replacement sensor module'}),
+  acc('GLACIAR X5 Barrier Gland Kit for IIC','3500-0118',161,'G','spare',['X5'],
+    {features:'Barrier gland kit for IIC for X5'}),
 
   // ════════════════════ CONTROLLERS ════════════════════
 
@@ -584,36 +556,36 @@ export const PRODUCTS: SeedProduct[] = [
     {relayOutputs:2,features:'DIN rail slave, 12 relay inputs'}),
 
   // ── NEW UNIT Controllers (21-series) ──
-  ctrl('UNIT_3612','UNIT 3612','21-3612',12,999,'24V','IP20',1043,'standard','A',
-    {relayOutputs:6,rs485:true,display:true,mounting:'DIN rail',features:'UNIT controller panel, 12 zones, Modbus RTU, multi-zone monitoring'}),
+  ctrl('UNIT_3612','SPLS24-CO2-10000-KIT','21-3612',12,999,'24V','IP20',1043,'standard','A',
+    {relayOutputs:6,rs485:true,display:true,mounting:'DIN rail',features:'SPLS24 kit with CO2 10000ppm detector, 24V, complete system'}),
 
-  ctrl('UNIT_3617','UNIT 3617','21-3617',17,999,'24V','IP20',1055,'standard','A',
-    {relayOutputs:8,rs485:true,display:true,mounting:'DIN rail',features:'UNIT controller panel, 17 zones, Modbus RTU, multi-zone monitoring'}),
+  ctrl('UNIT_3617','SPLS230-CO2-10000-KIT','21-3617',17,999,'24V','IP20',1055,'standard','A',
+    {relayOutputs:8,rs485:true,display:true,mounting:'DIN rail',features:'SPLS230 kit with CO2 10000ppm detector, 230V, complete system'}),
 
-  ctrl('UNIT_3620','UNIT 3620','21-3620',20,999,'24V','IP20',887,'standard','A',
-    {relayOutputs:4,rs485:true,display:true,mounting:'DIN rail',features:'UNIT controller panel, 20 zones, Modbus RTU'}),
+  ctrl('UNIT_3620','SPLS24-HFC-4000-KIT','21-3620',20,999,'24V','IP20',887,'standard','A',
+    {relayOutputs:4,rs485:true,display:true,mounting:'DIN rail',features:'SPLS24 kit with HFC 4000ppm detector, 24V, complete system'}),
 
-  ctrl('UNIT_3620_SE','UNIT 3620-SE','21-3620-SE',20,999,'24V','IP20',887,'standard','A',
-    {relayOutputs:4,rs485:true,display:true,mounting:'DIN rail',features:'UNIT 3620 Special Edition, 20 zones'}),
+  ctrl('UNIT_3620_SE','SPLS24-HFC-4000-KIT (SELF SENSE)','21-3620-SE',20,999,'24V','IP20',887,'standard','A',
+    {relayOutputs:4,rs485:true,display:true,mounting:'DIN rail',features:'SPLS24 kit with HFC 4000ppm detector, 24V, SELF SENSE variant'}),
 
-  ctrl('UNIT_3625','UNIT 3625','21-3625',25,999,'24V','IP20',901,'standard','A',
-    {relayOutputs:6,rs485:true,display:true,mounting:'DIN rail',features:'UNIT controller panel, 25 zones, Modbus RTU'}),
+  ctrl('UNIT_3625','SPLS230-HFC-4000-KIT','21-3625',25,999,'24V','IP20',901,'standard','A',
+    {relayOutputs:6,rs485:true,display:true,mounting:'DIN rail',features:'SPLS230 kit with HFC 4000ppm detector, 230V, complete system'}),
 
-  ctrl('UNIT_3625_SE','UNIT 3625-SE','21-3625-SE',25,999,'24V','IP20',901,'standard','A',
-    {relayOutputs:6,rs485:true,display:true,mounting:'DIN rail',features:'UNIT 3625 Special Edition, 25 zones'}),
+  ctrl('UNIT_3625_SE','SPLS230-HFC-4000-KIT (SELF SENSE)','21-3625-SE',25,999,'24V','IP20',901,'standard','A',
+    {relayOutputs:6,rs485:true,display:true,mounting:'DIN rail',features:'SPLS230 kit with HFC 4000ppm detector, 230V, SELF SENSE variant'}),
 
-  ctrl('UNIT_3652','UNIT 3652','21-3652',52,999,'24V','IP20',887,'standard','A',
-    {relayOutputs:4,rs485:true,display:true,mounting:'DIN rail',features:'UNIT controller panel, 52 zones, Modbus RTU'}),
+  ctrl('UNIT_3652','SPLS24-NH3-4000-KIT','21-3652',52,999,'24V','IP20',887,'standard','A',
+    {relayOutputs:4,rs485:true,display:true,mounting:'DIN rail',features:'SPLS24 kit with NH3 4000ppm detector, 24V, complete system'}),
 
-  ctrl('UNIT_3657','UNIT 3657','21-3657',57,999,'24V','IP20',901,'standard','A',
-    {relayOutputs:6,rs485:true,display:true,mounting:'DIN rail',features:'UNIT controller panel, 57 zones, Modbus RTU'}),
+  ctrl('UNIT_3657','SPLS230-NH3-4000-KIT','21-3657',57,999,'24V','IP20',901,'standard','A',
+    {relayOutputs:6,rs485:true,display:true,mounting:'DIN rail',features:'SPLS230 kit with NH3 4000ppm detector, 230V, complete system'}),
 
   // ── NEW LAN controller (81-series) ──
-  ctrl('LAN63_64','LAN63/64 Combined','81-130',24,999,'24V','DIN',1064,'standard','A',
-    {relayOutputs:4,features:'Combined LAN63/64 master+slave on DIN rail, 24 relay inputs'}),
+  ctrl('LAN63_64','LAN65','81-130',24,999,'24V','DIN',1064,'standard','A',
+    {relayOutputs:4,features:'LAN65, combined master+slave on DIN rail, 24 relay inputs'}),
 
   // ── NEW Advanced Controller (6300-series) ──
-  ctrl('SCU3600','SCU3600 Advanced Controller','6300-0001',64,999,'24V','IP20',2996,'premium','G',
+  ctrl('SCU3600','GLACIAR Controller 10','6300-0001',64,999,'24V','IP20',2996,'premium','G',
     {relayOutputs:16,rs485:true,display:true,mounting:'DIN rail or wall',features:'Advanced controller, up to 64 zones, touchscreen, Ethernet, Modbus TCP/RTU, BACnet support'}),
 
   // ════════════════════ ACCESSORIES (Alerts) ════════════════════
@@ -640,12 +612,13 @@ export const PRODUCTS: SeedProduct[] = [
   acc('BE-BL-24VDC Flashing light Blue','40-4023',101,'A','alert',['ALL'],
     {ip:'IP54',voltage:'9-60V DC',features:'Blue, Visual alarm'}),
 
+  // NOTE: 6100-0002 is NOT in the SAMON Price List 2026 — kept for reference
   acc('LED sign Refrigerant Alarm','6100-0002',0,'A','signage',['ALL'],
     {ip:'IP54',voltage:'230V/24V',features:'Visual warning sign'}),
 
   // ── NEW Alert accessories (40-series) ──
-  acc('Alarm Panel 40-221','40-221',761,'A','alert',['ALL'],
-    {ip:'IP54',voltage:'24V DC',features:'Multi-zone alarm panel with LED indicators and buzzer'}),
+  acc('UPS 5000 Battery back-up without batteries','40-221',761,'A','power',['ALL'],
+    {ip:'IP54',voltage:'24V DC',features:'UPS 5000 battery back-up unit, batteries not included'}),
 
   acc('SOCK-H-R-ND High socket No Display','40-420-ND',78,'A','mounting',['ALL'],
     {voltage:'230V',features:'High socket no display variant'}),
@@ -670,158 +643,158 @@ export const PRODUCTS: SeedProduct[] = [
     {features:'Heavy-duty mounting bracket'}),
 
   // ════════════════════ POWER ACCESSORIES ════════════════════
-  acc('PSU-24-480 Power Supply','4000-0001',479,'A','power',['ALL'],
-    {voltage:'100-240 VAC input, 24VDC 20A output',features:'480W DIN rail power supply for multi-detector installations'}),
+  acc('UPS 1000 Battery back-up without batteries','4000-0001',479,'A','power',['ALL'],
+    {voltage:'100-240 VAC input, 24VDC 20A output',features:'UPS 1000 battery back-up unit, batteries not included'}),
 
-  acc('Power Adapter 230V-24V','4000-0002',99,'A','power',['MIDI'],
+  acc('Power Adapter 230V-24V','4000-0002',99,'D','power',['MIDI'],
     {voltage:'85-305 VAC input, 24VDC 1.3A output',features:'31.2W, compatible with GLACIAR MIDI only'}),
 
-  // ════════════════════ NETWORK / BMS INTERFACES (5000-series) ════════════════════
-  acc('MODBUS Gateway','5000-0001',247,'G','spare',['ALL'],
-    {voltage:'24V DC',features:'Modbus RTU to TCP gateway, connects SAMON detectors to BMS via Ethernet'}),
+  // ════════════════════ PORTABLE GAS DETECTORS (5000-series) ════════════════════
+  acc('Portable Gas Detector O2','5000-0001',247,'C','spare',['ALL'],
+    {features:'Portable single-gas detector for Oxygen (O2)'}),
 
-  acc('Ethernet Gateway','5000-0002',927,'G','spare',['ALL'],
-    {voltage:'24V DC',features:'Ethernet gateway for remote monitoring and cloud connectivity'}),
+  acc('Portable Gas Detector O2,CO,H2S,%LEL IR','5000-0002',927,'C','spare',['ALL'],
+    {features:'Portable multi-gas detector: O2, CO, H2S, %LEL (IR sensor)'}),
 
-  acc('BACnet Interface','5000-0003',612,'G','spare',['ALL'],
-    {voltage:'24V DC',features:'BACnet/IP interface for BMS integration'}),
+  acc('Portable Gas Detector O2,CO,H2S,%LEL CC','5000-0003',612,'C','spare',['ALL'],
+    {features:'Portable multi-gas detector: O2, CO, H2S, %LEL (catalytic sensor)'}),
 
-  acc('LON Interface','5000-0004',603,'G','spare',['ALL'],
-    {voltage:'24V DC',features:'LON/FTT-10 interface for building automation'}),
+  acc('Portable Gas Detector CO2','5000-0004',603,'C','spare',['ALL'],
+    {features:'Portable single-gas detector for CO2'}),
 
-  acc('OPC Server License','5000-0005',519,'G','spare',['ALL'],
-    {features:'OPC UA/DA server license for SCADA integration'}),
+  acc('Portable Gas Detector NH3','5000-0005',519,'C','spare',['ALL'],
+    {features:'Portable single-gas detector for NH3'}),
 
-  // ════════════════════ SOFTWARE (5001-series) ════════════════════
-  acc('GasView Software License','5001-0001',155,'G','spare',['ALL'],
-    {features:'PC-based monitoring software for SAMON gas detection systems'}),
+  // ════════════════════ IR LINK (5001-series) ════════════════════
+  acc('IR Link for Portable Gas Detector (SGT/MGT)','5001-0001',155,'C','spare',['ALL'],
+    {features:'IR communication link for SGT/MGT portable gas detectors'}),
 
   // ════════════════════ SERVICE TOOLS ════════════════════
-  acc('DT300 Cable','60-120',114,'A','service',['MIDI','MP','GS','GR','GK','GSH','GSLS','GSMB','GXR'],
-    {features:'Connection cable for DT300 diagnostic tool'}),
+  acc('SA200 Service tool','60-120',114,'A','service',['MIDI','X5'],
+    {features:'SA200 service tool for SAMON detectors'}),
 
-  acc('DT300 Diagnostic Tool','60-130',589,'A','service',['MIDI','MP','GS','GR','GK','GSH','GSLS','GSMB','GXR'],
-    {features:'Field diagnostic tool for G-Series and MP-Series detectors'}),
+  acc('DT 300 Service tool','60-130',589,'A','service',['MIDI','X5'],
+    {features:'DT 300 service tool for field diagnostics'}),
 
-  acc('SM300-HC Calibration gas for DT300','60-132',277,'A','service',['MIDI','MP','GS','GR','GK','GSH','GSLS','GSMB','GXR'],
-    {features:'HC calibration gas module for DT300'}),
+  acc('SM300-HC sensor module','60-132',277,'A','service',['MIDI','X5'],
+    {features:'SM300-HC sensor module for HC gas detection'}),
 
-  acc('SM300-CO2 Calibration gas for DT300','60-133',277,'A','service',['MIDI','MP','GS','GR','GK','GSH','GSLS','GSMB','GXR'],
-    {features:'CO2 calibration gas module for DT300'}),
+  acc('SM300-H2 sensor module','60-133',277,'A','service',['MIDI','X5'],
+    {features:'SM300-H2 sensor module for hydrogen detection'}),
 
-  acc('SM300-HFC Calibration gas for DT300','60-134',277,'A','service',['MIDI','MP','GS','GR','GK','GSH','GSLS','GSMB','GXR'],
-    {features:'HFC calibration gas module for DT300'}),
+  acc('SM300-HFC-4000 sensor module','60-134',277,'A','service',['MIDI','X5'],
+    {features:'SM300-HFC-4000 sensor module for HFC gas detection'}),
 
-  acc('SM300-NH3 Calibration gas for DT300','60-136',277,'A','service',['MIDI','MP','GS','GR','GK','GSH','GSLS','GSMB','GXR'],
-    {features:'NH3 calibration gas module for DT300'}),
+  acc('SM300-NH3-4000 sensor module','60-136',277,'A','service',['MIDI','X5'],
+    {features:'SM300-NH3-4000 sensor module for NH3 detection up to 4000ppm'}),
 
-  acc('SM300-R290 Calibration gas for DT300','60-137',277,'A','service',['MIDI','MP','GS','GR','GK','GSH','GSLS','GSMB','GXR'],
-    {features:'R290 calibration gas module for DT300'}),
+  acc('SM300-NH3-10000 sensor module','60-137',277,'A','service',['MIDI','X5'],
+    {features:'SM300-NH3-10000 sensor module for NH3 detection up to 10000ppm'}),
 
-  acc('Calibration gas adapter','60-150',277,'A','service',['MIDI','MP','GS','GR','GK','GSH','GSLS','GSMB','GXR'],
-    {features:'Universal calibration gas adapter'}),
+  acc('SM300-SELF SENSE sensor module','60-150',277,'A','service',['MIDI','X5'],
+    {features:'SM300-SELF SENSE sensor module with self-diagnostic capability'}),
 
   acc('Calibration Adapter v2.0','62-9011',0,'A','service',['MIDI'],
     {features:'Calibration adapter for GLACIAR MIDI'}),
 
-  // ════════════════════ CALIBRATION GAS BOTTLES (61-series) ════════════════════
-  acc('Cal Gas Bottle R404A 230V','61-2030',500,'A','service',['ALL'],
-    {voltage:'230V',features:'Calibration gas bottle R404A, 230V heated regulator'}),
+  // ════════════════════ TEST GAS CANS (61-series) ════════════════════
+  acc('Test Gas NH3-50ppm (NH3/Air) 58LTR can','61-2030',500,'D','service',['ALL'],
+    {features:'Test gas can NH3-50ppm in Air, 58 litre'}),
 
-  acc('Cal Gas Bottle R404A 110V','61-2030-110',643,'A','service',['ALL'],
-    {voltage:'110V',features:'Calibration gas bottle R404A, 110V heated regulator'}),
+  acc('Test Gas NH3-50ppm (NH3/Air) 110LTR can','61-2030-110',643,'D','service',['ALL'],
+    {features:'Test gas can NH3-50ppm in Air, 110 litre'}),
 
-  acc('Cal Gas Bottle R134a 230V','61-2031',500,'A','service',['ALL'],
-    {voltage:'230V',features:'Calibration gas bottle R134a, 230V heated regulator'}),
+  acc('Test Gas NH3-500ppm (NH3/Air) 58LTR can','61-2031',500,'D','service',['ALL'],
+    {features:'Test gas can NH3-500ppm in Air, 58 litre'}),
 
-  acc('Cal Gas Bottle R134a 110V','61-2031-110',643,'A','service',['ALL'],
-    {voltage:'110V',features:'Calibration gas bottle R134a, 110V heated regulator'}),
+  acc('Test Gas NH3-500ppm (NH3/Air) 110LTR can','61-2031-110',643,'D','service',['ALL'],
+    {features:'Test gas can NH3-500ppm in Air, 110 litre'}),
 
-  acc('Cal Gas Bottle R32 230V','61-2032',500,'A','service',['ALL'],
-    {voltage:'230V',features:'Calibration gas bottle R32, 230V heated regulator'}),
+  acc('Test Gas NH3-2500ppm (NH3/Air) 58LTR can','61-2032',500,'D','service',['ALL'],
+    {features:'Test gas can NH3-2500ppm in Air, 58 litre'}),
 
-  acc('Cal Gas Bottle R32 110V','61-2032-110',643,'A','service',['ALL'],
-    {voltage:'110V',features:'Calibration gas bottle R32, 110V heated regulator'}),
+  acc('Test Gas NH3-2500ppm (NH3/Air) 110LTR can','61-2032-110',643,'D','service',['ALL'],
+    {features:'Test gas can NH3-2500ppm in Air, 110 litre'}),
 
-  acc('Cal Gas Bottle R410A 230V','61-2033',500,'A','service',['ALL'],
-    {voltage:'230V',features:'Calibration gas bottle R410A, 230V heated regulator'}),
+  acc('Test Gas NH3-4000ppm (NH3/Air) 58LTR can','61-2033',500,'D','service',['ALL'],
+    {features:'Test gas can NH3-4000ppm in Air, 58 litre'}),
 
-  acc('Cal Gas Bottle R410A 110V','61-2033-110',643,'A','service',['ALL'],
-    {voltage:'110V',features:'Calibration gas bottle R410A, 110V heated regulator'}),
+  acc('Test Gas NH3-4000ppm (NH3/Air) 110LTR can','61-2033-110',643,'D','service',['ALL'],
+    {features:'Test gas can NH3-4000ppm in Air, 110 litre'}),
 
-  acc('Cal Gas Bottle NH3 50ppm','61-2041',379,'A','service',['ALL'],
-    {features:'Calibration gas bottle NH3 50ppm'}),
+  acc('Test Gas R32-1000ppm (R32/Air) 58LTR can','61-2041',379,'D','service',['ALL'],
+    {features:'Test gas can R32-1000ppm in Air, 58 litre'}),
 
-  acc('Cal Gas Bottle NH3 50ppm 110V','61-2041-110',500,'A','service',['ALL'],
-    {voltage:'110V',features:'Calibration gas bottle NH3 50ppm, 110V'}),
+  acc('Test Gas R32-1000ppm (R32/Air) 110LTR can','61-2041-110',500,'D','service',['ALL'],
+    {features:'Test gas can R32-1000ppm in Air, 110 litre'}),
 
-  acc('Cal Gas Bottle NH3 500ppm','61-2042',379,'A','service',['ALL'],
-    {features:'Calibration gas bottle NH3 500ppm'}),
+  acc('Test Gas R454A-1000ppm (R454A/Air) 58LTR can','61-2042',379,'D','service',['ALL'],
+    {features:'Test gas can R454A-1000ppm in Air, 58 litre'}),
 
-  acc('Cal Gas Bottle NH3 2500ppm','61-2043',679,'A','service',['ALL'],
-    {features:'Calibration gas bottle NH3 2500ppm'}),
+  acc('Test Gas R454B-1000ppm (R454B/Air) 58LTR can','61-2043',679,'D','service',['ALL'],
+    {features:'Test gas can R454B-1000ppm in Air, 58 litre'}),
 
-  acc('Cal Gas Bottle NH3 5000ppm','61-2044',679,'A','service',['ALL'],
-    {features:'Calibration gas bottle NH3 5000ppm'}),
+  acc('Test Gas R454C-1000ppm (R454C/Air) 58LTR can','61-2044',679,'D','service',['ALL'],
+    {features:'Test gas can R454C-1000ppm in Air, 58 litre'}),
 
-  acc('Cal Gas Bottle R290 230V','61-2046',379,'A','service',['ALL'],
-    {voltage:'230V',features:'Calibration gas bottle R290/propane'}),
+  acc('Test Gas R134a-1000ppm (R134a/Air) 58LTR can','61-2046',379,'D','service',['ALL'],
+    {features:'Test gas can R134a-1000ppm in Air, 58 litre'}),
 
-  acc('Cal Gas Bottle R290 110V','61-2046-110',500,'A','service',['ALL'],
-    {voltage:'110V',features:'Calibration gas bottle R290/propane, 110V'}),
+  acc('Test Gas R134a-1000ppm (R134a/Air) 110LTR can','61-2046-110',500,'D','service',['ALL'],
+    {features:'Test gas can R134a-1000ppm in Air, 110 litre'}),
 
-  acc('Cal Gas Bottle CO2 230V','61-2047',379,'A','service',['ALL'],
-    {voltage:'230V',features:'Calibration gas bottle CO2'}),
+  acc('Test Gas R410a-1000ppm (R410a/N2) 58LTR can','61-2047',379,'D','service',['ALL'],
+    {features:'Test gas can R410a-1000ppm in N2, 58 litre'}),
 
-  acc('Cal Gas Bottle CO2 110V','61-2047-110',500,'A','service',['ALL'],
-    {voltage:'110V',features:'Calibration gas bottle CO2, 110V'}),
+  acc('Test Gas R410a-1000ppm (R410a/N2) 110LTR can','61-2047-110',500,'D','service',['ALL'],
+    {features:'Test gas can R410a-1000ppm in N2, 110 litre'}),
 
-  acc('Cal Gas Bottle CO 230V','61-2051',379,'A','service',['ALL'],
-    {voltage:'230V',features:'Calibration gas bottle CO'}),
+  acc('Test Gas R290-4000ppm (R290/Air) 58LTR can','61-2051',379,'D','service',['ALL'],
+    {features:'Test gas can R290-4000ppm in Air, 58 litre'}),
 
-  acc('Cal Gas Bottle CO 110V','61-2051-110',500,'A','service',['ALL'],
-    {voltage:'110V',features:'Calibration gas bottle CO, 110V'}),
+  acc('Test Gas R290-4000ppm (R290/Air) 110LTR can','61-2051-110',500,'D','service',['ALL'],
+    {features:'Test gas can R290-4000ppm in Air, 110 litre'}),
 
-  acc('Cal Gas Bottle NO2 230V','61-2063',379,'A','service',['ALL'],
-    {voltage:'230V',features:'Calibration gas bottle NO2'}),
+  acc('Test Gas CO2-8000ppm (CO2/N2) 58LTR can','61-2063',379,'D','service',['ALL'],
+    {features:'Test gas can CO2-8000ppm in N2, 58 litre'}),
 
-  acc('Cal Gas Bottle NO2 110V','61-2063-110',500,'A','service',['ALL'],
-    {voltage:'110V',features:'Calibration gas bottle NO2, 110V'}),
+  acc('Test Gas CO2-8000ppm (CO2/N2) 110LTR can','61-2063-110',500,'D','service',['ALL'],
+    {features:'Test gas can CO2-8000ppm in N2, 110 litre'}),
 
-  acc('Cal Gas Bottle R1234yf 110V','61-2070-110',643,'A','service',['ALL'],
-    {voltage:'110V',features:'Calibration gas bottle R1234yf, 110V'}),
+  acc('Test Gas Synthetic Air 110LTR can','61-2070-110',643,'D','service',['ALL'],
+    {features:'Test gas can Synthetic Air, 110 litre'}),
 
-  acc('Cal Gas Regulator Heated 230V','61-9013',554,'A','service',['ALL'],
-    {voltage:'230V',features:'Heated regulator for calibration gas bottles, 230V'}),
+  acc('Flow regulator 0.5l/min Stainless steel','61-9013',554,'D','service',['ALL'],
+    {features:'Flow regulator 0.5l/min, stainless steel construction'}),
 
-  acc('Cal Gas Regulator Standard','61-9015',348,'A','service',['ALL'],
-    {features:'Standard regulator for calibration gas bottles'}),
+  acc('Flow regulator Fix 0.5l/min Brass','61-9015',348,'D','service',['ALL'],
+    {features:'Fixed flow regulator 0.5l/min, brass construction'}),
 
-  acc('Cal Gas Regulator Flow Meter','61-9030',286,'A','service',['ALL'],
-    {features:'Flow meter regulator for calibration gas, adjustable flow'}),
+  acc('TR Calibration Kit','61-9030',286,'D','service',['ALL'],
+    {features:'Calibration kit for TR series detectors'}),
 
-  acc('Cal Gas Tubing Kit','61-9040',104,'A','service',['ALL'],
-    {features:'Tubing and fittings kit for calibration gas delivery'}),
+  acc('GLACIAR MIDI Calibration Kit','61-9040',104,'D','service',['ALL'],
+    {features:'Calibration kit for GLACIAR MIDI detectors'}),
 
-  // ════════════════════ SPARE PARTS (62-series) ════════════════════
-  acc('Spare fuse set','62-9022',16,'A','spare',['ALL'],
-    {features:'Replacement fuse set for controllers'}),
+  // ════════════════════ GLACIAR MIDI ACCESSORIES (62-series) ════════════════════
+  acc('GLACIAR MIDI Delivery protection cap 4 pcs','62-9022',16,'D','spare',['MIDI'],
+    {features:'Delivery protection cap for GLACIAR MIDI, pack of 4'}),
 
-  acc('Spare relay module','62-9031',32,'A','spare',['ALL'],
-    {features:'Replacement relay module for MPU/SPU controllers'}),
+  acc('GLACIAR MIDI Pipe adapter 1/2" R','62-9031',32,'D','spare',['MIDI'],
+    {features:'Pipe adapter 1/2" R for GLACIAR MIDI'}),
 
-  acc('Spare power supply board','62-9041',147,'A','spare',['ALL'],
-    {features:'Replacement power supply board'}),
+  acc('GLACIAR MIDI Duct adapter','62-9041',147,'D','spare',['MIDI'],
+    {features:'Duct adapter for GLACIAR MIDI'}),
 
-  acc('Spare terminal strip','62-9051',26,'A','spare',['ALL'],
-    {features:'Replacement terminal strip for controllers'}),
+  acc('GLACIAR MIDI Magnet wands 5 pcs','62-9051',26,'D','spare',['MIDI'],
+    {features:'Magnet wands for GLACIAR MIDI, pack of 5'}),
 
   // ════════════════════ LABELS / SMALL ACCESSORIES ════════════════════
-  acc('Label DEL659 Refrigerant Warning','DEL659',4,'A','signage',['ALL'],
-    {features:'Warning label for refrigerant areas'}),
+  acc('Sensor protection cap (L) for GS,GSR,TR-SC,MP-DS','DEL659',4,'A','spare',['ALL'],
+    {features:'Large sensor protection cap for GS, GSR, TR-SC, MP-DS detectors'}),
 
-  acc('Label DEL660 Gas Detection','DEL660',3,'A','signage',['ALL'],
-    {features:'Gas detection system label'}),
+  acc('Sensor protection cap (S) for GR,TR-SCR,MP-DR','DEL660',3,'A','spare',['ALL'],
+    {features:'Small sensor protection cap for GR, TR-SCR, MP-DR detectors'}),
 
   // ════════════════════ MIDI REPLACEMENT SENSORS (SEN-series) ════════════════════
   acc('SEN-41032 MIDI IR CO2 Sensor','SEN-41032',426,'G','spare',['MIDI'],
@@ -845,84 +818,5 @@ export const PRODUCTS: SeedProduct[] = [
   acc('SEN-49013 MIDI SC HC Sensor','SEN-49013',161,'G','spare',['MIDI'],
     {features:'Replacement SC HC/R290 sensor for MIDI'}),
 
-  // ════════════════════ G-SERIES REPLACEMENT SENSORS (SEN-series) ════════════════════
-  acc('SEN002 G-Series SC HFC Sensor A','SEN002',165,'A','spare',['GS','GR','GK','GSR','GSLS'],
-    {features:'Replacement SC sensor for G-Series HFC(A) detectors'}),
-
-  acc('SEN003 G-Series SC HFC Sensor B','SEN003',165,'A','spare',['GS','GR','GK','GSR','GSLS'],
-    {features:'Replacement SC sensor for G-Series HFC(B) detectors'}),
-
-  acc('SEN004 G-Series SC HC Sensor','SEN004',165,'A','spare',['GS','GR','GK','GSR','GSLS'],
-    {features:'Replacement SC sensor for G-Series HC/propane detectors'}),
-
-  acc('SEN006 G-Series SC Sensor Alt','SEN006',165,'A','spare',['GS','GR','GK','GSR','GSLS'],
-    {features:'Alternative replacement SC sensor for G-Series'}),
-
-  acc('SEN015 G-Series IR CO2 Sensor','SEN015',770,'A','spare',['GSH','GSLS','GSMB'],
-    {features:'Replacement IR CO2 sensor for G-Series CO2 detectors'}),
-
-  acc('SEN016 G-Series IR CO2 Sensor v2','SEN016',770,'A','spare',['GSH','GSLS','GSMB'],
-    {features:'Replacement IR CO2 sensor v2 for G-Series'}),
-
-  acc('SEN017 G-Series IR CO2 Sensor SelfSense','SEN017',770,'A','spare',['GSH','GSLS','GSMB'],
-    {features:'SelfSense IR CO2 sensor for G-Series'}),
-
-  acc('SEN018 G-Series IR CO2 Sensor SelfSense v2','SEN018',770,'A','spare',['GSH','GSLS','GSMB'],
-    {features:'SelfSense IR CO2 sensor v2 for G-Series'}),
-
-  acc('SEN019 G-Series SC Sensor SelfSense HFC','SEN019',165,'A','spare',['GS','GR','GK','GSR','GSLS'],
-    {features:'SelfSense SC HFC sensor for G-Series'}),
-
-  acc('SEN027 G-Series SC Sensor SelfSense HC','SEN027',165,'A','spare',['GS','GR','GK','GSR','GSLS'],
-    {features:'SelfSense SC HC sensor for G-Series'}),
-
-  // ════════════════════ TR/MP REPLACEMENT SENSORS (SEN-series) ════════════════════
-  acc('SEN113 TR SC HFC Sensor A','SEN113',351,'A','spare',['TR'],
-    {features:'Replacement SC HFC(A) sensor for TR transmitters'}),
-
-  acc('SEN1134 TR SC HFC Sensor A SelfSense','SEN1134',353,'A','spare',['TR'],
-    {features:'SelfSense SC HFC(A) sensor for TR transmitters'}),
-
-  acc('SEN114 TR SC HFC Sensor B','SEN114',351,'A','spare',['TR'],
-    {features:'Replacement SC HFC(B) sensor for TR transmitters'}),
-
-  acc('SEN1144 TR SC HFC Sensor B SelfSense','SEN1144',353,'A','spare',['TR'],
-    {features:'SelfSense SC HFC(B) sensor for TR transmitters'}),
-
-  acc('SEN115 TR EC NH3 Sensor','SEN115',439,'A','spare',['TR'],
-    {features:'Replacement EC NH3 sensor for TR transmitters'}),
-
-  acc('SEN203 MP SC HFC Sensor','SEN203',229,'A','spare',['MP'],
-    {features:'Replacement SC HFC sensor for MP sensor heads'}),
-
-  acc('SEN204 MP SC HC Sensor','SEN204',229,'A','spare',['MP'],
-    {features:'Replacement SC HC sensor for MP sensor heads'}),
-
-  acc('SEN210 MP IR CO2 Sensor','SEN210',297,'A','spare',['MP'],
-    {features:'Replacement IR CO2 sensor for MPS sensor heads'}),
-
-  acc('SEN212 MP IR CO2 SelfSense Sensor','SEN212',450,'A','spare',['MP'],
-    {features:'SelfSense IR CO2 sensor for MPS sensor heads'}),
-
-  acc('SEN219 MP SC SelfSense Sensor','SEN219',229,'A','spare',['MP'],
-    {features:'SelfSense SC sensor for MP sensor heads'}),
-
-  // ════════════════════ ATEX REPLACEMENT SENSORS (SEX-series) ════════════════════
-  acc('SEX003 GEX ATEX SC HFC Sensor','SEX003',472,'A','spare',['GEX'],
-    {features:'ATEX-rated replacement SC HFC sensor for GEX detectors'}),
-
-  acc('SEX006 GEX ATEX SC HC Sensor','SEX006',472,'A','spare',['GEX'],
-    {features:'ATEX-rated replacement SC HC sensor for GEX detectors'}),
-
-  acc('SEX013 GXR ATEX SC HFC Sensor','SEX013',472,'A','spare',['GXR'],
-    {features:'ATEX-rated replacement SC HFC sensor for GXR detectors'}),
-
-  acc('SEX016 GXR ATEX SC HC Sensor','SEX016',472,'A','spare',['GXR'],
-    {features:'ATEX-rated replacement SC HC sensor for GXR detectors'}),
-
-  acc('SEX018 GEX ATEX EC NH3 Sensor','SEX018',472,'A','spare',['GEX'],
-    {features:'ATEX-rated replacement EC NH3 sensor for GEX detectors'}),
-
-  acc('SEX019 GEX ATEX IR CO2 Sensor','SEX019',472,'A','spare',['GEX'],
-    {features:'ATEX-rated replacement IR CO2 sensor for GEX detectors'}),
+  // G-Series, TR, MP, GEX, GXR sensors — DISCONTINUED, removed from catalog
 ];

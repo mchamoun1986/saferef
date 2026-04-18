@@ -27,8 +27,6 @@ const ROUTE_ROLES: Record<string, Role[]> = {
   '/admin/settings': ['admin'],
   // Admin dashboard (admin only)
   '/admin': ['admin'],
-  // Legacy sales routes
-  '/sales': ['admin', 'sales'],
 };
 
 function findAllowedRoles(pathname: string): Role[] | null {
@@ -72,8 +70,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all admin/sales routes except public assets
+    // Match all admin routes except public assets
     '/admin/:path*',
-    '/sales/:path*',
   ],
 };

@@ -24,8 +24,6 @@ Objectif : devenir LA référence en ligne pour la conformité EN378 / EN14624 d
 | `src/app/configurator/` | Configurateur de détecteurs — coeur du produit, wizard multi-étapes |
 | `src/app/selector/` | Sélecteur de détecteurs (choix simplifié) |
 | `src/app/products/` | Catalogue produits SAMON (détecteurs, contrôleurs, accessoires) |
-| `src/app/sales/` | Interface commerciale — devis, BOM |
-| `src/app/sales/quotes/` | Gestion des devis (draft → sent → accepted/rejected) |
 | `src/app/admin/` | Panneau admin complet (voir ci-dessous) |
 | `src/app/(auth)/login/` | Authentification admin |
 | `src/app/api/` | 12 routes API REST (CRUD produits, gaz, devis, calculs, sessions) |

@@ -336,8 +336,6 @@ function DetailsTab({ data }: { data: ArchData | null }) {
               ["/selector", "Selector", "public"],
               ["/admin/catalogue", "Catalogue", "all roles"],
               ["/login", "Auth", "public"],
-              ["/sales", "Dashboard", "sales+"],
-              ["/sales/quotes", "Quotes", "sales+"],
               ["/admin", "Dashboard", "admin"],
               ["/admin/architecture", "Architecture", "admin"],
             ].map(([route, label, auth]) => (
