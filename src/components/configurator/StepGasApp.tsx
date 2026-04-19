@@ -490,25 +490,7 @@ export default function StepGasApp({
           </div>
         </div>
 
-        {/* Detection Range — conditional, full-width */}
-        {hasRangeOptions && rangeOptions.length > 0 && (
-          <div>
-            <label className={labelClass}>{t.detectionRange}</label>
-            <select
-              className={inputClass}
-              value={data.selectedRange}
-              onChange={(e) => update("selectedRange", e.target.value)}
-            >
-              <option value="">{t.selectRange}</option>
-              {rangeOptions.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                  {recommendedRange === r.value ? ` \u2605 ${t.recommended}` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        {/* Detection Range — removed from UI, handled on results page */}
       </div>
 
       {/* ── 2. Technical Options (hidden — M2 product selection, not used by M1 engine) ──── */}

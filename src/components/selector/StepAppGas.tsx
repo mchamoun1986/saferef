@@ -1,6 +1,7 @@
 'use client';
 
-import { Flame, Layers, Package, Check } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { Flame, Layers, Package, Check, Search, ChevronDown, X } from 'lucide-react';
 
 interface AppOption {
   id: string;
@@ -49,6 +50,36 @@ export default function StepAppGas({
   preferredFamily, onApplicationChange, onRefrigerantChange,
   onPreferredFamilyChange,
 }: Props) {
+  const [refOpen, setRefOpen] = useState(false);
+  const [refSearch, setRefSearch] = useState('');
+  const refDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (refDropdownRef.current && !refDropdownRef.current.contains(e.target as Node)) {
+        setRefOpen(false);
+        setRefSearch('');
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  // Selected refrigerant object
+  const selectedRefObj = useMemo(() => {
+    if (!refrigerant) return null;
+    return refrigerants.find(r => r.id === refrigerant) ?? null;
+  }, [refrigerant, refrigerants]);
+
+  // Filtered refrigerants for search
+  const filteredRefs = useMemo(() => {
+    if (!refSearch) return refrigerants;
+    const q = refSearch.toLowerCase();
+    return refrigerants.filter(r =>
+      r.id.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)
+    );
+  }, [refrigerants, refSearch]);
 
   return (
     <div className="space-y-5">
@@ -91,7 +122,7 @@ export default function StepAppGas({
         </div>
       </div>
 
-      {/* ── 2. Refrigerant ──────────────────────────────────────── */}
+      {/* ── 2. Refrigerant — Searchable Dropdown ──────────────── */}
       <div className="bg-white rounded-xl shadow-[0_2px_12px_rgba(22,53,75,0.08)] p-5 space-y-4">
         <div className="flex items-center gap-2.5">
           <span className="w-1 h-5 bg-[#E63946] rounded-full flex-shrink-0" />
@@ -100,46 +131,84 @@ export default function StepAppGas({
         </div>
 
         <div>
-          <label className={labelClass}>
-            Select Refrigerant
-            {refrigerant && (
-              <span className="ml-2 text-[#A7C031] normal-case tracking-normal">
-                {refrigerant} selected
+          <label className={labelClass}>Refrigerant</label>
+
+          {/* Selected chip */}
+          {selectedRefObj && (
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex items-center gap-2 bg-[#16354B] text-white text-sm font-semibold px-3 py-1.5 rounded-lg">
+                <span>{selectedRefObj.id}</span>
+                <span className="text-white/70">&mdash;</span>
+                <span className="text-white/90 font-normal">{selectedRefObj.name}</span>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${safetyBadgeColor(selectedRefObj.safetyClass)}`}>
+                  {selectedRefObj.safetyClass}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onRefrigerantChange('')}
+                  className="ml-1 w-4 h-4 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               </span>
-            )}
-          </label>
-          {refrigerants.length === 0 ? (
-            <p className="text-xs text-[#6b8da5] italic py-2">Loading refrigerants...</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {refrigerants.map(ref => {
-                const isSelected = refrigerant === ref.id;
-                return (
-                  <button
-                    key={ref.id}
-                    type="button"
-                    onClick={() => onRefrigerantChange(ref.id)}
-                    className={`group relative flex items-center gap-2 px-3 py-2 rounded-lg border-2 text-xs font-medium transition-all ${
-                      isSelected
-                        ? 'border-[#A7C031] bg-[#A7C031]/10 text-[#16354B] shadow-sm'
-                        : 'border-[#e2e8f0] text-[#6b8da5] hover:border-[#A7C031]/40 hover:shadow-sm'
-                    }`}
-                  >
-                    {isSelected && (
-                      <Check className="w-3 h-3 text-[#A7C031] flex-shrink-0" />
-                    )}
-                    <span className="font-semibold">{ref.id}</span>
-                    <span className={`hidden sm:inline ${isSelected ? 'text-[#16354B]/70' : 'text-[#6b8da5]/70'}`}>
-                      {ref.name}
-                    </span>
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${safetyBadgeColor(ref.safetyClass)}`}>
-                      {ref.safetyClass}
-                    </span>
-                  </button>
-                );
-              })}
             </div>
           )}
+
+          {/* Dropdown container */}
+          <div ref={refDropdownRef} className="relative">
+            <div
+              className={`flex items-center gap-2 ${inputClass} cursor-pointer`}
+              onClick={() => setRefOpen(true)}
+            >
+              <Search className="w-4 h-4 text-[#6b8da5] flex-shrink-0" />
+              {refOpen ? (
+                <input
+                  type="text"
+                  autoFocus
+                  className="flex-1 bg-transparent outline-none text-sm text-[#16354B] placeholder:text-[#6b8da5]"
+                  placeholder="Search refrigerant (R744, R32, R717...)"
+                  value={refSearch}
+                  onChange={e => setRefSearch(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Escape') { setRefOpen(false); setRefSearch(''); } }}
+                />
+              ) : (
+                <span className="flex-1 text-sm text-[#6b8da5]">
+                  {selectedRefObj ? `${selectedRefObj.id} \u2014 ${selectedRefObj.name}` : 'Select refrigerant...'}
+                </span>
+              )}
+              <ChevronDown className={`w-4 h-4 text-[#6b8da5] transition-transform ${refOpen ? 'rotate-180' : ''}`} />
+            </div>
+
+            {/* Dropdown list */}
+            {refOpen && (
+              <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border-2 border-[#e2e8f0] rounded-xl shadow-xl max-h-80 overflow-y-auto">
+                {filteredRefs.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-sm text-[#6b8da5]">No results</div>
+                ) : (
+                  filteredRefs.map(r => {
+                    const isActive = refrigerant === r.id;
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => { onRefrigerantChange(r.id); setRefOpen(false); setRefSearch(''); }}
+                        className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-left transition-colors ${
+                          isActive ? 'bg-[#16354B]/10' : 'hover:bg-[#f8fafc]'
+                        }`}
+                      >
+                        <span className="text-sm font-semibold text-[#16354B] min-w-[65px]">{r.id}</span>
+                        <span className="text-sm text-[#475569] flex-1 truncate">{r.name}</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${safetyBadgeColor(r.safetyClass)}`}>
+                          {r.safetyClass}
+                        </span>
+                        {isActive && <Check className="w-4 h-4 text-[#16354B] flex-shrink-0" />}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
