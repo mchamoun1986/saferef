@@ -86,6 +86,7 @@ export default function SimulatorM2Page() {
   const [loading, setLoading] = useState(true);
   const [inputs, setInputs] = useState<SimInputs>(DEFAULT_INPUTS);
   const [history, setHistory] = useState<SimResult[]>([]);
+  const [expandedSol, setExpandedSol] = useState<string | null>(null);
   const [nextId, setNextId] = useState(1);
 
   useEffect(() => {
@@ -370,19 +371,32 @@ export default function SimulatorM2Page() {
                 )}
               </div>
 
-              {/* BOM per solution */}
-              {liveResults.solutions.map((s, i) => (
+              {/* BOM per solution — collapsible */}
+              {liveResults.solutions.map((s, i) => {
+                const cardId = `sol-${i}`;
+                return (
                 <div key={i} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                  <div className="px-5 py-3 flex items-center justify-between bg-gray-800">
+                  <button
+                    onClick={() => setExpandedSol(prev => prev === cardId ? null : cardId)}
+                    className="w-full px-5 py-3 flex items-center justify-between bg-gray-800 hover:bg-gray-700 transition-colors cursor-pointer"
+                  >
                     <div className="flex items-center gap-3">
-                      <h3 className="text-white font-bold">{s.name}</h3>
+                      <span className="text-gray-400 text-xs">{expandedSol === cardId ? '▼' : '▶'}</span>
+                      <h3 className="text-white font-bold text-left">{s.name}</h3>
                       {tierBadge(s.tier)}
                       {modeBadge(s.mode)}
+                      <span className="text-gray-400 text-xs ml-2">{s.components.filter(c => !c.optional).length} items</span>
                     </div>
-                    <span className="text-white font-bold text-lg">
-                      {s.hasNaPrice ? 'N/A' : `${s.total.toFixed(2)} EUR`}
-                    </span>
-                  </div>
+                    <div className="flex items-center gap-3">
+                      {s.optionalTotal > 0 && (
+                        <span className="text-amber-400 text-xs">+{s.optionalTotal.toFixed(0)} opt</span>
+                      )}
+                      <span className="text-white font-bold text-lg">
+                        {s.hasNaPrice ? 'N/A' : `${s.total.toFixed(2)} EUR`}
+                      </span>
+                    </div>
+                  </button>
+                  {expandedSol === cardId && (
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="bg-gray-50 border-b text-left text-gray-500 uppercase tracking-wider">
@@ -423,8 +437,10 @@ export default function SimulatorM2Page() {
                       )}
                     </tfoot>
                   </table>
+                  )}
                 </div>
-              ))}
+                );
+              })}
 
               {/* History */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
