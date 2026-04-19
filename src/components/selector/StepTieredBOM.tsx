@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { Solution, BomComponent } from '@/lib/m2-engine/designer-types';
 import { useLang } from '@/lib/i18n-context';
 import { TIERED_BOM, t } from '@/lib/i18n-common';
-import { Download, Printer } from 'lucide-react';
+import { Download, Printer, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface ZoneCalcData {
   zoneName: string;
@@ -66,6 +66,45 @@ export default function StepTieredBOM({
     comments: '',
   });
   const [saving, setSaving] = useState(false);
+  const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const [filterMeas, setFilterMeas] = useState('');
+  const [filterRange, setFilterRange] = useState('');
+
+  // Parse measurement type from range string (e.g. "0-10000 ppm" → "ppm")
+  function parseMeasType(range: string | null): string {
+    if (!range) return '';
+    const r = range.toLowerCase();
+    if (r.includes('lel') || r.includes('lfl')) return 'lel';
+    if (r.includes('vol') || r.includes('% vol')) return 'vol';
+    if (r.includes('ppm')) return 'ppm';
+    return '';
+  }
+
+  // Available measurement types from solutions
+  const availMeasTypes = useMemo(() => {
+    const s = new Set<string>();
+    solutions.forEach(sol => { const m = parseMeasType(sol.detector.range); if (m) s.add(m); });
+    return Array.from(s).sort();
+  }, [solutions]);
+
+  // Available ranges from solutions (after meas filter)
+  const availRanges = useMemo(() => {
+    const s = new Set<string>();
+    solutions.forEach(sol => {
+      if (filterMeas && parseMeasType(sol.detector.range) !== filterMeas) return;
+      if (sol.detector.range) s.add(sol.detector.range);
+    });
+    return Array.from(s).sort();
+  }, [solutions, filterMeas]);
+
+  // Filtered solutions
+  const filteredSolutions = useMemo(() => {
+    return solutions.filter(sol => {
+      if (filterMeas && parseMeasType(sol.detector.range) !== filterMeas) return false;
+      if (filterRange && sol.detector.range !== filterRange) return false;
+      return true;
+    });
+  }, [solutions, filterMeas, filterRange]);
 
   // Mandatory components only for total
   const getMandatoryTotal = (sol: Solution) =>
@@ -235,101 +274,156 @@ export default function StepTieredBOM({
         </div>
       )}
 
-      {/* Solution Cards */}
-      <div className="grid gap-6">
-        {solutions.map((sol, idx) => {
+      {/* Filter bar */}
+      {solutions.length > 0 && (
+        <div className="bg-white rounded-xl shadow-[0_2px_12px_rgba(22,53,75,0.08)] p-4 space-y-3">
+          {/* Measurement type */}
+          {availMeasTypes.length > 1 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider w-24">Measurement</span>
+              <button onClick={() => { setFilterMeas(''); setFilterRange(''); }}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${!filterMeas ? 'bg-[#16354B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                All ({solutions.length})
+              </button>
+              {availMeasTypes.map(m => (
+                <button key={m} onClick={() => { setFilterMeas(m); setFilterRange(''); }}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filterMeas === m ? 'bg-[#16354B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                  {m.toUpperCase()} ({solutions.filter(s => parseMeasType(s.detector.range) === m).length})
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Range level */}
+          {availRanges.length > 1 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider w-24">Range</span>
+              <button onClick={() => setFilterRange('')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${!filterRange ? 'bg-[#E63946] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                All
+              </button>
+              {availRanges.map(r => (
+                <button key={r} onClick={() => setFilterRange(r)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filterRange === r ? 'bg-[#E63946] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                  {r}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="text-xs text-gray-400">
+            Showing {filteredSolutions.length} of {solutions.length} solutions
+          </div>
+        </div>
+      )}
+
+      {/* Solution Cards — collapsible */}
+      <div className="grid gap-4">
+        {filteredSolutions.map((sol, idx) => {
           const color = tierColor(sol);
           const label = tierLabel(sol);
           const mandatoryTotal = getMandatoryTotal(sol);
           const mandatory = sol.components.filter(c => !c.optional);
           const optional = sol.components.filter(c => c.optional);
+          const isExpanded = expandedCard === idx;
 
           return (
             <div key={idx} className="border-2 rounded-xl overflow-hidden" style={{ borderColor: color }}>
-              {/* Solution Header */}
-              <div className="px-5 py-3 flex items-center justify-between" style={{ background: color }}>
+              {/* Solution Header — clickable */}
+              <button
+                onClick={() => setExpandedCard(isExpanded ? null : idx)}
+                className="w-full px-5 py-3 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
+                style={{ background: color }}
+              >
                 <div className="flex items-center gap-3">
-                  <h3 className="text-white font-bold text-base">{sol.name}</h3>
+                  {isExpanded ? <ChevronDown className="w-4 h-4 text-white/70" /> : <ChevronRight className="w-4 h-4 text-white/70" />}
+                  <h3 className="text-white font-bold text-base text-left">{sol.name}</h3>
                   <span className="bg-white/20 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
                     {label}
                   </span>
-                  {sol.mode === 'standalone' && (
-                    <span className="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full">Standalone</span>
-                  )}
                 </div>
-                <div className="text-white text-right">
-                  <div className="font-bold text-lg">{fmtEur(mandatoryTotal)} EUR</div>
-                  {sol.optionalTotal > 0 && (
-                    <div className="text-[11px] opacity-70">+ {fmtEur(sol.optionalTotal)} optional</div>
+                <div className="text-white text-right flex items-center gap-4">
+                  {sol.detector.range && (
+                    <span className="text-white/70 text-xs">{sol.detector.range}</span>
                   )}
+                  <span className="text-white/70 text-xs">{mandatory.length} items</span>
+                  <div>
+                    <div className="font-bold text-lg">{fmtEur(mandatoryTotal)} EUR</div>
+                    {sol.optionalTotal > 0 && (
+                      <div className="text-[11px] opacity-70">+ {fmtEur(sol.optionalTotal)} opt</div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </button>
 
-              {/* Detector summary */}
-              <div className="px-5 py-3 bg-gray-50 flex items-center gap-4 border-b">
-                {sol.detector.image && (
-                  <img
-                    src={sol.detector.image.startsWith('/') ? sol.detector.image : `/assets/${sol.detector.image}`}
-                    alt={sol.detector.name}
-                    className="w-16 h-16 object-contain rounded bg-white border border-gray-200 p-1 flex-shrink-0"
-                  />
-                )}
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                  <span><b>Detector:</b> {sol.detector.name}</span>
-                  <span><b>Code:</b> {sol.detector.code}</span>
-                  {sol.detector.sensorTech && <span><b>Sensor:</b> {sol.detector.sensorTech}</span>}
-                  {sol.detector.range && <span><b>Range:</b> {sol.detector.range}</span>}
-                  {sol.controller && (
-                    <span><b>Controller:</b> {sol.controllerQty}x {sol.controller.name}</span>
-                  )}
-                  {!sol.controller && (
-                    <span className="text-green-600 font-semibold">Standalone</span>
-                  )}
-                  {sol.connectionLabel && (
-                    <span><b>Connection:</b> {sol.connectionLabel}</span>
-                  )}
-                </div>
-              </div>
+              {/* Expanded content */}
+              {isExpanded && (
+                <>
+                  {/* Detector summary */}
+                  <div className="px-5 py-3 bg-gray-50 flex items-center gap-4 border-b">
+                    {sol.detector.image && (
+                      <img
+                        src={sol.detector.image.startsWith('/') ? sol.detector.image : `/assets/${sol.detector.image}`}
+                        alt={sol.detector.name}
+                        className="w-16 h-16 object-contain rounded bg-white border border-gray-200 p-1 flex-shrink-0"
+                      />
+                    )}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                      <span><b>Detector:</b> {sol.detector.name}</span>
+                      <span><b>Code:</b> {sol.detector.code}</span>
+                      {sol.detector.sensorTech && <span><b>Sensor:</b> {sol.detector.sensorTech}</span>}
+                      {sol.detector.range && <span><b>Range:</b> {sol.detector.range}</span>}
+                      {sol.controller && (
+                        <span><b>Controller:</b> {sol.controllerQty}x {sol.controller.name}</span>
+                      )}
+                      {!sol.controller && (
+                        <span className="text-green-600 font-semibold">Standalone</span>
+                      )}
+                      {sol.connectionLabel && (
+                        <span><b>Connection:</b> {sol.connectionLabel}</span>
+                      )}
+                    </div>
+                  </div>
 
-              {/* BOM Table */}
-              <table className="w-full text-sm">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="w-10 px-2 py-2"></th>
-                    <th className="text-left px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Code</th>
-                    <th className="text-left px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Product</th>
-                    <th className="text-center px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Role</th>
-                    <th className="text-center px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Qty</th>
-                    <th className="text-right px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Unit (EUR)</th>
-                    <th className="text-right px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mandatory.map((comp: BomComponent, li: number) => (
-                    <ComponentRow key={li} comp={comp} li={li} />
-                  ))}
-                  {optional.length > 0 && (
-                    <>
+                  {/* BOM Table */}
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-100">
                       <tr>
-                        <td colSpan={7} className="px-3 py-1.5 text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider bg-gray-50 border-t">
-                          Optional Accessories
-                        </td>
+                        <th className="w-10 px-2 py-2"></th>
+                        <th className="text-left px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Code</th>
+                        <th className="text-left px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Product</th>
+                        <th className="text-center px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Role</th>
+                        <th className="text-center px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Qty</th>
+                        <th className="text-right px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Unit (EUR)</th>
+                        <th className="text-right px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Subtotal</th>
                       </tr>
-                      {optional.map((comp: BomComponent, li: number) => (
-                        <ComponentRow key={`opt-${li}`} comp={comp} li={li} optional />
+                    </thead>
+                    <tbody>
+                      {mandatory.map((comp: BomComponent, li: number) => (
+                        <ComponentRow key={li} comp={comp} li={li} />
                       ))}
-                    </>
-                  )}
-                </tbody>
-              </table>
+                      {optional.length > 0 && (
+                        <>
+                          <tr>
+                            <td colSpan={7} className="px-3 py-1.5 text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider bg-gray-50 border-t">
+                              Optional Accessories
+                            </td>
+                          </tr>
+                          {optional.map((comp: BomComponent, li: number) => (
+                            <ComponentRow key={`opt-${li}`} comp={comp} li={li} optional />
+                          ))}
+                        </>
+                      )}
+                    </tbody>
+                  </table>
 
-              {/* Total row */}
-              <div className="px-5 py-3 bg-gray-50 border-t flex justify-between items-center">
-                <div className="text-xs text-gray-400 italic">List prices — contact your distributor for final pricing</div>
-                <div className="text-lg font-bold" style={{ color }}>
-                  {fmtEur(mandatoryTotal)} EUR
-                </div>
-              </div>
+                  {/* Total row */}
+                  <div className="px-5 py-3 bg-gray-50 border-t flex justify-between items-center">
+                    <div className="text-xs text-gray-400 italic">List prices — contact your distributor for final pricing</div>
+                    <div className="text-lg font-bold" style={{ color }}>
+                      {fmtEur(mandatoryTotal)} EUR
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           );
         })}
