@@ -68,6 +68,8 @@ export default function StepTieredBOM({
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const [filterMeas, setFilterMeas] = useState('');
   const [filterRange, setFilterRange] = useState('');
+  const [filterMode, setFilterMode] = useState('');
+  const [filterSensor, setFilterSensor] = useState('');
 
   // Parse measurement type from range string (e.g. "0-10000 ppm" → "ppm")
   function parseMeasType(range: string | null): string {
@@ -86,7 +88,7 @@ export default function StepTieredBOM({
     return Array.from(s).sort();
   }, [solutions]);
 
-  // Available ranges from solutions (after meas filter)
+  // Available ranges (after meas filter)
   const availRanges = useMemo(() => {
     const s = new Set<string>();
     solutions.forEach(sol => {
@@ -96,14 +98,34 @@ export default function StepTieredBOM({
     return Array.from(s).sort();
   }, [solutions, filterMeas]);
 
+  // Available modes
+  const availModes = useMemo(() => {
+    const s = new Set<string>();
+    solutions.forEach(sol => s.add(sol.mode));
+    return Array.from(s).sort();
+  }, [solutions]);
+
+  // Available sensor techs
+  const availSensors = useMemo(() => {
+    const s = new Set<string>();
+    solutions.forEach(sol => { if (sol.detector.sensorTech) s.add(sol.detector.sensorTech); });
+    return Array.from(s).sort();
+  }, [solutions]);
+
   // Filtered solutions
   const filteredSolutions = useMemo(() => {
     return solutions.filter(sol => {
       if (filterMeas && parseMeasType(sol.detector.range) !== filterMeas) return false;
       if (filterRange && sol.detector.range !== filterRange) return false;
+      if (filterMode && sol.mode !== filterMode) return false;
+      if (filterSensor && sol.detector.sensorTech !== filterSensor) return false;
       return true;
     });
-  }, [solutions, filterMeas, filterRange]);
+  }, [solutions, filterMeas, filterRange, filterMode, filterSensor]);
+
+  function resetFilters() {
+    setFilterMeas(''); setFilterRange(''); setFilterMode(''); setFilterSensor('');
+  }
 
   // Mandatory components only for total
   const getMandatoryTotal = (sol: Solution) =>
@@ -275,29 +297,45 @@ export default function StepTieredBOM({
 
       {/* Filter bar */}
       {solutions.length > 0 && (
-        <div className="bg-white rounded-xl shadow-[0_2px_12px_rgba(22,53,75,0.08)] p-4 space-y-3">
-          {/* Measurement type */}
-          {availMeasTypes.length > 1 && (
+        <div className="bg-white rounded-xl shadow-[0_2px_12px_rgba(22,53,75,0.08)] p-4 space-y-2.5">
+          {/* Row 1: Mode */}
+          {availModes.length > 1 && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider w-24">Measurement</span>
-              <button onClick={() => { setFilterMeas(''); setFilterRange(''); }}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${!filterMeas ? 'bg-[#16354B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                All ({solutions.length})
+              <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider w-20 flex-shrink-0">Mode</span>
+              <button onClick={() => setFilterMode('')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${!filterMode ? 'bg-[#16354B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                All
               </button>
-              {availMeasTypes.map(m => (
-                <button key={m} onClick={() => { setFilterMeas(m); setFilterRange(''); }}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filterMeas === m ? 'bg-[#16354B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                  {m.toUpperCase()} ({solutions.filter(s => parseMeasType(s.detector.range) === m).length})
+              {availModes.map(m => (
+                <button key={m} onClick={() => setFilterMode(m)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filterMode === m ? 'bg-[#16354B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                  {m === 'standalone' ? 'Standalone' : 'Centralized'} ({solutions.filter(s => s.mode === m).length})
                 </button>
               ))}
             </div>
           )}
-          {/* Range level */}
+          {/* Row 2: Sensor tech */}
+          {availSensors.length > 1 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider w-20 flex-shrink-0">Sensor</span>
+              <button onClick={() => setFilterSensor('')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${!filterSensor ? 'bg-[#16354B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                All
+              </button>
+              {availSensors.map(s => (
+                <button key={s} onClick={() => setFilterSensor(s)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filterSensor === s ? 'bg-[#16354B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                  {s} ({solutions.filter(sol => sol.detector.sensorTech === s).length})
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Row 3: Range */}
           {availRanges.length > 1 && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider w-24">Range</span>
-              <button onClick={() => setFilterRange('')}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${!filterRange ? 'bg-[#E63946] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider w-20 flex-shrink-0">Range</span>
+              <button onClick={() => { setFilterRange(''); setFilterMeas(''); }}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${!filterRange && !filterMeas ? 'bg-[#E63946] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                 All
               </button>
               {availRanges.map(r => (
@@ -308,8 +346,16 @@ export default function StepTieredBOM({
               ))}
             </div>
           )}
-          <div className="text-xs text-gray-400">
-            Showing {filteredSolutions.length} of {solutions.length} solutions
+          {/* Summary + reset */}
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-xs text-gray-400">
+              Showing {filteredSolutions.length} of {solutions.length} solutions
+            </span>
+            {(filterMeas || filterRange || filterMode || filterSensor) && (
+              <button onClick={resetFilters} className="text-xs text-[#E63946] font-semibold hover:underline">
+                Reset filters
+              </button>
+            )}
           </div>
         </div>
       )}
