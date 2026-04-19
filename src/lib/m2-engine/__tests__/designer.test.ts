@@ -500,8 +500,8 @@ describe('SystemDesigner V2', () => {
   // ─── 3. Centralized solution ──────────────────────────────────────────────
 
   describe('Centralized solution', () => {
-    it('MIDI + GC10 centralized solution is generated', () => {
-      const solutions = designer.generate(makeInputs({ gas: 'R744', points: 1 }));
+    it('MIDI + GC10 centralized solution is generated (points > 1)', () => {
+      const solutions = designer.generate(makeInputs({ gas: 'R744', points: 3 }));
       const centralized = solutions.filter(s => s.mode === 'centralized');
       expect(centralized.length).toBeGreaterThan(0);
 
@@ -511,6 +511,14 @@ describe('SystemDesigner V2', () => {
       expect(midiGC10).toBeDefined();
       expect(midiGC10!.controllerQty).toBe(1);
       expect(midiGC10!.controller!.code).toBe('GC10');
+    });
+
+    it('no centralized MIDI solutions for 1 detection point', () => {
+      const solutions = designer.generate(makeInputs({ gas: 'R744', points: 1 }));
+      const midiCentralized = solutions.filter(s =>
+        s.mode === 'centralized' && s.detector.family === 'GLACIAR MIDI'
+      );
+      expect(midiCentralized.length).toBe(0);
     });
 
     it('X5 sensor + X5 Transmitter centralized solution is generated', () => {
@@ -722,7 +730,7 @@ describe('SystemDesigner V2', () => {
     });
 
     it('NOT included when controller powers detectors (GC10)', () => {
-      const solutions = designer.generate(makeInputs({ gas: 'R744', voltage: '230V AC', points: 1 }));
+      const solutions = designer.generate(makeInputs({ gas: 'R744', voltage: '230V AC', points: 3 }));
       const gc10Sol = solutions.find(s =>
         s.mode === 'centralized' && s.controller?.family === 'GLACIAR Controller 10' &&
         s.detector.family === 'GLACIAR MIDI'
@@ -982,7 +990,7 @@ describe('SystemDesigner V2', () => {
 
   describe('Connection label', () => {
     it('MIDI + GC10 shows 4-20mA connection label', () => {
-      const solutions = designer.generate(makeInputs({ gas: 'R744', points: 1 }));
+      const solutions = designer.generate(makeInputs({ gas: 'R744', points: 3 }));
       const midiGC10 = solutions.find(s =>
         s.mode === 'centralized' &&
         s.detector.family === 'GLACIAR MIDI' &&

@@ -36,7 +36,10 @@ export class SystemDesigner {
       const controllers = this.findCompatibleControllers(det);
 
       // Step 3: Generate centralized solutions (detector + controller)
-      for (const ctrl of controllers) {
+      // Skip centralized when only 1 point UNLESS sensor requires a base (X5 → Transmitter)
+      const sensorNeedsBase = !det.standalone && det.type === 'sensor';
+      if (points <= 1 && !sensorNeedsBase) { /* skip centralized — 1 point, standalone is enough */ }
+      else for (const ctrl of controllers) {
         const compatFamilies = [det.family, ctrl.family].filter(Boolean);
         const { beacon, siren } = this.findAlertProducts(compatFamilies);
 
