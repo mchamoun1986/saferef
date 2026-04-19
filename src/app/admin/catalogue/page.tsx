@@ -1,9 +1,13 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useLang } from '@/lib/i18n-context';
+import {
+  X, Zap, Radio, Wrench, Box, Layers,
+  Eye, Search,
+} from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -41,6 +45,14 @@ interface Product {
   compatibleFamilies: string;
   tier: string;
   productGroup: string;
+  // V2 fields
+  variant: string | null;
+  subType: string | null;
+  function: string | null;
+  status: string;
+  ports: string;
+  connectionRules: string;
+  compatibleWith: string;
 }
 
 interface AppOption {
@@ -48,6 +60,8 @@ interface AppOption {
   labelEn: string;
   labelFr: string;
   icon: string;
+  productFamilies: string;
+  suggestedGases: string;
 }
 
 function parseJson<T>(val: string | null | undefined, fallback: T): T {
@@ -90,19 +104,359 @@ const GAS_GROUPS = [
   ]},
 ];
 
+// ── Tier badge ────────────────────────────────────────────────────────────────
+
+function tierBadge(tier: string) {
+  const tierNorm = tier?.toLowerCase() ?? '';
+  if (tierNorm.includes('premium') && tierNorm.includes('ir')) {
+    return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#E63946]/20 text-[#E63946] border border-[#E63946]/30">Premium IR</span>;
+  }
+  if (tierNorm.includes('premium') && tierNorm.includes('ec')) {
+    return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#E63946]/20 text-[#E63946] border border-[#E63946]/30">Premium EC</span>;
+  }
+  if (tierNorm.includes('premium')) {
+    return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#E63946]/20 text-[#E63946] border border-[#E63946]/30">Premium</span>;
+  }
+  if (tierNorm.includes('economic')) {
+    return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#16a34a]/20 text-[#16a34a] border border-[#16a34a]/30">Economic</span>;
+  }
+  // default: standard
+  return <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#2563eb]/20 text-[#2563eb] border border-[#2563eb]/30">Standard</span>;
+}
+
 // ── Type badge colors ─────────────────────────────────────────────────────────
 
+const TYPE_COLORS: Record<string, string> = {
+  sensor: 'bg-purple-600', detector: 'bg-blue-600', controller: 'bg-green-600', alert: 'bg-red-600', accessory: 'bg-teal-600',
+};
+const TYPE_LABELS: Record<string, string> = {
+  sensor: 'Sensor', detector: 'Detector', controller: 'Controller', alert: 'Alert', accessory: 'Accessory',
+};
+
 function typeBadge(type: string) {
-  const map: Record<string, string> = {
-    sensor: 'bg-purple-600', detector: 'bg-blue-600', controller: 'bg-green-600', alert: 'bg-red-600', accessory: 'bg-teal-600',
-  };
-  const labels: Record<string, string> = {
-    sensor: 'Sensor', detector: 'Detector', controller: 'Controller', alert: 'Alert', accessory: 'Accessory',
-  };
   return (
-    <span className={`${map[type] ?? 'bg-gray-600'} text-white text-[9px] font-bold px-2 py-0.5 rounded`}>
-      {labels[type] ?? type}
+    <span className={`${TYPE_COLORS[type] ?? 'bg-gray-600'} text-white text-[9px] font-bold px-2 py-0.5 rounded`}>
+      {TYPE_LABELS[type] ?? type}
     </span>
+  );
+}
+
+// ── Gas chip color lookup ────────────────────────────────────────────────────
+
+const GAS_COLOR_MAP: Record<string, string> = {};
+for (const group of GAS_GROUPS) {
+  for (const item of group.items) {
+    GAS_COLOR_MAP[item.id] = item.color;
+  }
+}
+function gasColor(gasId: string): string {
+  return GAS_COLOR_MAP[gasId] ?? '#6b7280';
+}
+
+// ── Detail Modal ──────────────────────────────────────────────────────────────
+
+function ProductDetailModal({ product: p, onClose }: { product: Product; onClose: () => void }) {
+  const gases = parseJson<string[]>(p.gas, []);
+  const refs = parseJson<string[]>(p.refs, []);
+  const mountTypes = parseJson<string[]>(p.mount, []);
+  const compatFamilies = parseJson<string[]>(p.compatibleFamilies, []);
+  const compatWith = parseJson<string[]>(p.compatibleWith, []);
+  const connectToList = parseJson<string[]>(p.connectTo, []);
+  const isDetection = p.type === 'detector' || p.type === 'sensor';
+
+  // Close on escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto"
+         onClick={onClose}>
+      {/* Overlay */}
+      <div className="fixed inset-0 bg-black/70 transition-opacity" />
+
+      {/* Modal card */}
+      <div className="relative bg-[#0f1f2e] border border-[#1a3a50] rounded-xl max-w-3xl w-full mx-4 my-8 shadow-2xl"
+           onClick={e => e.stopPropagation()}>
+        {/* Close */}
+        <button onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-white z-10 p-1 rounded-lg hover:bg-[#1a3a50] transition-colors">
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Header */}
+        <div className="flex gap-6 p-6 border-b border-[#1a3348]">
+          {/* Image */}
+          <div className="w-48 h-48 bg-[#162a3d] rounded-lg flex items-center justify-center shrink-0 p-4">
+            {p.image ? (
+              <img src={`/assets/${p.image}`} alt={p.name} className="max-h-full max-w-full object-contain" />
+            ) : (
+              <div className="text-gray-600 text-2xl font-bold opacity-30 select-none">{p.family}</div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl font-bold text-white mb-1">{p.name}</h2>
+            <p className="text-sm text-gray-400 mb-2">
+              {p.family}{p.variant ? ` \u2014 ${p.variant}` : ''}
+            </p>
+            <p className="text-xs font-mono text-gray-500 mb-3">{p.code}</p>
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              {typeBadge(p.type)}
+              {tierBadge(p.tier)}
+              {p.status === 'planned' && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">Planned</span>
+              )}
+              {p.standalone && isDetection && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">Standalone</span>
+              )}
+              {p.atex && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">ATEX</span>
+              )}
+            </div>
+            {p.price > 0 && (
+              <div className="text-2xl font-bold text-white">{p.price.toFixed(0)} <span className="text-sm text-gray-500">{'\u20AC'}</span></div>
+            )}
+          </div>
+        </div>
+
+        {/* Sections */}
+        <div className="p-6 space-y-6">
+
+          {/* Detection */}
+          {isDetection && (
+            <section>
+              <h3 className="text-xs font-bold text-[#E63946] uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Search className="w-3.5 h-3.5" /> Detection
+              </h3>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                {p.range && <DetailRow label="Range" value={p.range} />}
+                {p.sensorTech && <DetailRow label="Sensor Tech" value={p.sensorTech} />}
+                {p.sensorLife && <DetailRow label="Sensor Life" value={p.sensorLife} />}
+                <DetailRow label="ATEX Certified" value={p.atex ? 'Yes' : 'No'} />
+              </div>
+              {(gases.length > 0 || refs.length > 0) && (
+                <div className="mt-3">
+                  <span className="text-xs text-gray-500 mr-2">Gases:</span>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {(refs.length > 0 ? refs : gases).map(g => (
+                      <span key={g} className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                        style={{ color: gasColor(g), borderColor: gasColor(g) + '40', background: gasColor(g) + '15' }}>
+                        {g}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* Electrical */}
+          {(p.voltage || p.power || p.ip || p.tempMin !== null || p.tempMax !== null) && (
+            <section>
+              <h3 className="text-xs font-bold text-[#E63946] uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Zap className="w-3.5 h-3.5" /> Electrical
+              </h3>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                {p.voltage && <DetailRow label="Voltage" value={p.voltage} />}
+                {p.power !== null && p.power !== undefined && <DetailRow label="Power" value={`${p.power} W`} />}
+                {p.ip && <DetailRow label="IP Rating" value={p.ip} />}
+                {(p.tempMin !== null || p.tempMax !== null) && (
+                  <DetailRow label="Temp Range" value={`${p.tempMin ?? '?'}\u00B0C to ${p.tempMax ?? '?'}\u00B0C`} />
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Outputs */}
+          {isDetection && (p.relay > 0 || p.analog || p.modbus || p.standalone) && (
+            <section>
+              <h3 className="text-xs font-bold text-[#E63946] uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Radio className="w-3.5 h-3.5" /> Outputs
+              </h3>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                {p.relay > 0 && <DetailRow label="Relay Count" value={String(p.relay)} />}
+                {p.analog && <DetailRow label="Analog Output" value={p.analog} />}
+                <DetailRow label="Modbus" value={p.modbus ? 'Yes' : 'No'} />
+                <DetailRow label="Standalone" value={p.standalone ? 'Yes' : 'No'} />
+              </div>
+            </section>
+          )}
+
+          {/* Compatibility */}
+          {(compatWith.length > 0 || compatFamilies.length > 0 || connectToList.length > 0) && (
+            <section>
+              <h3 className="text-xs font-bold text-[#E63946] uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Layers className="w-3.5 h-3.5" /> Compatibility
+              </h3>
+              <div className="space-y-2 text-sm">
+                {compatWith.length > 0 && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-500 shrink-0 w-36">Compatible with:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {compatWith.map(c => (
+                        <span key={c} className="text-[10px] font-medium px-2 py-0.5 rounded bg-[#1a3a50] text-gray-300">{c}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {compatFamilies.length > 0 && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-500 shrink-0 w-36">Compatible families:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {compatFamilies.map(f => (
+                        <span key={f} className="text-[10px] font-medium px-2 py-0.5 rounded bg-[#1a3a50] text-gray-300">{f}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {connectToList.length > 0 && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-500 shrink-0 w-36">Connects to:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {connectToList.map(c => (
+                        <span key={c} className="text-[10px] font-medium px-2 py-0.5 rounded bg-[#1a3a50] text-gray-300">{c}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Mounting */}
+          {(mountTypes.length > 0 || p.remote) && (
+            <section>
+              <h3 className="text-xs font-bold text-[#E63946] uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Wrench className="w-3.5 h-3.5" /> Mounting
+              </h3>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                {mountTypes.length > 0 && <DetailRow label="Mount Types" value={mountTypes.join(', ')} />}
+                <DetailRow label="Remote" value={p.remote ? 'Yes' : 'No'} />
+              </div>
+            </section>
+          )}
+
+          {/* Description */}
+          {(p.function || p.features) && (
+            <section>
+              <h3 className="text-xs font-bold text-[#E63946] uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Box className="w-3.5 h-3.5" /> Description
+              </h3>
+              {p.function && <p className="text-sm text-gray-300 mb-2">{p.function}</p>}
+              {p.features && <p className="text-sm text-gray-400">{p.features}</p>}
+            </section>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-gray-500">{label}:</span>
+      <span className="text-gray-200 font-medium">{value}</span>
+    </div>
+  );
+}
+
+// ── Product Card ──────────────────────────────────────────────────────────────
+
+function ProductCard({ product: p, onClick }: { product: Product; onClick: () => void }) {
+  const gases = parseJson<string[]>(p.gas, []);
+  const refs = parseJson<string[]>(p.refs, []);
+  const displayGases = refs.length > 0 ? refs : gases;
+  const isDetection = p.type === 'detector' || p.type === 'sensor';
+
+  return (
+    <div onClick={onClick}
+      className="bg-[#12283d] rounded-lg border border-[#1a3a50] hover:border-[#2a5a70] transition-all duration-200 overflow-hidden group cursor-pointer hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
+      {/* Image area */}
+      <div className="h-40 bg-[#162a3d] flex items-center justify-center p-3 relative">
+        {p.image ? (
+          <img src={`/assets/${p.image}`} alt={p.name}
+            className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-200" />
+        ) : (
+          <div className="text-gray-600 text-3xl font-bold opacity-20 select-none">{p.family}</div>
+        )}
+        {/* Type badge top-right */}
+        <div className="absolute top-2 right-2">{typeBadge(p.type)}</div>
+        {/* View icon on hover */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
+          <Eye className="w-8 h-8 text-white opacity-0 group-hover:opacity-60 transition-opacity" />
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="p-3">
+        {/* Name */}
+        <h3 className="text-sm font-bold text-white leading-tight mb-0.5 truncate" title={p.name}>{p.name}</h3>
+        {/* Family + Variant */}
+        <div className="text-[10px] text-gray-500 mb-1.5 truncate">
+          {p.family}{p.variant ? ` \u2014 ${p.variant}` : ''}
+        </div>
+        {/* Code */}
+        <div className="text-[10px] font-mono text-gray-600 mb-2">{p.code}</div>
+
+        {/* Badges row */}
+        <div className="flex flex-wrap items-center gap-1 mb-2">
+          {tierBadge(p.tier)}
+          {isDetection && p.sensorTech && (
+            <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30">
+              {p.sensorTech}
+            </span>
+          )}
+          {p.standalone && isDetection && (
+            <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/30">
+              Standalone
+            </span>
+          )}
+          {p.atex && (
+            <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/30">
+              ATEX
+            </span>
+          )}
+          {p.status === 'planned' && (
+            <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">
+              Planned
+            </span>
+          )}
+        </div>
+
+        {/* Range for detectors/sensors */}
+        {isDetection && p.range && (
+          <div className="text-[10px] text-gray-500 mb-1.5">
+            Range: <span className="text-gray-300 font-medium">{p.range}</span>
+          </div>
+        )}
+
+        {/* Gas chips */}
+        {displayGases.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1 mb-2">
+            {displayGases.slice(0, 3).map(g => (
+              <span key={g} className="text-[8px] font-bold px-1.5 py-0.5 rounded-full"
+                style={{ color: gasColor(g), background: gasColor(g) + '18', border: `1px solid ${gasColor(g)}30` }}>
+                {g}
+              </span>
+            ))}
+            {displayGases.length > 3 && (
+              <span className="text-[8px] text-gray-500 font-medium">+{displayGases.length - 3} more</span>
+            )}
+          </div>
+        )}
+
+        {/* Price */}
+        {p.price > 0 && (
+          <div className="mt-1 text-right">
+            <span className="text-lg font-bold text-white">{p.price.toFixed(0)}</span>
+            <span className="text-xs text-gray-500 ml-1">{'\u20AC'}</span>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -114,6 +468,7 @@ export default function ProductCatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [applications, setApplications] = useState<AppOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Filters
   const [filterType, setFilterType] = useState('');
@@ -124,7 +479,7 @@ export default function ProductCatalogPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/products?discontinued=false').then(r => r.json()),
+      fetch('/api/products').then(r => r.json()),
       fetch('/api/applications').then(r => r.json()).catch(() => []),
     ]).then(([prods, apps]) => {
       setProducts(Array.isArray(prods) ? prods : []);
@@ -133,36 +488,82 @@ export default function ProductCatalogPage() {
     }).catch(() => setLoading(false));
   }, []);
 
-  // Counts
-  const sensors = products.filter(p => p.type === 'sensor').length;
-  const detectors = products.filter(p => p.type === 'detector').length;
-  const controllers = products.filter(p => p.type === 'controller').length;
-  const alerts = products.filter(p => p.type === 'alert').length;
-  const accessories = products.filter(p => p.type === 'accessory').length;
+  // Build a map: appId -> list of product family names from productFamilies
+  const appFamiliesMap = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const app of applications) {
+      map[app.id] = parseJson<string[]>(app.productFamilies, []);
+    }
+    return map;
+  }, [applications]);
+
+  // Counts per type
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = { sensor: 0, detector: 0, controller: 0, alert: 0, accessory: 0 };
+    for (const p of products) {
+      if (counts[p.type] !== undefined) counts[p.type]++;
+    }
+    return counts;
+  }, [products]);
+
+  // Count products matching each gas
+  const gasProductCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const group of GAS_GROUPS) {
+      for (const item of group.items) {
+        counts[item.id] = products.filter(p => {
+          const gases = parseJson<string[]>(p.gas, []);
+          const refs = parseJson<string[]>(p.refs, []);
+          return gases.includes(item.id) || refs.includes(item.id);
+        }).length;
+      }
+    }
+    return counts;
+  }, [products]);
 
   // Toggle gas filter
-  function toggleGas(gasId: string) {
+  const toggleGas = useCallback((gasId: string) => {
     setFilterGas(prev => prev.includes(gasId) ? prev.filter(g => g !== gasId) : [...prev, gasId]);
-  }
+  }, []);
 
   // Filtered + sorted
   const filtered = useMemo(() => {
     let list = products;
+
+    // Type filter
     if (filterType) list = list.filter(p => p.type === filterType);
-    if (filterApp) list = list.filter(p => parseJson<string[]>(p.apps, []).includes(filterApp));
-    if (filterGas.length > 0) list = list.filter(p => {
-      const gases = parseJson<string[]>(p.gas, []);
-      return filterGas.some(fg => gases.includes(fg));
-    });
+
+    // Application filter — match by family name from app's productFamilies
+    if (filterApp) {
+      const families = appFamiliesMap[filterApp] ?? [];
+      if (families.length > 0) {
+        list = list.filter(p => families.some(f => p.family.toUpperCase().includes(f.toUpperCase())));
+      }
+    }
+
+    // Gas filter (OR)
+    if (filterGas.length > 0) {
+      list = list.filter(p => {
+        const gases = parseJson<string[]>(p.gas, []);
+        const refs = parseJson<string[]>(p.refs, []);
+        const allGases = [...gases, ...refs];
+        return filterGas.some(fg => allGases.includes(fg));
+      });
+    }
+
+    // Text search
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(p =>
         p.name.toLowerCase().includes(q) ||
         p.code.toLowerCase().includes(q) ||
         p.family.toLowerCase().includes(q) ||
-        parseJson<string[]>(p.gas, []).some(g => g.toLowerCase().includes(q))
+        (p.variant ?? '').toLowerCase().includes(q) ||
+        parseJson<string[]>(p.gas, []).some(g => g.toLowerCase().includes(q)) ||
+        parseJson<string[]>(p.refs, []).some(r => r.toLowerCase().includes(q))
       );
     }
+
     // Sort
     list = [...list].sort((a, b) => {
       if (sortBy === 'price') return a.price - b.price;
@@ -170,7 +571,14 @@ export default function ProductCatalogPage() {
       return a.family.localeCompare(b.family) || a.name.localeCompare(b.name);
     });
     return list;
-  }, [products, filterType, filterApp, filterGas, search, sortBy]);
+  }, [products, filterType, filterApp, filterGas, search, sortBy, appFamiliesMap]);
+
+  // Count products matching selected application
+  const appProductCount = useCallback((appId: string) => {
+    const families = appFamiliesMap[appId] ?? [];
+    if (families.length === 0) return 0;
+    return products.filter(p => families.some(f => p.family.toUpperCase().includes(f.toUpperCase()))).length;
+  }, [products, appFamiliesMap]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0c1824]">
@@ -208,48 +616,48 @@ export default function ProductCatalogPage() {
 
       {/* ── Type Tabs ── */}
       <div className="bg-[#0f1f2e] px-4 py-2 flex items-center gap-2 border-b border-[#1a3348]">
-        <button onClick={() => setFilterType('')}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${!filterType ? 'bg-[#E63946] text-white' : 'bg-transparent text-gray-400 border border-[#2a4a60] hover:border-gray-500'}`}>
-          Tous <span className="ml-1 opacity-70">{products.length}</span>
-        </button>
-        <button onClick={() => setFilterType('sensor')}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1.5 ${filterType === 'sensor' ? 'bg-[#E63946] text-white' : 'bg-transparent text-gray-400 border border-[#2a4a60] hover:border-gray-500'}`}>
-          <span className="w-2 h-2 rounded-full bg-purple-500" /> Sensor <span className="opacity-70">{sensors}</span>
-        </button>
-        <button onClick={() => setFilterType('detector')}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1.5 ${filterType === 'detector' ? 'bg-[#E63946] text-white' : 'bg-transparent text-gray-400 border border-[#2a4a60] hover:border-gray-500'}`}>
-          <span className="w-2 h-2 rounded-full bg-blue-500" /> Detector <span className="opacity-70">{detectors}</span>
-        </button>
-        <button onClick={() => setFilterType('controller')}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1.5 ${filterType === 'controller' ? 'bg-[#E63946] text-white' : 'bg-transparent text-gray-400 border border-[#2a4a60] hover:border-gray-500'}`}>
-          <span className="w-2 h-2 rounded-full bg-green-500" /> Controller <span className="opacity-70">{controllers}</span>
-        </button>
-        <button onClick={() => setFilterType('alert')}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1.5 ${filterType === 'alert' ? 'bg-[#E63946] text-white' : 'bg-transparent text-gray-400 border border-[#2a4a60] hover:border-gray-500'}`}>
-          <span className="w-2 h-2 rounded-full bg-red-500" /> Alert <span className="opacity-70">{alerts}</span>
-        </button>
-        <button onClick={() => setFilterType('accessory')}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1.5 ${filterType === 'accessory' ? 'bg-[#E63946] text-white' : 'bg-transparent text-gray-400 border border-[#2a4a60] hover:border-gray-500'}`}>
-          <span className="w-2 h-2 rounded-full bg-teal-500" /> Accessory <span className="opacity-70">{accessories}</span>
-        </button>
+        {[
+          { key: '', label: 'Tous', count: products.length, dot: '' },
+          { key: 'sensor', label: 'Sensor', count: typeCounts.sensor, dot: 'bg-purple-500' },
+          { key: 'detector', label: 'Detector', count: typeCounts.detector, dot: 'bg-blue-500' },
+          { key: 'controller', label: 'Controller', count: typeCounts.controller, dot: 'bg-green-500' },
+          { key: 'alert', label: 'Alert', count: typeCounts.alert, dot: 'bg-red-500' },
+          { key: 'accessory', label: 'Accessory', count: typeCounts.accessory, dot: 'bg-teal-500' },
+        ].map(tab => (
+          <button key={tab.key} onClick={() => setFilterType(tab.key)}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1.5 ${
+              filterType === tab.key
+                ? 'bg-[#E63946] text-white'
+                : 'bg-transparent text-gray-400 border border-[#2a4a60] hover:border-gray-500'
+            }`}>
+            {tab.dot && <span className={`w-2 h-2 rounded-full ${tab.dot}`} />}
+            {tab.label} <span className="opacity-70">{tab.count}</span>
+          </button>
+        ))}
       </div>
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         {/* ── Left Sidebar ── */}
-        <aside className="w-[200px] shrink-0 bg-[#0c1824] border-r border-[#1a3348] overflow-y-auto p-4 space-y-6">
+        <aside className="w-[220px] shrink-0 bg-[#0c1824] border-r border-[#1a3348] overflow-y-auto p-4 space-y-6">
           {/* Application filter */}
           <div>
             <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Application</div>
             <div className="space-y-0.5">
-              {applications.map(app => (
-                <button key={app.id} onClick={() => setFilterApp(filterApp === app.id ? '' : app.id)}
-                  className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors flex items-center gap-2 ${
-                    filterApp === app.id ? 'bg-[#1a3a50] text-white' : 'text-gray-400 hover:text-gray-200 hover:bg-[#111d2b]'
-                  }`}>
-                  <span className="text-sm">{APP_ICONS[app.id] ?? app.icon}</span>
-                  <span className="truncate">{lang === 'fr' ? app.labelFr : app.labelEn}</span>
-                </button>
-              ))}
+              {applications.map(app => {
+                const count = appProductCount(app.id);
+                return (
+                  <button key={app.id} onClick={() => setFilterApp(filterApp === app.id ? '' : app.id)}
+                    className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors flex items-center gap-2 ${
+                      filterApp === app.id ? 'bg-[#1a3a50] text-white' : 'text-gray-400 hover:text-gray-200 hover:bg-[#111d2b]'
+                    }`}>
+                    <span className="text-sm">{APP_ICONS[app.id] ?? app.icon}</span>
+                    <span className="truncate flex-1">{lang === 'fr' ? app.labelFr : app.labelEn}</span>
+                    {count > 0 && (
+                      <span className="text-[9px] font-mono text-gray-600 shrink-0">{count}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -259,15 +667,19 @@ export default function ProductCatalogPage() {
             {GAS_GROUPS.map(group => (
               <div key={group.group} className="mb-3">
                 <div className="text-[9px] font-bold text-[#E63946] uppercase tracking-wider mb-1">{group.group}</div>
-                {group.items.map(item => (
-                  <label key={item.id} className="flex items-center gap-2 px-2 py-1 text-xs text-gray-400 hover:text-gray-200 cursor-pointer">
-                    <input type="checkbox" checked={filterGas.includes(item.id)}
-                      onChange={() => toggleGas(item.id)}
-                      className="rounded border-gray-600 bg-transparent text-[#E63946] focus:ring-0 w-3 h-3" />
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: item.color }} />
-                    <span className="truncate">{item.label}</span>
-                  </label>
-                ))}
+                {group.items.map(item => {
+                  const count = gasProductCounts[item.id] ?? 0;
+                  return (
+                    <label key={item.id} className="flex items-center gap-2 px-2 py-1 text-xs text-gray-400 hover:text-gray-200 cursor-pointer">
+                      <input type="checkbox" checked={filterGas.includes(item.id)}
+                        onChange={() => toggleGas(item.id)}
+                        className="rounded border-gray-600 bg-transparent text-[#E63946] focus:ring-0 w-3 h-3" />
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: item.color }} />
+                      <span className="truncate flex-1">{item.label}</span>
+                      <span className="text-[9px] font-mono text-gray-600 shrink-0">{count}</span>
+                    </label>
+                  );
+                })}
               </div>
             ))}
           </div>
@@ -282,52 +694,20 @@ export default function ProductCatalogPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filtered.map(p => (
-                <div key={p.id} className="bg-[#12283d] rounded-lg border border-[#1a3a50] hover:border-[#2a5a70] transition-colors overflow-hidden group">
-                  {/* Image area */}
-                  <div className="h-40 bg-[#162a3d] flex items-center justify-center p-3 relative">
-                    {p.image ? (
-                      <img src={`/assets/${p.image}`} alt={p.name}
-                        className="max-h-full max-w-full object-contain" />
-                    ) : (
-                      <div className="text-gray-600 text-3xl font-bold opacity-20 select-none">{p.family}</div>
-                    )}
-                    {/* Type badge top-right */}
-                    <div className="absolute top-2 right-2">{typeBadge(p.type)}</div>
-                  </div>
-
-                  {/* Info */}
-                  <div className="p-3">
-                    {/* Name */}
-                    <h3 className="text-sm font-bold text-white leading-tight mb-0.5 truncate">{p.name}</h3>
-                    {/* Type + Family */}
-                    <div className="text-[10px] text-gray-500 mb-1.5">{{sensor:'Sensor',detector:'Detector',controller:'Controller',alert:'Alert',accessory:'Accessory'}[p.type] ?? p.type}</div>
-                    {/* Brand */}
-                    <div className="flex items-center gap-1 mb-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[#E63946]" />
-                      <span className="text-[11px] font-bold text-[#E63946]">SafeRef</span>
-                    </div>
-                    {/* Specs line */}
-                    {(p.voltage || p.sensorTech || p.ip) && (
-                      <div className="text-[10px] text-gray-500">
-                        {p.voltage && <span>Pwr: <b className="text-gray-300">{p.voltage}</b></span>}
-                        {p.sensorTech && <span className="ml-2">Sensor: <b className="text-gray-300">{p.sensorTech}</b></span>}
-                        {p.ip && <span className="ml-2">{p.ip}</span>}
-                      </div>
-                    )}
-                    {/* Price */}
-                    {p.price > 0 && (
-                      <div className="mt-2 text-right">
-                        <span className="text-lg font-bold text-white">{p.price.toFixed(0)}</span>
-                        <span className="text-xs text-gray-500 ml-1">{'\u20AC'}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <ProductCard key={p.id} product={p} onClick={() => setSelectedProduct(p)} />
               ))}
             </div>
           )}
         </main>
       </div>
+
+      {/* ── Detail Modal ── */}
+      {selectedProduct && (
+        <ProductDetailModal
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+        />
+      )}
     </div>
   );
 }
