@@ -1,0 +1,342 @@
+{
+  "version": "1.0",
+  "exportedAt": "2026-04-19T20:36:47.773Z",
+  "totalGases": 47,
+  "gases": {
+    "CO": {
+      "detectors": [
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 2
+    },
+    "Ethanol": {
+      "detectors": [
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 2
+    },
+    "NO2": {
+      "detectors": [
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 2
+    },
+    "O2": {
+      "detectors": [
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 2
+    },
+    "R1150": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 2
+    },
+    "R123": {
+      "detectors": [
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 2
+    },
+    "R1233zd": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 4
+    },
+    "R1234yf": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 10
+    },
+    "R1234ze": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 10
+    },
+    "R125": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 4
+    },
+    "R1270": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 4
+    },
+    "R134A": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 8
+    },
+    "R22": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 6
+    },
+    "R227": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 4
+    },
+    "R290": {
+      "detectors": [
+        "GLACIAR MICRO",
+        "GLACIAR MIDI",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 6
+    },
+    "R32": {
+      "detectors": [
+        "GLACIAR MICRO",
+        "GLACIAR MIDI",
+        "GLACIAR RM",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 13
+    },
+    "R404A": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 6
+    },
+    "R407A": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 6
+    },
+    "R407C": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 4
+    },
+    "R407F": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 6
+    },
+    "R410A": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "GLACIAR RM",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 10
+    },
+    "R417A": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 4
+    },
+    "R422D": {
+      "detectors": [
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 1
+    },
+    "R442A": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 2
+    },
+    "R442D": {
+      "detectors": [
+        "X5 Direct Sensor Module"
+      ],
+      "skuCount": 1
+    },
+    "R448A": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 6
+    },
+    "R449A": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 8
+    },
+    "R450A": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 2
+    },
+    "R452A": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 2
+    },
+    "R452B": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 6
+    },
+    "R453A": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 2
+    },
+    "R454A": {
+      "detectors": [
+        "GLACIAR MICRO",
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 5
+    },
+    "R454B": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 4
+    },
+    "R454C": {
+      "detectors": [
+        "GLACIAR MICRO",
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 5
+    },
+    "R455A": {
+      "detectors": [
+        "GLACIAR MICRO",
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 5
+    },
+    "R464A": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 2
+    },
+    "R465A": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 2
+    },
+    "R466A": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 2
+    },
+    "R468A": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 2
+    },
+    "R50": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 2
+    },
+    "R507": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 4
+    },
+    "R507A": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 2
+    },
+    "R513A": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 8
+    },
+    "R600": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 2
+    },
+    "R600A": {
+      "detectors": [
+        "GLACIAR MIDI"
+      ],
+      "skuCount": 4
+    },
+    "R717": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 14
+    },
+    "R744": {
+      "detectors": [
+        "GLACIAR MIDI",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ],
+      "skuCount": 6
+    }
+  }
+}

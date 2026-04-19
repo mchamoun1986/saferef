@@ -1,0 +1,451 @@
+{
+  "version": "1.0",
+  "exportedAt": "2026-04-19T20:36:47.773Z",
+  "rules": {
+    "1992-R-LP Siren": {
+      "connectionRules": {
+        "triggerInputs": 1,
+        "triggerSource": "Exactly 1 relay output from 1 device (controller or standalone detector). Cannot be wired to multiple sources.",
+        "powerSource": "24V DC from system power or dedicated supply"
+      },
+      "ports": {
+        "inputs": [
+          "DC Power Input",
+          "Trigger Input"
+        ],
+        "outputs": [
+          "Audible Alert Output"
+        ],
+        "features": []
+      }
+    },
+    "BE Flashing Light": {
+      "connectionRules": {
+        "triggerInputs": 1,
+        "triggerSource": "Exactly 1 relay output from 1 device (controller or standalone detector). Cannot be wired to multiple sources.",
+        "powerSource": "24V DC from system power or dedicated supply"
+      },
+      "ports": {
+        "inputs": [
+          "24V DC Power Input",
+          "Trigger Input"
+        ],
+        "outputs": [
+          "Visual Alert Output"
+        ],
+        "features": []
+      }
+    },
+    "Calibration Kit": {
+      "connectionRules": null,
+      "ports": {
+        "inputs": [],
+        "outputs": [],
+        "features": []
+      }
+    },
+    "FL Combined Flashing Light and Siren": {
+      "connectionRules": {
+        "triggerInputs": 1,
+        "triggerSource": "Exactly 1 relay output from 1 device (controller or standalone detector). Cannot be wired to multiple sources.",
+        "powerSource": "24V DC from system power or dedicated supply"
+      },
+      "ports": {
+        "inputs": [
+          "Power Input",
+          "Trigger Input"
+        ],
+        "outputs": [
+          "Visual + Audible Alert Output"
+        ],
+        "features": []
+      }
+    },
+    "Flow Regulator": {
+      "connectionRules": null,
+      "ports": {
+        "inputs": [],
+        "outputs": [],
+        "features": []
+      }
+    },
+    "GLACIAR Controller 10": {
+      "connectionRules": {
+        "maxDetectors": 10,
+        "detectorConnection": "4-20mA analog only (10 input channels). MIDI connects via J1 analog output → GC10 analog input.",
+        "modbusPort": "Output to BMS only — NOT for detector input. RS-485 Modbus sends GC10 data to Building Management System.",
+        "highwayCount": 6,
+        "maxAddressablePerHighway": 128,
+        "relayOutputCount": 10,
+        "alertConnection": "Controller relays drive alerts centrally. 1 beacon on Relay 1, 1 siren on Relay 2 (typical). Relays are configurable.",
+        "alertsNeeded": "1 beacon + 1 siren connected to controller relays (centralized, regardless of detector count)",
+        "beaconsNeeded": 1,
+        "sirensNeeded": 1,
+        "powerSource": "110/230 VAC direct (no adapter needed)",
+        "powersDetectors": true
+      },
+      "ports": {
+        "inputs": [
+          "AC Mains Power Input",
+          "Addressable Detector Input Highway 1",
+          "Addressable Detector Input Highway 2",
+          "Addressable Detector Input Highway 3",
+          "Addressable Detector Input Highway 4",
+          "Addressable Detector Input Highway 5",
+          "Addressable Detector Input Highway 6",
+          "E-Stop / Slam Switch Input",
+          "Fire System Interlock",
+          "Jog-Wheel / LCD Interface"
+        ],
+        "outputs": [
+          "Configurable Relay 1",
+          "Configurable Relay 2",
+          "Configurable Relay 3",
+          "Fault Relay",
+          "Solid State Beacon/Sounder Output",
+          "Extra Alarm Relay",
+          "RS-485 Modbus Port 1",
+          "RS-485 Modbus Port 2",
+          "Built-in Buzzer",
+          "Status LEDs"
+        ],
+        "features": [
+          "Wi-Fi"
+        ]
+      }
+    },
+    "GLACIAR MICRO": {
+      "connectionRules": {
+        "standaloneCapable": false,
+        "relayOutputCount": 0,
+        "alertsPerUnit": 0,
+        "alertConnection": "OEM sensor — no relay outputs, alerts managed by host system via Modbus.",
+        "powerAdapterRequired": "Host system must provide 12V DC"
+      },
+      "ports": {
+        "inputs": [
+          "12V DC Power",
+          "Magnet Sensor"
+        ],
+        "outputs": [
+          "Status LEDs"
+        ],
+        "features": [
+          "RS-485 Modbus RTU"
+        ]
+      }
+    },
+    "GLACIAR MIDI": {
+      "connectionRules": {
+        "maxPerController": 10,
+        "connectionToController": "4-20mA analog (MIDI J1 analog output → GC10 analog input channel)",
+        "connectionToGC10": "4-20mA analog ONLY — MIDI J1 output wired to GC10 analog input. Never via Modbus.",
+        "modbusUsage": "Direct to BMS (standalone/without GC10) or for service/monitoring only — NOT used when MIDI is connected to GC10",
+        "standaloneCapable": true,
+        "relayOutputCount": 2,
+        "alertsPerUnit": 2,
+        "alertConnection": "Each MIDI relay drives exactly 1 alert device. In standalone mode: 1 alert on Warning relay + 1 alert on Alarm relay. With controller: MIDI relays typically unused for alerts (controller manages centrally).",
+        "powerAdapterRequired": "When site voltage is 230V AC (MIDI needs 24V)",
+        "powerAdapterCapacity": 5
+      },
+      "ports": {
+        "inputs": [
+          "24V AC/DC Power",
+          "Built-in Sensor Connector",
+          "Rotary Switch",
+          "Magnetic Key Slot"
+        ],
+        "outputs": [
+          "Analogue Output",
+          "Warning/Fault Relay",
+          "Alarm Relay",
+          "Service Voltage Output",
+          "Status LEDs"
+        ],
+        "features": [
+          "RS-485 Modbus RTU",
+          "Bluetooth BLE"
+        ]
+      }
+    },
+    "GLACIAR RM": {
+      "connectionRules": {
+        "maxPerController": 10,
+        "connectionToController": "Modbus RTU",
+        "standaloneCapable": true,
+        "relayOutputCount": 2,
+        "alertsPerUnit": 2,
+        "alertConnection": "Each RM relay drives exactly 1 alert device. In standalone mode: 1 alert on Relay 1 + 1 alert on Relay 2. With controller: RM relays typically unused for alerts (controller manages centrally).",
+        "powerAdapterRequired": "When site voltage is 230V AC (RM needs 12-24V)",
+        "powerAdapterCapacity": 5
+      },
+      "ports": {
+        "inputs": [
+          "12-24V AC/DC Power",
+          "Service Button"
+        ],
+        "outputs": [
+          "Relay 1",
+          "Relay 2",
+          "Status LED",
+          "Audible Alert"
+        ],
+        "features": [
+          "RS-485 Modbus RTU",
+          "Wi-Fi Access Point"
+        ]
+      }
+    },
+    "MIDI Accessories": {
+      "connectionRules": null,
+      "ports": {
+        "inputs": [],
+        "outputs": [],
+        "features": []
+      }
+    },
+    "Power Adapter": {
+      "connectionRules": {
+        "converts": "230V AC to 24V DC",
+        "maxLoad": 5,
+        "needed": "When site power is 230V and detectors require 24V"
+      },
+      "ports": {
+        "inputs": [
+          "AC Mains Input"
+        ],
+        "outputs": [
+          "DC Output"
+        ],
+        "features": []
+      }
+    },
+    "Protection Bracket": {
+      "connectionRules": null,
+      "ports": {
+        "inputs": [],
+        "outputs": [],
+        "features": []
+      }
+    },
+    "RMV Backbox": {
+      "connectionRules": null,
+      "ports": {
+        "inputs": [],
+        "outputs": [],
+        "features": []
+      }
+    },
+    "SOCK-H-R High Socket Beacon": {
+      "connectionRules": {
+        "triggerInputs": 1,
+        "triggerSource": "Exactly 1 relay output from 1 device (controller or standalone detector). Cannot be wired to multiple sources.",
+        "powerSource": "24V DC or 230V AC (model dependent)"
+      },
+      "ports": {
+        "inputs": [
+          "Power Input",
+          "Trigger Input"
+        ],
+        "outputs": [
+          "Visual Alert Output"
+        ],
+        "features": []
+      }
+    },
+    "UPS Battery Backup": {
+      "connectionRules": null,
+      "ports": {
+        "inputs": [
+          "AC Mains Input"
+        ],
+        "outputs": [
+          "Battery Backup Output"
+        ],
+        "features": []
+      }
+    },
+    "X5 Accessories": {
+      "connectionRules": null,
+      "ports": {
+        "inputs": [],
+        "outputs": [],
+        "features": []
+      }
+    },
+    "X5 Direct Sensor Module": {
+      "connectionRules": {
+        "requiresTransmitter": true,
+        "connectionType": "Direct mount (Port A/B)",
+        "maxPerTransmitter": 2,
+        "standaloneCapable": false
+      },
+      "ports": {
+        "inputs": [],
+        "outputs": [
+          "Module Connector (Direct-Mount)"
+        ],
+        "features": []
+      }
+    },
+    "X5 Remote Sensor": {
+      "connectionRules": {
+        "requiresTransmitter": true,
+        "connectionType": "Remote highway cable",
+        "maxPerTransmitter": 2,
+        "standaloneCapable": false
+      },
+      "ports": {
+        "inputs": [],
+        "outputs": [],
+        "features": [
+          "Highway Connection (Remote)"
+        ]
+      }
+    },
+    "X5 Transmitter": {
+      "connectionRules": {
+        "maxSensorModules": 2,
+        "sensorConnection": "Direct mount or remote highway cable",
+        "relayOutputCount": 3,
+        "alertConnection": "Transmitter relays drive alerts. 1 fault relay + 2 alarm relays.",
+        "alertsPerTransmitter": 2,
+        "beaconsPerTransmitter": 1,
+        "sirensPerTransmitter": 1,
+        "powerSource": "18-30 VDC",
+        "auxPowerOutput": "0.5A for sensors",
+        "configurations": {
+          "A": {
+            "name": "Direct-connected sensors only",
+            "description": "1 or 2 directly-connected sensor heads",
+            "maxSensors": 2,
+            "sensorType": "direct",
+            "requiredAccessories": [],
+            "note": "Gland and plugs included with transmitter"
+          },
+          "B": {
+            "name": "Mixed (1 direct + 1 remote)",
+            "description": "1 directly-connected + 1 remote sensor head",
+            "maxSensors": 2,
+            "sensorTypes": [
+              "direct",
+              "remote"
+            ],
+            "requiredAccessories": [
+              {
+                "code": "3500-0029",
+                "name": "D44 Power Filter",
+                "qty": 1,
+                "reason": "Required for remote sensor"
+              },
+              {
+                "code": "3500-0030",
+                "name": "Cable Gland EXd II C",
+                "qty": 2,
+                "reason": "For remote sensor cables"
+              }
+            ]
+          },
+          "C": {
+            "name": "Remote sensors only",
+            "description": "2 remote sensor heads",
+            "maxSensors": 2,
+            "sensorType": "remote",
+            "requiredAccessories": [
+              {
+                "code": "3500-0029",
+                "name": "D44 Power Filter",
+                "qty": 1,
+                "reason": "Required for remote sensors"
+              },
+              {
+                "code": "3500-0030",
+                "name": "Cable Gland EXd II C",
+                "qty": 4,
+                "reason": "For remote sensor cables"
+              },
+              {
+                "code": "3500-0031",
+                "name": "Stopping Plug M20",
+                "qty": 1,
+                "reason": "Blank unused entry"
+              }
+            ]
+          }
+        }
+      },
+      "ports": {
+        "inputs": [
+          "24V DC Power (Port 1)",
+          "24V DC Power (Port 2)",
+          "Sensor Port A",
+          "Sensor Port B",
+          "Magnetic Wand Interface"
+        ],
+        "outputs": [
+          "Analogue Output A (4-20mA)",
+          "Analogue Output B (4-20mA)",
+          "Fault Relay",
+          "Alarm Level 1 Relay",
+          "Alarm Level 2 Relay",
+          "Auxiliary Power Output",
+          "Digital Display",
+          "Status Indicator LEDs"
+        ],
+        "features": [
+          "Highway Connection (Addressable Bus)"
+        ]
+      }
+    }
+  },
+  "wiringTopologies": [
+    {
+      "name": "MIDI Standalone",
+      "description": "GLACIAR MIDI operates independently with built-in relays for warning and alarm. No controller needed. Power: 24V AC/DC. Each unit has 2 relay outputs (warning + alarm) for direct alert device control.",
+      "products": [
+        "GLACIAR MIDI"
+      ]
+    },
+    {
+      "name": "MIDI + GC10 Centralized",
+      "description": "Up to 10 GLACIAR MIDI detectors connected to one GLACIAR Controller 10 via 4-20mA analog signals. Controller manages centralized alarm logic, relay outputs, and BMS communication via Modbus.",
+      "products": [
+        "GLACIAR MIDI",
+        "GLACIAR Controller 10"
+      ]
+    },
+    {
+      "name": "X5 Config A — Direct Sensors Only",
+      "description": "X5 Transmitter with 1-2 direct-mount sensor modules plugged into ports A and B. No remote cable. ATEX-rated configuration. Ideal for machinery rooms.",
+      "products": [
+        "X5 Transmitter",
+        "X5 Direct Sensor Module"
+      ]
+    },
+    {
+      "name": "X5 Config B — Remote Sensors Only",
+      "description": "X5 Transmitter with 1-2 remote sensors connected via cable (up to 300m). Sensors placed in hazardous areas, transmitter in safe area. ATEX-rated.",
+      "products": [
+        "X5 Transmitter",
+        "X5 Remote Sensor"
+      ]
+    },
+    {
+      "name": "X5 Config C — Mixed Direct + Remote",
+      "description": "X5 Transmitter with one direct sensor on port A and one remote sensor on port B (or vice versa). Combines proximity and distant monitoring in one unit.",
+      "products": [
+        "X5 Transmitter",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ]
+    },
+    {
+      "name": "X5 + GC10 Centralized",
+      "description": "Multiple X5 Transmitters connected to GLACIAR Controller 10 via 4-20mA analog signals. Controller provides centralized alarm management for large installations.",
+      "products": [
+        "X5 Transmitter",
+        "GLACIAR Controller 10"
+      ]
+    }
+  ]
+}

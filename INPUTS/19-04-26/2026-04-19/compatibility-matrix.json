@@ -1,0 +1,186 @@
+{
+  "version": "1.0",
+  "exportedAt": "2026-04-19T20:36:47.773Z",
+  "matrix": [
+    {
+      "product": "1992-R-LP Siren",
+      "compatibleWith": [
+        "GLACIAR Controller 10",
+        "GLACIAR MIDI",
+        "GLACIAR RM",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor",
+        "X5 Transmitter"
+      ]
+    },
+    {
+      "product": "BE Flashing Light",
+      "compatibleWith": [
+        "GLACIAR Controller 10",
+        "GLACIAR MIDI",
+        "GLACIAR RM",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor",
+        "X5 Transmitter"
+      ]
+    },
+    {
+      "product": "Calibration Kit",
+      "compatibleWith": [
+        "GLACIAR RM"
+      ]
+    },
+    {
+      "product": "FL Combined Flashing Light and Siren",
+      "compatibleWith": [
+        "GLACIAR Controller 10",
+        "GLACIAR MIDI",
+        "GLACIAR RM",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor",
+        "X5 Transmitter"
+      ]
+    },
+    {
+      "product": "Flow Regulator",
+      "compatibleWith": [
+        "GLACIAR MIDI"
+      ]
+    },
+    {
+      "product": "GLACIAR Controller 10",
+      "compatibleWith": [
+        "GLACIAR MIDI",
+        "GLACIAR RM",
+        "X5 Remote Sensor",
+        "X5 Transmitter"
+      ]
+    },
+    {
+      "product": "GLACIAR MIDI",
+      "compatibleWith": [
+        "GLACIAR Controller 10"
+      ]
+    },
+    {
+      "product": "GLACIAR RM",
+      "compatibleWith": [
+        "GLACIAR Controller 10"
+      ]
+    },
+    {
+      "product": "MIDI Accessories",
+      "compatibleWith": [
+        "GLACIAR MIDI"
+      ]
+    },
+    {
+      "product": "Power Adapter",
+      "compatibleWith": [
+        "GLACIAR MIDI"
+      ]
+    },
+    {
+      "product": "Protection Bracket",
+      "compatibleWith": [
+        "GLACIAR MIDI"
+      ]
+    },
+    {
+      "product": "RMV Backbox",
+      "compatibleWith": [
+        "GLACIAR RM"
+      ]
+    },
+    {
+      "product": "SOCK-H-R High Socket Beacon",
+      "compatibleWith": [
+        "GLACIAR Controller 10",
+        "GLACIAR MIDI",
+        "GLACIAR RM",
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor",
+        "X5 Transmitter"
+      ]
+    },
+    {
+      "product": "UPS Battery Backup",
+      "compatibleWith": [
+        "GLACIAR Controller 10",
+        "GLACIAR MIDI"
+      ]
+    },
+    {
+      "product": "X5 Accessories",
+      "compatibleWith": [
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor",
+        "X5 Transmitter"
+      ]
+    },
+    {
+      "product": "X5 Direct Sensor Module",
+      "compatibleWith": [
+        "X5 Transmitter"
+      ]
+    },
+    {
+      "product": "X5 Remote Sensor",
+      "compatibleWith": [
+        "GLACIAR Controller 10",
+        "X5 Transmitter"
+      ]
+    },
+    {
+      "product": "X5 Transmitter",
+      "compatibleWith": [
+        "X5 Direct Sensor Module",
+        "X5 Remote Sensor"
+      ]
+    }
+  ],
+  "detectorToController": {
+    "GLACIAR MIDI": [
+      "GLACIAR Controller 10"
+    ],
+    "GLACIAR RM": [
+      "GLACIAR Controller 10"
+    ],
+    "X5 Direct Sensor Module": [
+      "X5 Transmitter"
+    ],
+    "X5 Remote Sensor": [
+      "X5 Transmitter",
+      "GLACIAR Controller 10"
+    ]
+  },
+  "accessoryToProduct": {
+    "Calibration Kit": [
+      "GLACIAR RM"
+    ],
+    "Flow Regulator": [
+      "GLACIAR MIDI"
+    ],
+    "MIDI Accessories": [
+      "GLACIAR MIDI"
+    ],
+    "Power Adapter": [
+      "GLACIAR MIDI"
+    ],
+    "Protection Bracket": [
+      "GLACIAR MIDI"
+    ],
+    "RMV Backbox": [
+      "GLACIAR RM"
+    ],
+    "UPS Battery Backup": [
+      "GLACIAR MIDI",
+      "GLACIAR Controller 10"
+    ],
+    "X5 Accessories": [
+      "X5 Transmitter",
+      "X5 Direct Sensor Module",
+      "X5 Remote Sensor"
+    ]
+  }
+}
