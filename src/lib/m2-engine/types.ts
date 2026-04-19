@@ -62,7 +62,7 @@ export interface PricedBOM extends BOMResult {
   totalDiscount: number;
 }
 
-/** Raw product shape from API (matches Prisma Product model) */
+/** Raw product shape from API (matches Prisma Product model, including V2 fields) */
 export interface ProductRecord {
   id: string;
   type: string;
@@ -71,6 +71,7 @@ export interface ProductRecord {
   code: string;
   price: number;
   image?: string | null;
+  specs?: string;
   gas: string;
   refs: string;
   apps: string;
@@ -98,6 +99,14 @@ export interface ProductRecord {
   remote: boolean;
   features: string | null;
   connectTo: string | null;
+  // V2 fields
+  variant?: string | null;
+  subType?: string | null;
+  function?: string | null;
+  status?: string;
+  ports?: string;
+  connectionRules?: string;
+  compatibleWith?: string;
 }
 
 /** Discount matrix row */

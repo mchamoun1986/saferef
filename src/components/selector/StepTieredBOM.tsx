@@ -1,24 +1,10 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import type { SelectionResult, PricingResult, PricedTier, RegulationResult } from '@/lib/engine-types';
+import type { Solution, BomComponent } from '@/lib/m2-engine/designer-types';
 import { useLang } from '@/lib/i18n-context';
 import { TIERED_BOM, t } from '@/lib/i18n-common';
 import { Download, Printer } from 'lucide-react';
-
-const TIER_COLORS: Record<string, string> = {
-  premiumStandalone: '#E63946', premiumCentralized: '#c2185b',
-  ecoStandalone: '#2563eb', ecoCentralized: '#16a34a',
-};
-const TIER_LABELS: Record<string, string> = {
-  PREMIUM_STANDALONE: 'Premium — Standalone', PREMIUM_CENTRALIZED: 'Premium — Centralized',
-  ECO_STANDALONE: 'Economical — Standalone', ECO_CENTRALIZED: 'Economical — Centralized',
-};
-
-interface ProductImageMap {
-  [code: string]: string | null;
-}
 
 interface ZoneCalcData {
   zoneName: string;
@@ -34,15 +20,9 @@ interface ZoneCalcData {
 }
 
 interface Props {
-  selectionResult: SelectionResult;
-  pricingResult: PricingResult;
-  customerGroup: string;
-  customerGroups: string[];
-  onCustomerGroupChange: (v: string) => void;
+  solutions: Solution[];
   clientData: { firstName: string; lastName: string; company: string; email: string; phone: string; projectName: string; country: string; customerGroup: string };
   gasAppData: { zoneType: string; selectedRefrigerant: string; selectedRange: string; sitePowerVoltage: string; zoneAtex: boolean; mountingType: string };
-  regulationResult?: RegulationResult;
-  productImages?: ProductImageMap;
   zoneCalcData?: ZoneCalcData[];
 }
 
@@ -52,11 +32,22 @@ function fmtEur(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function tierColor(sol: Solution): string {
+  if (sol.mode === 'standalone' && sol.tier === 'premium') return '#E63946';
+  if (sol.mode === 'centralized' && sol.tier === 'premium') return '#c2185b';
+  if (sol.mode === 'standalone') return '#2563eb';
+  return '#16a34a';
+}
+
+function tierLabel(sol: Solution): string {
+  const tierStr = sol.tier.charAt(0).toUpperCase() + sol.tier.slice(1);
+  const modeStr = sol.mode === 'standalone' ? 'Standalone' : 'Centralized';
+  return `${tierStr} — ${modeStr}`;
+}
+
 export default function StepTieredBOM({
-  selectionResult, pricingResult, customerGroup, customerGroups,
-  onCustomerGroupChange, clientData, gasAppData, regulationResult, productImages = {}, zoneCalcData = [],
+  solutions, clientData, gasAppData, zoneCalcData = [],
 }: Props) {
-  const router = useRouter();
   const { lang } = useLang();
   const i = t(TIERED_BOM, lang);
   const [showQuoteForm, setShowQuoteForm] = useState(false);
@@ -76,26 +67,16 @@ export default function StepTieredBOM({
   });
   const [saving, setSaving] = useState(false);
 
-  const tierOrder = ['premiumStandalone', 'premiumCentralized', 'ecoStandalone', 'ecoCentralized'] as const;
-  const availableTiers = tierOrder.filter(k => pricingResult.tiers[k] !== null);
-
-  // Grand total = first available tier's net total (no recommendation badge for now)
-  const recTier = pricingResult.recommended ? pricingResult.tiers[pricingResult.recommended] : (availableTiers.length > 0 ? pricingResult.tiers[availableTiers[0]] : null);
-  const grandTotal = recTier?.summary.totalHt ?? 0;
+  // Mandatory components only for total
+  const getMandatoryTotal = (sol: Solution) =>
+    sol.components.filter(c => !c.optional).reduce((s, c) => s + c.subtotal, 0);
 
   const handleSaveQuote = useCallback(async () => {
     setSaving(true);
     try {
-      const configJson = JSON.stringify({
-        ...gasAppData,
-        regulation: regulationResult,
-        pricing: pricingResult,
-        selection: selectionResult,
-      });
-      // Flatten all BOM lines from recommended tier for legacy compatibility
-      const recLines = recTier?.bomLines ?? [];
-      const bomJson = JSON.stringify(recLines);
-      const zonesJson = JSON.stringify([]);
+      const firstSol = solutions[0];
+      const bomJson = JSON.stringify(firstSol?.components ?? []);
+      const configJson = JSON.stringify({ gasAppData, solutions: solutions.map(s => ({ name: s.name, tier: s.tier, mode: s.mode, total: s.total })) });
 
       await fetch('/api/quotes', {
         method: 'POST',
@@ -103,11 +84,11 @@ export default function StepTieredBOM({
         body: JSON.stringify({
           ...quoteForm,
           bomJson,
-          zonesJson,
+          zonesJson: JSON.stringify([]),
           configJson,
-          totalGross: recTier?.summary.totalBeforeDiscount ?? 0,
-          totalNet: grandTotal,
-          customerGroup,
+          totalGross: firstSol ? getMandatoryTotal(firstSol) : 0,
+          totalNet: firstSol?.total ?? 0,
+          customerGroup: clientData.customerGroup || 'NO',
           currency: 'EUR',
         }),
       });
@@ -116,7 +97,7 @@ export default function StepTieredBOM({
     } finally {
       setSaving(false);
     }
-  }, [quoteForm, pricingResult, selectionResult, gasAppData, regulationResult, recTier, grandTotal, customerGroup, router]);
+  }, [quoteForm, solutions, gasAppData, clientData.customerGroup]);
 
   const handleDownloadReport = useCallback(async () => {
     const { jsPDF } = await import('jspdf');
@@ -124,12 +105,11 @@ export default function StepTieredBOM({
     const pw = doc.internal.pageSize.getWidth();
     const margin = 14;
     const navy: [number, number, number] = [22, 53, 75];
-    const red: [number, number, number] = [230, 57, 70];
     const green: [number, number, number] = [167, 192, 49];
     let y = 0;
     const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
-    // ── Header ──
+    // Header
     doc.setFillColor(...navy);
     doc.rect(0, 0, pw, 24, 'F');
     doc.setTextColor(255, 255, 255);
@@ -139,15 +119,11 @@ export default function StepTieredBOM({
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.text(dateStr, pw - margin, 11, { align: 'right' });
-    if (regulationResult) {
-      doc.text(`${regulationResult.regulationName || regulationResult.regulationId} | ${gasAppData.selectedRefrigerant}`, margin, 18);
-    }
+    doc.text(`${gasAppData.selectedRefrigerant || ''}  |  ${gasAppData.zoneType || ''}`, margin, 18);
     doc.setTextColor(...green);
-    doc.setFont('helvetica', 'bold');
-    doc.text(pricingResult.quoteRef || '', pw - margin, 18, { align: 'right' });
     y = 30;
 
-    // ── Client Info ──
+    // Client info
     doc.setTextColor(...navy);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
@@ -158,152 +134,45 @@ export default function StepTieredBOM({
     doc.setTextColor(80, 80, 80);
     doc.text(`Client: ${clientData.firstName} ${clientData.lastName} — ${clientData.company}`, margin, y);
     doc.text(`Project: ${clientData.projectName}    Country: ${clientData.country}`, pw / 2, y);
-    y += 8;
+    y += 10;
 
-    // ── Regulation Summary ──
-    if (regulationResult) {
-      doc.setFillColor(240, 243, 247);
-      doc.rect(margin, y - 3, pw - 2 * margin, 14, 'F');
-      doc.setTextColor(...navy);
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      const regItems = [
-        `Detection: ${regulationResult.detectionRequired === 'YES' ? 'Required' : regulationResult.detectionRequired}`,
-        `Detectors: ${regulationResult.recommendedDetectors}`,
-        `Placement: ${regulationResult.placementHeight}`,
-        `Standard: ${regulationResult.regulationName || regulationResult.regulationId}`,
-      ];
-      doc.text(regItems.join('    |    '), margin + 3, y + 4);
-      y += 16;
-    }
-
-    // ── Zone Calculations ──
-    if (zoneCalcData.length > 0) {
-      doc.setTextColor(...navy);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text('CALCULATION RESULTS', margin, y);
-      y += 5;
-
-      // Table header
-      doc.setFillColor(245, 245, 245);
-      doc.rect(margin, y - 2, pw - 2 * margin, 5, 'F');
-      doc.setTextColor(120, 120, 120);
-      doc.setFontSize(7);
-      doc.text('ZONE', margin + 2, y + 1.5);
-      doc.text('DIMENSIONS', margin + 40, y + 1.5);
-      doc.text('CHARGE', margin + 80, y + 1.5);
-      doc.text('DETECTION', margin + 105, y + 1.5);
-      doc.text('DETECTORS', margin + 135, y + 1.5);
-      doc.text('PLACEMENT', pw - margin - 3, y + 1.5, { align: 'right' });
-      y += 6;
-
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(50, 50, 50);
-      doc.setFontSize(8);
-      for (const z of zoneCalcData) {
-        if (y > 275) { doc.addPage(); y = 15; }
-        doc.setFont('helvetica', 'bold');
-        doc.text(z.zoneName, margin + 2, y);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`${z.surface}m² × ${z.height}m = ${z.volume.toFixed(1)}m³`, margin + 40, y);
-        doc.text(`${z.charge} kg`, margin + 80, y);
-        const detLabel = z.detectionRequired === 'YES' ? 'Required' : z.detectionRequired === 'RECOMMENDED' ? 'Recommended' : z.detectionRequired;
-        doc.text(detLabel, margin + 105, y);
-        doc.text(String(z.detectors), margin + 140, y);
-        doc.text(`${z.placement} (${z.placementM})`, pw - margin - 3, y, { align: 'right' });
-        y += 5;
-      }
-
-      // Total detectors
-      const totalDets = zoneCalcData.reduce((s, z) => s + z.detectors, 0);
-      doc.setDrawColor(200, 200, 200);
-      doc.line(margin, y, pw - margin, y);
-      y += 4;
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...navy);
-      doc.text(`Total detectors: ${totalDets}`, margin + 2, y);
-      if (regulationResult) {
-        doc.text(`Threshold: ${Math.round(regulationResult.thresholdPpm).toLocaleString()} ppm (max — set alarm below)`, pw - margin - 3, y, { align: 'right' });
-      }
-      y += 10;
-    }
-
-    // ── Per-Tier BOM ──
-    for (const tierKey of tierOrder) {
-      const tier = pricingResult.tiers[tierKey];
-      if (!tier) continue;
-      const selTier = selectionResult.tiers[tierKey];
-      const isRec = pricingResult.recommended === tierKey;
-      const color = tierKey === 'premiumStandalone' ? red : tierKey === 'premiumCentralized' ? [194, 24, 91] as [number, number, number] : tierKey === 'ecoStandalone' ? [37, 99, 235] as [number, number, number] : [22, 163, 74] as [number, number, number];
-
-      // Check page space
+    // Solutions
+    for (const sol of solutions) {
       if (y > 240) { doc.addPage(); y = 15; }
+      const color = tierColor(sol);
+      const [r, g, b] = color.startsWith('#')
+        ? [parseInt(color.slice(1,3),16), parseInt(color.slice(3,5),16), parseInt(color.slice(5,7),16)]
+        : [22, 53, 75];
 
-      // Tier header
-      doc.setFillColor(...color);
+      // Solution header
+      doc.setFillColor(r, g, b);
       doc.rect(margin, y, pw - 2 * margin, 8, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text(`${TIER_LABELS[tier.tier] || tier.label}${isRec ? '  — RECOMMENDED' : ''}`, margin + 3, y + 5.5);
-      doc.text(`Score: ${tier.solutionScore}/21`, pw - margin - 3, y + 5.5, { align: 'right' });
+      doc.text(sol.name, margin + 3, y + 5.5);
+      doc.text(`${fmtEur(getMandatoryTotal(sol))} EUR`, pw - margin - 3, y + 5.5, { align: 'right' });
       y += 11;
-
-      // Detector info
-      if (selTier) {
-        doc.setTextColor(80, 80, 80);
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
-        const detInfo = `Detector: ${selTier.detector.name}  |  Qty: ${selTier.detector.qty}  |  Sensor: ${selTier.detector.sensorTech ?? '-'}${selTier.detector.range ? `  |  Range: ${selTier.detector.range}` : ''}`;
-        doc.text(detInfo, margin + 2, y);
-        y += 5;
-      }
-
-      // BOM table header
-      doc.setFillColor(245, 245, 245);
-      doc.rect(margin, y - 2, pw - 2 * margin, 5, 'F');
-      doc.setTextColor(120, 120, 120);
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'bold');
-      doc.text('CODE', margin + 2, y + 1.5);
-      doc.text('PRODUCT', margin + 35, y + 1.5);
-      doc.text('QTY', pw - margin - 55, y + 1.5);
-      doc.text('LIST PRICE', pw - margin - 35, y + 1.5);
-      doc.text('SUBTOTAL', pw - margin - 3, y + 1.5, { align: 'right' });
-      y += 6;
 
       // BOM lines
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(50, 50, 50);
       doc.setFontSize(8);
-      for (const line of tier.bomLines) {
+      for (const comp of sol.components) {
         if (y > 275) { doc.addPage(); y = 15; }
-        doc.text(line.code, margin + 2, y);
-        doc.text(line.name.substring(0, 40), margin + 35, y);
-        doc.text(String(line.qty), pw - margin - 53, y);
-        doc.text(fmtEur(line.listPrice), pw - margin - 25, y, { align: 'right' });
-        doc.setFont('helvetica', 'bold');
-        doc.text(fmtEur(line.listPrice * line.qty), pw - margin - 3, y, { align: 'right' });
+        doc.text(comp.code, margin + 2, y);
+        doc.text(comp.name.substring(0, 40), margin + 35, y);
+        doc.text(`${comp.qty}`, pw - margin - 53, y);
+        doc.text(fmtEur(comp.unitPrice), pw - margin - 25, y, { align: 'right' });
+        doc.setFont('helvetica', comp.optional ? 'italic' : 'bold');
+        doc.text(fmtEur(comp.subtotal), pw - margin - 3, y, { align: 'right' });
         doc.setFont('helvetica', 'normal');
         y += 4.5;
       }
-
-      // Tier total
-      doc.setDrawColor(200, 200, 200);
-      doc.line(margin, y, pw - margin, y);
-      y += 4;
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...color);
-      doc.text(`Total: ${fmtEur(tier.summary.totalBeforeDiscount)} EUR`, pw - margin - 3, y, { align: 'right' });
-      doc.setTextColor(150, 150, 150);
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'normal');
-      doc.text('List prices — contact your distributor for final pricing', margin + 2, y);
-      y += 10;
+      y += 5;
     }
 
-    // ── Disclaimer ──
+    // Disclaimer
     if (y > 255) { doc.addPage(); y = 15; }
     doc.setFillColor(255, 249, 235);
     doc.rect(margin, y, pw - 2 * margin, 16, 'F');
@@ -315,25 +184,24 @@ export default function StepTieredBOM({
     doc.text('This product selection is based on regulatory calculations and is provided for informational purposes only.', margin + 3, y + 9);
     doc.text('Final selection, pricing, and availability must be confirmed by your local distributor or SafeRef sales representative.', margin + 3, y + 13);
 
-    // ── Footer ──
+    // Footer
     const pageCount = doc.getNumberOfPages();
     for (let p = 1; p <= pageCount; p++) {
       doc.setPage(p);
       doc.setFontSize(7);
       doc.setTextColor(150, 150, 150);
-      doc.text(`SafeRef — Gas Detection Systems`, margin, 290);
+      doc.text('SafeRef — Gas Detection Systems', margin, 290);
       doc.text(`Page ${p}/${pageCount}`, pw - margin, 290, { align: 'right' });
     }
 
-    const ref = pricingResult.quoteRef || `SR-${Date.now()}`;
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${ref}-report.pdf`;
+    a.download = `SR-report-${Date.now()}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [pricingResult, selectionResult, regulationResult, clientData, gasAppData, tierOrder]);
+  }, [solutions, clientData, gasAppData]);
 
   return (
     <div className="space-y-6">
@@ -342,7 +210,7 @@ export default function StepTieredBOM({
         <h2 className="text-xl font-bold text-[#16354B]">{i.title}</h2>
       </div>
 
-      {/* Preliminary Selection Disclaimer */}
+      {/* Preliminary disclaimer */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
         <span className="font-semibold">Preliminary recommendation</span> — This product selection is based on regulatory calculations and is provided for informational purposes only.
         Final selection, pricing, and availability must be confirmed by your local distributor or sales representative.
@@ -351,129 +219,115 @@ export default function StepTieredBOM({
       {/* Duct/Pipe accessory notice */}
       {gasAppData.mountingType === 'duct' && (
         <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 text-xs text-amber-800">
-          <span className="font-semibold">Duct detection selected</span> — Only detectors with remote sensor probes are shown. A duct sampling accessory will be required for installation. Please confirm with your sales representative.
+          <span className="font-semibold">Duct detection selected</span> — Only detectors with remote sensor probes are shown. A duct sampling accessory will be required for installation.
         </div>
       )}
-      {gasAppData.mountingType === 'pipe_valve' && (
+      {gasAppData.mountingType === 'pipe' && (
         <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 text-xs text-amber-800">
-          <span className="font-semibold">Pipe/valve detection selected</span> — Detectors with remote sensor probes or native pipe-mount products are shown. A pipe mounting accessory may be required. Please confirm with your sales representative.
+          <span className="font-semibold">Pipe/valve detection selected</span> — Detectors with remote sensor probes or native pipe-mount products are shown.
         </div>
       )}
 
-      {/* Regulation Banner — simplified for client */}
-      {regulationResult && (
-        <div className="bg-gradient-to-r from-[#16354B] to-[#2a4a62] text-white rounded-lg p-4 flex flex-wrap justify-around gap-3">
-          <StatBlock label="Detection" value={regulationResult.detectionRequired === 'YES' ? 'Required' : regulationResult.detectionRequired === 'RECOMMENDED' ? 'Recommended' : regulationResult.detectionRequired} accent={regulationResult.detectionRequired === 'YES' ? '#f87171' : '#fbbf24'} />
-          <StatBlock label="Detectors" value={String(regulationResult.recommendedDetectors)} />
-          <StatBlock label="Placement" value={regulationResult.placementHeight === 'floor' ? 'Floor level' : regulationResult.placementHeight === 'ceiling' ? 'Ceiling' : 'Breathing zone'} />
-          <StatBlock label="Standard" value={regulationResult.regulationName || regulationResult.regulationId.toUpperCase()} />
-        </div>
-      )}
-
-      {/* Warnings */}
-      {pricingResult.warnings.length > 0 && (
-        <div className="bg-amber-50 border border-amber-400 rounded-lg p-3 text-sm text-amber-800">
-          <span className="font-semibold">{i.warnings}:</span>
-          <ul className="mt-1 list-disc list-inside text-xs">
-            {pricingResult.warnings.map((w, i) => <li key={i}>{w}</li>)}
-          </ul>
-        </div>
-      )}
-
-      {/* Tier Cards */}
-      {availableTiers.length === 0 && (
+      {/* No solutions notice */}
+      {solutions.length === 0 && (
         <div className="text-center py-8 text-red-500 font-semibold">
           {i.noProducts}
         </div>
       )}
 
+      {/* Solution Cards */}
       <div className="grid gap-6">
-        {availableTiers.map(key => {
-          const tier = pricingResult.tiers[key]!;
-          const selTier = selectionResult.tiers[key];
-          const isRec = pricingResult.recommended === key;
-          const color = TIER_COLORS[key];
+        {solutions.map((sol, idx) => {
+          const color = tierColor(sol);
+          const label = tierLabel(sol);
+          const mandatoryTotal = getMandatoryTotal(sol);
+          const mandatory = sol.components.filter(c => !c.optional);
+          const optional = sol.components.filter(c => c.optional);
 
           return (
-            <div key={key} className={`border-2 rounded-xl overflow-hidden ${isRec ? 'ring-2 ring-offset-2' : ''}`}
-              style={{ borderColor: color, ...(isRec ? { ringColor: color } as React.CSSProperties : {}) }}>
-              {/* Tier Header */}
+            <div key={idx} className="border-2 rounded-xl overflow-hidden" style={{ borderColor: color }}>
+              {/* Solution Header */}
               <div className="px-5 py-3 flex items-center justify-between" style={{ background: color }}>
                 <div className="flex items-center gap-3">
-                  <h3 className="text-white font-bold text-base">{TIER_LABELS[tier.tier] || tier.label}</h3>
-                  {isRec && (
-                    <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                      {i.recommended}
-                    </span>
+                  <h3 className="text-white font-bold text-base">{sol.name}</h3>
+                  <span className="bg-white/20 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                    {label}
+                  </span>
+                  {sol.mode === 'standalone' && (
+                    <span className="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full">Standalone</span>
                   )}
                 </div>
                 <div className="text-white text-right">
-                  <div className="text-xs opacity-75">{i.score}</div>
-                  <div className="font-bold text-lg">{tier.solutionScore}/21</div>
+                  <div className="font-bold text-lg">{fmtEur(mandatoryTotal)} EUR</div>
+                  {sol.optionalTotal > 0 && (
+                    <div className="text-[11px] opacity-70">+ {fmtEur(sol.optionalTotal)} optional</div>
+                  )}
                 </div>
               </div>
 
-              {/* Detector summary with image */}
-              {selTier && (
-                <div className="px-5 py-3 bg-gray-50 flex items-center gap-4 border-b">
-                  {selTier.detector.image && (
-                    <img
-                      src={selTier.detector.image.startsWith('/') ? selTier.detector.image : `/assets/${selTier.detector.image}`}
-                      alt={selTier.detector.name}
-                      className="w-16 h-16 object-contain rounded bg-white border border-gray-200 p-1 flex-shrink-0"
-                    />
+              {/* Detector summary */}
+              <div className="px-5 py-3 bg-gray-50 flex items-center gap-4 border-b">
+                {sol.detector.image && (
+                  <img
+                    src={sol.detector.image.startsWith('/') ? sol.detector.image : `/assets/${sol.detector.image}`}
+                    alt={sol.detector.name}
+                    className="w-16 h-16 object-contain rounded bg-white border border-gray-200 p-1 flex-shrink-0"
+                  />
+                )}
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                  <span><b>Detector:</b> {sol.detector.name}</span>
+                  <span><b>Code:</b> {sol.detector.code}</span>
+                  {sol.detector.sensorTech && <span><b>Sensor:</b> {sol.detector.sensorTech}</span>}
+                  {sol.detector.range && <span><b>Range:</b> {sol.detector.range}</span>}
+                  {sol.controller && (
+                    <span><b>Controller:</b> {sol.controllerQty}x {sol.controller.name}</span>
                   )}
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                    <span><b>{i.detector}:</b> {selTier.detector.name}</span>
-                    <span><b>{i.qty}:</b> {selTier.detector.qty}</span>
-                    <span><b>{i.sensor}:</b> {selTier.detector.sensorTech ?? '-'}</span>
-                    {selTier.detector.range && <span><b>Range:</b> {selTier.detector.range}</span>}
-                    {selTier.controller && <span><b>{i.controller}:</b> {selTier.controller.qty}x {selTier.controller.name}</span>}
-                    {!selTier.controller && <span className="text-green-600 font-semibold">{i.standalone}</span>}
-                  </div>
+                  {!sol.controller && (
+                    <span className="text-green-600 font-semibold">Standalone</span>
+                  )}
+                  {sol.connectionLabel && (
+                    <span><b>Connection:</b> {sol.connectionLabel}</span>
+                  )}
                 </div>
-              )}
+              </div>
 
-              {/* BOM Table — list prices only (indicative) */}
+              {/* BOM Table */}
               <table className="w-full text-sm">
                 <thead className="bg-gray-100">
                   <tr>
                     <th className="w-10 px-2 py-2"></th>
-                    <th className="text-left px-3 py-2 text-[10px] uppercase text-[#6b8da5]">{i.code}</th>
-                    <th className="text-left px-3 py-2 text-[10px] uppercase text-[#6b8da5]">{i.product}</th>
-                    <th className="text-center px-3 py-2 text-[10px] uppercase text-[#6b8da5]">{i.qty}</th>
-                    <th className="text-right px-3 py-2 text-[10px] uppercase text-[#6b8da5]">List Price (EUR)</th>
+                    <th className="text-left px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Code</th>
+                    <th className="text-left px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Product</th>
+                    <th className="text-center px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Role</th>
+                    <th className="text-center px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Qty</th>
+                    <th className="text-right px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Unit (EUR)</th>
                     <th className="text-right px-3 py-2 text-[10px] uppercase text-[#6b8da5]">Subtotal</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {tier.bomLines.map((line, li) => {
-                    const img = productImages[line.code];
-                    return (
-                      <tr key={li} className={`border-t ${li % 2 === 0 ? '' : 'bg-gray-50'}`}>
-                        <td className="px-2 py-1.5">
-                          {img ? (
-                            <img src={img.startsWith('/') ? img : `/assets/${img}`} alt="" className="w-8 h-8 object-contain rounded" />
-                          ) : (
-                            <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-[8px] text-gray-300">—</div>
-                          )}
+                  {mandatory.map((comp: BomComponent, li: number) => (
+                    <ComponentRow key={li} comp={comp} li={li} />
+                  ))}
+                  {optional.length > 0 && (
+                    <>
+                      <tr>
+                        <td colSpan={7} className="px-3 py-1.5 text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider bg-gray-50 border-t">
+                          Optional Accessories
                         </td>
-                        <td className="px-3 py-1.5 font-mono text-xs text-[#16354B] font-bold">{line.code}</td>
-                        <td className="px-3 py-1.5 text-xs">{line.name}</td>
-                        <td className="px-3 py-1.5 text-center text-xs">{line.qty}</td>
-                        <td className="px-3 py-1.5 text-right text-xs">{fmtEur(line.listPrice)}</td>
-                        <td className="px-3 py-1.5 text-right text-xs font-semibold">{fmtEur(line.listPrice * line.qty)}</td>
                       </tr>
-                    );
-                  })}
+                      {optional.map((comp: BomComponent, li: number) => (
+                        <ComponentRow key={`opt-${li}`} comp={comp} li={li} optional />
+                      ))}
+                    </>
+                  )}
                 </tbody>
               </table>
 
-              {/* Tier Total — list price only */}
+              {/* Total row */}
               <div className="px-5 py-3 bg-gray-50 border-t flex justify-between items-center">
                 <div className="text-xs text-gray-400 italic">List prices — contact your distributor for final pricing</div>
                 <div className="text-lg font-bold" style={{ color }}>
-                  {fmtEur(tier.summary.totalBeforeDiscount)} EUR
+                  {fmtEur(mandatoryTotal)} EUR
                 </div>
               </div>
             </div>
@@ -481,45 +335,18 @@ export default function StepTieredBOM({
         })}
       </div>
 
-      {/* Comparison Table */}
-      {pricingResult.comparison.rows.length > 0 && (
-        <div className="border-2 border-[#e2e8f0] rounded-xl overflow-hidden">
-          <div className="bg-[#16354B] text-white px-5 py-3 font-semibold text-sm">{i.comparison}</div>
-          <table className="w-full text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="text-left px-4 py-2 text-[10px] uppercase text-[#6b8da5]">{i.criteria}</th>
-                <th className="text-center px-4 py-2 text-[10px] uppercase" style={{ color: TIER_COLORS.premiumStandalone }}>Prem SA</th>
-                <th className="text-center px-4 py-2 text-[10px] uppercase" style={{ color: TIER_COLORS.premiumCentralized }}>Prem Ctrl</th>
-                <th className="text-center px-4 py-2 text-[10px] uppercase" style={{ color: TIER_COLORS.ecoStandalone }}>Eco SA</th>
-                <th className="text-center px-4 py-2 text-[10px] uppercase" style={{ color: TIER_COLORS.ecoCentralized }}>Eco Ctrl</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pricingResult.comparison.rows.map((row, ri) => (
-                <tr key={ri} className={`border-t ${ri % 2 === 0 ? '' : 'bg-gray-50'}`}>
-                  <td className="px-4 py-2 font-medium text-xs">{row.label}</td>
-                  <td className="px-4 py-2 text-center text-xs">{row.premiumStandalone}</td>
-                  <td className="px-4 py-2 text-center text-xs">{row.premiumCentralized}</td>
-                  <td className="px-4 py-2 text-center text-xs">{row.ecoStandalone}</td>
-                  <td className="px-4 py-2 text-center text-xs">{row.ecoCentralized}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Grand total (first / cheapest solution) */}
+      {solutions.length > 0 && (
+        <div className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] text-white rounded-xl p-6 flex justify-between items-center">
+          <div>
+            <div className="text-sm opacity-75">Estimated List Price — {solutions[0].name}</div>
+            <div className="text-xs opacity-50 mt-1">Indicative pricing — final quote from your distributor</div>
+          </div>
+          <div className="text-3xl font-extrabold">{fmtEur(getMandatoryTotal(solutions[0]))} EUR</div>
         </div>
       )}
 
-      {/* Grand Total — list price */}
-      <div className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] text-white rounded-xl p-6 flex justify-between items-center">
-        <div>
-          <div className="text-sm opacity-75">Estimated List Price ({TIER_LABELS[recTier?.tier ?? ''] || pricingResult.recommended})</div>
-          <div className="text-xs opacity-50 mt-1">Indicative pricing — final quote from your distributor</div>
-        </div>
-        <div className="text-3xl font-extrabold">{fmtEur(recTier?.summary.totalBeforeDiscount ?? 0)} EUR</div>
-      </div>
-
-      {/* Print / Download Report */}
+      {/* Print / Download */}
       <div className="flex items-center gap-3 no-print">
         <button onClick={handleDownloadReport}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#16354B] text-white text-sm font-semibold rounded-lg hover:bg-[#1e4a6a] transition-colors">
@@ -543,7 +370,7 @@ export default function StepTieredBOM({
         </button>
       </div>
 
-      {/* Quote Submitted Confirmation */}
+      {/* Quote submitted confirmation */}
       {quoteSubmitted && (
         <div className="bg-green-50 border-2 border-green-400 rounded-xl p-6 text-center">
           <div className="text-3xl mb-3">&#10003;</div>
@@ -640,7 +467,7 @@ export default function StepTieredBOM({
               </div>
             </div>
 
-            <div>
+            <div className="mt-3">
               <label className={labelClass}>Comments / Questions</label>
               <textarea value={quoteForm.comments} rows={3} placeholder="Any specific requirements, questions, or additional information..."
                 onChange={e => setQuoteForm(prev => ({ ...prev, comments: e.target.value }))}
@@ -664,11 +491,24 @@ export default function StepTieredBOM({
   );
 }
 
-function StatBlock({ label, value, accent }: { label: string; value: string; accent?: string }) {
+function ComponentRow({ comp, li, optional }: { comp: BomComponent; li: number; optional?: boolean }) {
   return (
-    <div className="text-center min-w-[70px]">
-      <div className="text-[8px] uppercase tracking-widest text-gray-400">{label}</div>
-      <div className="font-bold text-sm mt-0.5" style={accent ? { color: accent } : undefined}>{value}</div>
-    </div>
+    <tr className={`border-t ${li % 2 === 0 ? '' : 'bg-gray-50'} ${optional ? 'opacity-70 italic' : ''}`}>
+      <td className="px-2 py-1.5">
+        {comp.image ? (
+          <img src={comp.image.startsWith('/') ? comp.image : `/assets/${comp.image}`} alt="" className="w-8 h-8 object-contain rounded" />
+        ) : (
+          <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-[8px] text-gray-300">—</div>
+        )}
+      </td>
+      <td className="px-3 py-1.5 font-mono text-xs text-[#16354B] font-bold">{comp.code}</td>
+      <td className="px-3 py-1.5 text-xs">{comp.name}</td>
+      <td className="px-3 py-1.5 text-center">
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{comp.role}</span>
+      </td>
+      <td className="px-3 py-1.5 text-center text-xs">{comp.qty}</td>
+      <td className="px-3 py-1.5 text-right text-xs">{fmtEur(comp.unitPrice)}</td>
+      <td className="px-3 py-1.5 text-right text-xs font-semibold">{fmtEur(comp.subtotal)}</td>
+    </tr>
   );
 }

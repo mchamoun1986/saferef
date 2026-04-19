@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { User, FolderOpen } from 'lucide-react';
-import type { ProductRecord, DiscountRow, BOMZone } from '@/lib/m2-engine/types';
-import type { SelectionInput, SelectionResult, PricingInput, PricingResult } from '@/lib/engine-types';
-import { toProductEntries } from '@/lib/m2-engine/parse-product';
-import { selectProducts } from '@/lib/m2-engine/selection-engine';
-import { calculatePricing } from '@/lib/m2-engine/pricing-engine';
+import type { ProductRecord, BOMZone } from '@/lib/m2-engine/types';
+import type { ProductV2, Solution } from '@/lib/m2-engine/designer-types';
+import { SystemDesigner } from '@/lib/m2-engine/selection-engine';
 import StepAppGas from './StepAppGas';
 import StepTechnical from './StepTechnical';
 import StepZoneQty from './StepZoneQty';
@@ -55,7 +53,7 @@ interface RefOption {
   id: string;
   name: string;
   safetyClass: string;
-  gasGroup: string;
+  gasGroup?: string;
 }
 
 interface AppOption {
@@ -64,12 +62,6 @@ interface AppOption {
   icon: string;
   suggestedGases?: string;
 }
-
-const CUSTOMER_GROUPS = [
-  '', 'EDC', 'OEM', '1Fo', '2Fo', '3Fo',
-  '1Contractor', '2Contractor', '3Contractor',
-  'AKund', 'BKund', 'NO',
-];
 
 /* ── Inline Client Step (mirrors Calculator StepClient styling) ── */
 function StepClientInline({ data, onChange }: { data: SelectorClientData; onChange: (d: SelectorClientData) => void }) {
@@ -149,10 +141,58 @@ function StepClientInline({ data, onChange }: { data: SelectorClientData; onChan
   );
 }
 
+/** Cast a ProductRecord (API shape) to ProductV2 (engine shape) */
+function toProductV2(p: ProductRecord): ProductV2 {
+  return {
+    id: p.id,
+    type: p.type,
+    family: p.family,
+    name: p.name,
+    code: p.code,
+    price: p.price,
+    image: p.image ?? null,
+    specs: p.specs ?? '',
+    tier: p.tier || 'standard',
+    productGroup: p.productGroup || 'G',
+    gas: p.gas,
+    refs: p.refs,
+    apps: p.apps,
+    range: p.range,
+    sensorTech: p.sensorTech,
+    sensorLife: p.sensorLife ?? null,
+    power: p.power ?? null,
+    voltage: p.voltage,
+    ip: p.ip ?? null,
+    tempMin: p.tempMin ?? null,
+    tempMax: p.tempMax ?? null,
+    relay: p.relay ?? 0,
+    analog: p.analog,
+    modbus: p.modbus ?? false,
+    standalone: p.standalone ?? false,
+    atex: p.atex ?? false,
+    mount: typeof p.mount === 'string' ? p.mount : JSON.stringify(p.mount),
+    remote: p.remote ?? false,
+    features: p.features ?? null,
+    connectTo: p.connectTo ?? null,
+    discontinued: p.discontinued ?? false,
+    channels: p.channels ?? null,
+    maxPower: p.maxPower ?? null,
+    subCategory: p.subCategory ?? null,
+    compatibleFamilies: p.compatibleFamilies ?? '[]',
+    // V2 fields
+    variant: p.variant ?? null,
+    subType: p.subType ?? null,
+    function: p.function ?? null,
+    status: p.status ?? 'active',
+    ports: p.ports ?? '[]',
+    connectionRules: p.connectionRules ?? '{}',
+    compatibleWith: p.compatibleWith ?? '[]',
+  };
+}
+
 export default function SelectorWizard() {
   const [step, setStep] = useState(1);
   const [rawProducts, setRawProducts] = useState<ProductRecord[]>([]);
-  const [discountMatrix, setDiscountMatrix] = useState<DiscountRow[]>([]);
   const [refrigerants, setRefrigerants] = useState<RefOption[]>([]);
   const [applications, setApplications] = useState<AppOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,104 +202,63 @@ export default function SelectorWizard() {
     firstName: '', lastName: '', company: '', email: '', phone: '', projectName: '', country: 'FR', rgpdConsent: false,
   });
 
-  // Step 2 state (was step 1)
+  // Step 2 state
   const [application, setApplication] = useState('');
-  const [gasGroup, setGasGroup] = useState('');
-  const [refrigerantRefs, setRefrigerantRefs] = useState<string[]>([]);
+  const [refrigerant, setRefrigerant] = useState('');
   const [preferredFamily, setPreferredFamily] = useState('');
 
-  // Step 3 state (was step 2)
+  // Step 3 state
   const [voltage, setVoltage] = useState<'12V' | '24V' | '230V'>('24V');
   const [atexRequired, setAtexRequired] = useState(false);
   const [mountType, setMountType] = useState('ambient');
   const [standalone, setStandalone] = useState(false);
 
-  // Step 4 state (was step 3)
+  // Step 4 state
   const [zones, setZones] = useState<BOMZone[]>([{ name: 'Zone 1', detectorQty: 1 }]);
 
-  // Step 5 state (was step 4)
-  const [customerGroup, setCustomerGroup] = useState('');
-  const [selectionResult, setSelectionResult] = useState<SelectionResult | null>(null);
-  const [pricingResult, setPricingResult] = useState<PricingResult | null>(null);
+  // Step 5 state
+  const [solutions, setSolutions] = useState<Solution[]>([]);
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/products?discontinued=false').then(r => r.json()),
+      fetch('/api/products?status=active').then(r => r.json()),
       fetch('/api/refrigerants-v5').then(r => r.json()),
       fetch('/api/applications').then(r => r.json()),
-      fetch('/api/discount-matrix').then(r => r.json()).catch(() => []),
-    ]).then(([prods, refs, apps, dm]) => {
-      setRawProducts(prods);
-      setRefrigerants(refs);
-      setApplications(apps);
-      setDiscountMatrix(Array.isArray(dm) ? dm : []);
+    ]).then(([prods, refs, apps]) => {
+      setRawProducts(Array.isArray(prods) ? prods : []);
+      setRefrigerants(Array.isArray(refs) ? refs : []);
+      setApplications(Array.isArray(apps) ? apps : []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
 
-  const { products, controllers, accessories } = useMemo(
-    () => toProductEntries(rawProducts),
-    [rawProducts],
-  );
-
-  const priceDb = useMemo(() => {
-    const db = new Map<string, { price: number; productGroup: string; discontinued: boolean }>();
-    for (const p of rawProducts) db.set(p.code, { price: p.price, productGroup: p.productGroup || 'G', discontinued: p.discontinued });
-    return db;
-  }, [rawProducts]);
-
   const totalDetectors = zones.reduce((s, z) => s + z.detectorQty, 0);
 
   function generateQuote() {
-    const selInput: SelectionInput = {
-      regulationResult: {} as SelectionInput['regulationResult'],
-      totalDetectors,
-      selectedRefrigerant: refrigerantRefs[0] || '',
-      zoneType: application || 'supermarket',
-      zoneAtex: atexRequired,
-      outputRequired: 'any',
-      sitePowerVoltage: voltage,
-      mountingType: mountType,
-      projectCountry: clientData.country || 'FR',
-      products,
-      controllers,
-      accessories,
+    const products = rawProducts.map(toProductV2);
+    const designer = new SystemDesigner(products);
+
+    // Map voltage to V2 format
+    const voltageMap: Record<string, string> = {
+      '12V': '12V DC',
+      '24V': '24V DC/AC',
+      '230V': '230V AC',
     };
 
-    const sel = selectProducts(selInput);
-    setSelectionResult(sel);
+    const sols = designer.generate({
+      gas: refrigerant,
+      atex: atexRequired,
+      voltage: voltageMap[voltage] || '24V DC/AC',
+      location: mountType as 'ambient' | 'duct' | 'pipe',
+      outputs: [],
+      measType: '',
+      points: totalDetectors,
+      application: application || undefined,
+    });
 
-    const pInput: PricingInput = {
-      tiers: sel.tiers,
-      customerGroup: (customerGroup || 'NO') as PricingInput['customerGroup'],
-      discountMatrix,
-      priceDb,
-    };
-    setPricingResult(calculatePricing(pInput));
+    setSolutions(sols);
     setStep(5);
   }
-
-  // Build image map from raw products (code -> image filename)
-  const productImages = useMemo(() => {
-    const map: Record<string, string | null> = {};
-    for (const p of rawProducts) {
-      if (p.image) map[p.code] = p.image;
-    }
-    return map;
-  }, [rawProducts]);
-
-  // Recalculate pricing when customer group changes on step 5
-  useMemo(() => {
-    if (step !== 5 || !selectionResult) return;
-    const pInput: PricingInput = {
-      tiers: selectionResult.tiers,
-      customerGroup: (customerGroup || 'NO') as PricingInput['customerGroup'],
-      discountMatrix,
-      priceDb,
-    };
-    setPricingResult(calculatePricing(pInput));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customerGroup]);
 
   function nextStep() {
     if (step === 4) { generateQuote(); return; }
@@ -325,12 +324,10 @@ export default function SelectorWizard() {
             applications={applications}
             refrigerants={refrigerants}
             application={application}
-            gasGroup={gasGroup}
-            refrigerantRefs={refrigerantRefs}
+            refrigerant={refrigerant}
             preferredFamily={preferredFamily}
             onApplicationChange={setApplication}
-            onGasGroupChange={setGasGroup}
-            onRefrigerantRefsChange={setRefrigerantRefs}
+            onRefrigerantChange={setRefrigerant}
             onPreferredFamilyChange={setPreferredFamily}
           />
         )}
@@ -349,16 +346,18 @@ export default function SelectorWizard() {
         {step === 4 && (
           <StepZoneQty zones={zones} onChange={setZones} />
         )}
-        {step === 5 && selectionResult && pricingResult && (
+        {step === 5 && (
           <StepTieredBOM
-            selectionResult={selectionResult}
-            pricingResult={pricingResult}
-            customerGroup={customerGroup}
-            customerGroups={CUSTOMER_GROUPS}
-            onCustomerGroupChange={setCustomerGroup}
-            clientData={{ ...clientData, customerGroup }}
-            gasAppData={{ zoneType: application, selectedRefrigerant: refrigerantRefs[0] || '', selectedRange: '', sitePowerVoltage: voltage, zoneAtex: atexRequired, mountingType: mountType }}
-            productImages={productImages}
+            solutions={solutions}
+            clientData={{ ...clientData, customerGroup: '' }}
+            gasAppData={{
+              zoneType: application,
+              selectedRefrigerant: refrigerant,
+              selectedRange: '',
+              sitePowerVoltage: voltage,
+              zoneAtex: atexRequired,
+              mountingType: mountType,
+            }}
             zoneCalcData={[]}
           />
         )}

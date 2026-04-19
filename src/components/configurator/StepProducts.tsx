@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import type { ClientData, GasAppData, ZoneData } from './types';
-import type { RefrigerantV5, ZoneRegulationResult, SelectionInput, SelectionResult, PricingInput, PricingResult } from '@/lib/engine-types';
-import type { ProductRecord, DiscountRow } from '@/lib/m2-engine/types';
-import { toProductEntries } from '@/lib/m2-engine/parse-product';
-import { selectProducts } from '@/lib/m2-engine/selection-engine';
-import { calculatePricing } from '@/lib/m2-engine/pricing-engine';
+import type { RefrigerantV5, ZoneRegulationResult } from '@/lib/engine-types';
+import type { ProductRecord } from '@/lib/m2-engine/types';
+import type { ProductV2, Solution } from '@/lib/m2-engine/designer-types';
+import { SystemDesigner } from '@/lib/m2-engine/selection-engine';
 import StepTieredBOM from '@/components/selector/StepTieredBOM';
 import StepCalcSheet from './StepCalcSheet';
 import { type Lang } from './i18n';
@@ -29,36 +28,70 @@ interface Props {
   lang?: Lang;
 }
 
-const CUSTOMER_GROUPS = [
-  '', 'EDC', 'OEM', '1Fo', '2Fo', '3Fo',
-  '1Contractor', '2Contractor', '3Contractor',
-  'AKund', 'BKund', 'NO',
-];
+/** Cast a ProductRecord (API shape) to ProductV2 (engine shape) */
+function toProductV2(p: ProductRecord): ProductV2 {
+  return {
+    id: p.id,
+    type: p.type,
+    family: p.family,
+    name: p.name,
+    code: p.code,
+    price: p.price,
+    image: p.image ?? null,
+    specs: p.specs ?? '',
+    tier: p.tier || 'standard',
+    productGroup: p.productGroup || 'G',
+    gas: p.gas,
+    refs: p.refs,
+    apps: p.apps,
+    range: p.range,
+    sensorTech: p.sensorTech,
+    sensorLife: p.sensorLife ?? null,
+    power: p.power ?? null,
+    voltage: p.voltage,
+    ip: p.ip ?? null,
+    tempMin: p.tempMin ?? null,
+    tempMax: p.tempMax ?? null,
+    relay: p.relay ?? 0,
+    analog: p.analog,
+    modbus: p.modbus ?? false,
+    standalone: p.standalone ?? false,
+    atex: p.atex ?? false,
+    mount: typeof p.mount === 'string' ? p.mount : JSON.stringify(p.mount),
+    remote: p.remote ?? false,
+    features: p.features ?? null,
+    connectTo: p.connectTo ?? null,
+    discontinued: p.discontinued ?? false,
+    channels: p.channels ?? null,
+    maxPower: p.maxPower ?? null,
+    subCategory: p.subCategory ?? null,
+    compatibleFamilies: p.compatibleFamilies ?? '[]',
+    // V2 fields
+    variant: p.variant ?? null,
+    subType: p.subType ?? null,
+    function: p.function ?? null,
+    status: p.status ?? 'active',
+    ports: p.ports ?? '[]',
+    connectionRules: p.connectionRules ?? '{}',
+    compatibleWith: p.compatibleWith ?? '[]',
+  };
+}
 
 export default function StepProducts({
   clientData, gasAppData, zones, refrigerant, zoneRegulations, application, spaceTypes = [], lang = 'en',
 }: Props) {
   const [rawProducts, setRawProducts] = useState<ProductRecord[]>([]);
-  const [discountMatrix, setDiscountMatrix] = useState<DiscountRow[]>([]);
-  const [customerGroup, setCustomerGroup] = useState(clientData.customerGroup || '');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/products?discontinued=false').then(r => r.json()),
-      fetch('/api/discount-matrix').then(r => r.json()).catch(() => []),
-    ]).then(([prods, dm]) => {
-      setRawProducts(prods);
-      setDiscountMatrix(Array.isArray(dm) ? dm : []);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    fetch('/api/products?status=active')
+      .then(r => r.json())
+      .then((prods) => {
+        setRawProducts(Array.isArray(prods) ? prods : []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
-
-  // Parse raw products into engine-compatible ProductEntry arrays
-  const { products, controllers, accessories } = useMemo(
-    () => toProductEntries(rawProducts),
-    [rawProducts],
-  );
 
   // Total detectors from M1 regulation results
   const totalDetectors = useMemo(
@@ -66,45 +99,46 @@ export default function StepProducts({
     [zoneRegulations],
   );
 
-  // Build SelectionInput for the new engine
-  const selectionInput = useMemo((): SelectionInput | null => {
-    if (products.length === 0) return null;
-    const atexRequired = zoneRegulations.some(zr =>
+  // Determine ATEX requirement from regulation results
+  const atexRequired = useMemo(
+    () => zoneRegulations.some(zr =>
       zr.result.extraRequirements.some(er => er.id === 'ATEX' && er.mandatory)
-    );
-    const firstReg = zoneRegulations[0]?.result;
-    return {
-      regulationResult: firstReg,
-      totalDetectors,
-      selectedRefrigerant: refrigerant.id,
-      selectedRange: gasAppData.selectedRange || undefined,
-      zoneType: gasAppData.zoneType || 'supermarket',
-      zoneAtex: gasAppData.zoneAtex || atexRequired,
-      outputRequired: 'any',
-      sitePowerVoltage: gasAppData.sitePowerVoltage,
-      mountingType: gasAppData.mountingType || 'wall',
-      projectCountry: clientData.country || 'SE',
-      products,
-      controllers,
-      accessories,
-      alertAccessory: undefined,
-    };
-  }, [products, controllers, accessories, refrigerant, gasAppData, zoneRegulations, totalDetectors, clientData]);
+    ),
+    [zoneRegulations],
+  );
 
-  // Run M2 selection engine
-  const selectionResult = useMemo((): SelectionResult | null => {
-    if (!selectionInput) return null;
-    return selectProducts(selectionInput);
-  }, [selectionInput]);
+  // Map voltage format for V2 engine
+  const voltageV2 = useMemo(() => {
+    const v = gasAppData.sitePowerVoltage || '24V';
+    if (v === '12V') return '12V DC';
+    if (v === '230V') return '230V AC';
+    return '24V DC/AC';
+  }, [gasAppData.sitePowerVoltage]);
 
-  // Build price DB from raw products
-  const priceDb = useMemo(() => {
-    const db = new Map<string, { price: number; productGroup: string; discontinued: boolean }>();
-    for (const p of rawProducts) {
-      db.set(p.code, { price: p.price, productGroup: p.productGroup || 'G', discontinued: p.discontinued });
-    }
-    return db;
-  }, [rawProducts]);
+  // Map location for V2 engine
+  const locationV2 = useMemo(() => {
+    const m = gasAppData.mountingType || 'ambient';
+    if (m === 'duct') return 'duct';
+    if (m === 'pipe_valve' || m === 'pipe') return 'pipe';
+    return 'ambient';
+  }, [gasAppData.mountingType]);
+
+  // Run SystemDesigner V2
+  const solutions = useMemo((): Solution[] => {
+    if (rawProducts.length === 0 || totalDetectors === 0) return [];
+    const products = rawProducts.map(toProductV2);
+    const designer = new SystemDesigner(products);
+    return designer.generate({
+      gas: refrigerant.id,
+      atex: gasAppData.zoneAtex || atexRequired,
+      voltage: voltageV2,
+      location: locationV2 as 'ambient' | 'duct' | 'pipe',
+      outputs: [],
+      measType: '',
+      points: totalDetectors,
+      application: gasAppData.zoneType || undefined,
+    });
+  }, [rawProducts, refrigerant, gasAppData, atexRequired, totalDetectors, voltageV2, locationV2]);
 
   // Build zone calc data for PDF report
   const zoneCalcData = useMemo(() => {
@@ -125,28 +159,7 @@ export default function StepProducts({
     });
   }, [zones, zoneRegulations]);
 
-  // Build image map from raw products (code → image filename)
-  const productImages = useMemo(() => {
-    const map: Record<string, string | null> = {};
-    for (const p of rawProducts) {
-      if (p.image) map[p.code] = p.image;
-    }
-    return map;
-  }, [rawProducts]);
-
-  // Run M3 pricing engine
-  const pricingResult = useMemo((): PricingResult | null => {
-    if (!selectionResult) return null;
-    const pricingInput: PricingInput = {
-      tiers: selectionResult.tiers,
-      customerGroup: (customerGroup || 'NO') as PricingInput['customerGroup'],
-      discountMatrix,
-      priceDb,
-    };
-    return calculatePricing(pricingInput);
-  }, [selectionResult, customerGroup, discountMatrix, priceDb]);
-
-  if (loading || !selectionResult || !pricingResult) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-4 border-red-600 border-t-transparent" />
@@ -177,17 +190,18 @@ export default function StepProducts({
         </div>
       </details>
 
-      {/* Product Recommendation */}
+      {/* Product Recommendation using V2 solutions */}
       <StepTieredBOM
-        selectionResult={selectionResult}
-        pricingResult={pricingResult}
-        customerGroup={customerGroup}
-        customerGroups={CUSTOMER_GROUPS}
-        onCustomerGroupChange={setCustomerGroup}
-        clientData={clientData}
-        gasAppData={gasAppData}
-        regulationResult={zoneRegulations[0]?.result}
-        productImages={productImages}
+        solutions={solutions}
+        clientData={{ ...clientData, customerGroup: clientData.customerGroup || '' }}
+        gasAppData={{
+          zoneType: gasAppData.zoneType || '',
+          selectedRefrigerant: refrigerant.id,
+          selectedRange: gasAppData.selectedRange || '',
+          sitePowerVoltage: gasAppData.sitePowerVoltage || '24V',
+          zoneAtex: gasAppData.zoneAtex || atexRequired,
+          mountingType: gasAppData.mountingType || 'ambient',
+        }}
         zoneCalcData={zoneCalcData}
       />
     </div>

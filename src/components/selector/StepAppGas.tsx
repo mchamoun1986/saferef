@@ -1,7 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
-import { Flame, Layers, Beaker, Package, Check } from 'lucide-react';
+import { Flame, Layers, Package, Check } from 'lucide-react';
 
 interface AppOption {
   id: string;
@@ -14,24 +13,21 @@ interface RefOption {
   id: string;
   name: string;
   safetyClass: string;
-  gasGroup: string;
+  gasGroup?: string;
 }
 
 interface Props {
   applications: AppOption[];
   refrigerants: RefOption[];
   application: string;
-  gasGroup: string;
-  refrigerantRefs: string[];
+  refrigerant: string;
   preferredFamily: string;
   onApplicationChange: (v: string) => void;
-  onGasGroupChange: (v: string) => void;
-  onRefrigerantRefsChange: (v: string[]) => void;
+  onRefrigerantChange: (v: string) => void;
   onPreferredFamilyChange: (v: string) => void;
 }
 
-const GAS_GROUPS = ['CO2', 'HFC1', 'HFC2', 'NH3', 'R290', 'CO', 'NO2', 'O2'];
-const FAMILIES = ['MIDI', 'X5', 'RM', 'Aquis'];
+const FAMILIES = ['GLACIAR MIDI', 'X5 Direct Sensor Module', 'X5 Remote Sensor', 'X5 Transmitter'];
 
 const inputClass = 'w-full bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-lg px-3.5 py-2.5 text-sm font-medium text-[#16354B] focus:border-[#16354B] focus:ring-2 focus:ring-[#16354B]/20 outline-none transition-colors';
 const labelClass = 'block text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider mb-1.5';
@@ -48,33 +44,11 @@ function safetyBadgeColor(sc: string): string {
   return 'bg-gray-100 text-gray-600 border-gray-300';
 }
 
-/** Gas group color scheme */
-function gasGroupColor(g: string, isSelected: boolean): string {
-  if (!isSelected) return 'border-[#e2e8f0] bg-white text-[#6b8da5] hover:border-[#E63946]/40 hover:shadow-sm';
-  const upper = g.toUpperCase();
-  if (upper === 'CO2') return 'border-[#E63946] bg-[#E63946] text-white shadow-md';
-  if (upper === 'NH3') return 'border-[#E63946] bg-[#E63946] text-white shadow-md';
-  if (upper === 'R290') return 'border-[#E63946] bg-[#E63946] text-white shadow-md';
-  return 'border-[#E63946] bg-[#E63946] text-white shadow-md';
-}
-
 export default function StepAppGas({
-  applications, refrigerants, application, gasGroup, refrigerantRefs,
-  preferredFamily, onApplicationChange, onGasGroupChange,
-  onRefrigerantRefsChange, onPreferredFamilyChange,
+  applications, refrigerants, application, refrigerant,
+  preferredFamily, onApplicationChange, onRefrigerantChange,
+  onPreferredFamilyChange,
 }: Props) {
-  const filteredRefs = useMemo(() => {
-    if (!gasGroup) return refrigerants;
-    return refrigerants.filter(r => r.gasGroup === gasGroup);
-  }, [gasGroup, refrigerants]);
-
-  function handleRefToggle(refId: string) {
-    if (refrigerantRefs.includes(refId)) {
-      onRefrigerantRefsChange(refrigerantRefs.filter(r => r !== refId));
-    } else {
-      onRefrigerantRefsChange([...refrigerantRefs, refId]);
-    }
-  }
 
   return (
     <div className="space-y-5">
@@ -117,75 +91,56 @@ export default function StepAppGas({
         </div>
       </div>
 
-      {/* ── 2. Gas Group ────────────────────────────────────────── */}
+      {/* ── 2. Refrigerant ──────────────────────────────────────── */}
       <div className="bg-white rounded-xl shadow-[0_2px_12px_rgba(22,53,75,0.08)] p-5 space-y-4">
         <div className="flex items-center gap-2.5">
           <span className="w-1 h-5 bg-[#E63946] rounded-full flex-shrink-0" />
           <Layers className="w-4 h-4 text-[#E63946]" />
-          <h3 className="text-base font-bold text-[#16354B]">Gas Group</h3>
+          <h3 className="text-base font-bold text-[#16354B]">Refrigerant</h3>
         </div>
 
         <div>
-          <label className={labelClass}>Select Gas Category</label>
-          <div className="flex flex-wrap gap-2">
-            {GAS_GROUPS.map(g => (
-              <button
-                key={g}
-                type="button"
-                onClick={() => { onGasGroupChange(g); onRefrigerantRefsChange([]); }}
-                className={`px-4 py-2 rounded-full border-2 text-sm font-bold transition-all ${gasGroupColor(g, gasGroup === g)}`}
-              >
-                {g}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Refrigerant Chips ─────────────────────────────────── */}
-        {gasGroup && (
-          <div>
-            <label className={labelClass}>
-              Refrigerant(s)
-              {refrigerantRefs.length > 0 && (
-                <span className="ml-2 text-[#A7C031] normal-case tracking-normal">
-                  {refrigerantRefs.length} selected
-                </span>
-              )}
-            </label>
-            {filteredRefs.length === 0 ? (
-              <p className="text-xs text-[#6b8da5] italic py-2">No refrigerants found for this gas group.</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {filteredRefs.map(ref => {
-                  const isSelected = refrigerantRefs.includes(ref.id);
-                  return (
-                    <button
-                      key={ref.id}
-                      type="button"
-                      onClick={() => handleRefToggle(ref.id)}
-                      className={`group relative flex items-center gap-2 px-3 py-2 rounded-lg border-2 text-xs font-medium transition-all ${
-                        isSelected
-                          ? 'border-[#A7C031] bg-[#A7C031]/10 text-[#16354B] shadow-sm'
-                          : 'border-[#e2e8f0] text-[#6b8da5] hover:border-[#A7C031]/40 hover:shadow-sm'
-                      }`}
-                    >
-                      {isSelected && (
-                        <Check className="w-3 h-3 text-[#A7C031] flex-shrink-0" />
-                      )}
-                      <span className="font-semibold">{ref.id}</span>
-                      <span className={`hidden sm:inline ${isSelected ? 'text-[#16354B]/70' : 'text-[#6b8da5]/70'}`}>
-                        {ref.name}
-                      </span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${safetyBadgeColor(ref.safetyClass)}`}>
-                        {ref.safetyClass}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+          <label className={labelClass}>
+            Select Refrigerant
+            {refrigerant && (
+              <span className="ml-2 text-[#A7C031] normal-case tracking-normal">
+                {refrigerant} selected
+              </span>
             )}
-          </div>
-        )}
+          </label>
+          {refrigerants.length === 0 ? (
+            <p className="text-xs text-[#6b8da5] italic py-2">Loading refrigerants...</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {refrigerants.map(ref => {
+                const isSelected = refrigerant === ref.id;
+                return (
+                  <button
+                    key={ref.id}
+                    type="button"
+                    onClick={() => onRefrigerantChange(ref.id)}
+                    className={`group relative flex items-center gap-2 px-3 py-2 rounded-lg border-2 text-xs font-medium transition-all ${
+                      isSelected
+                        ? 'border-[#A7C031] bg-[#A7C031]/10 text-[#16354B] shadow-sm'
+                        : 'border-[#e2e8f0] text-[#6b8da5] hover:border-[#A7C031]/40 hover:shadow-sm'
+                    }`}
+                  >
+                    {isSelected && (
+                      <Check className="w-3 h-3 text-[#A7C031] flex-shrink-0" />
+                    )}
+                    <span className="font-semibold">{ref.id}</span>
+                    <span className={`hidden sm:inline ${isSelected ? 'text-[#16354B]/70' : 'text-[#6b8da5]/70'}`}>
+                      {ref.name}
+                    </span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${safetyBadgeColor(ref.safetyClass)}`}>
+                      {ref.safetyClass}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── 3. Preferred Product Range ──────────────────────────── */}
@@ -209,7 +164,6 @@ export default function StepAppGas({
                 <option key={f} value={f}>{f}</option>
               ))}
             </select>
-            <Beaker className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b8da5] pointer-events-none" />
           </div>
         </div>
       </div>
