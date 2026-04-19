@@ -39,9 +39,15 @@ function tierColor(sol: Solution): string {
 }
 
 function tierLabel(sol: Solution): string {
-  const tierStr = sol.tier.charAt(0).toUpperCase() + sol.tier.slice(1);
   const modeStr = sol.mode === 'standalone' ? 'Standalone' : 'Centralized';
-  return `${tierStr} — ${modeStr}`;
+  const tech = sol.detector.sensorTech || '';
+  if (sol.tier === 'premium') {
+    if (tech.toLowerCase().includes('infrared')) return `Premium (IR) — ${modeStr}`;
+    if (tech.toLowerCase().includes('electrochemical') || tech.toLowerCase().includes('ionic')) return `Premium (EC) — ${modeStr}`;
+    return `Premium — ${modeStr}`;
+  }
+  if (sol.tier === 'economic') return `Economic — ${modeStr}`;
+  return `Standard — ${modeStr}`;
 }
 
 export default function StepTieredBOM({
