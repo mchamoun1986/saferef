@@ -9,7 +9,7 @@ function toBOMLine(product: ProductRecord, qty: number, essential: boolean): BOM
     code: product.code,
     name: product.name,
     family: product.family,
-    type: product.type as 'detector' | 'controller' | 'accessory',
+    type: product.type as 'detector' | 'sensor' | 'controller' | 'alert' | 'accessory',
     unitPrice: product.price,
     productGroup: product.productGroup,
     qty,

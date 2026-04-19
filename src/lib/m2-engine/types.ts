@@ -29,7 +29,7 @@ export interface BOMLine {
   code: string;
   name: string;
   family: string;
-  type: 'detector' | 'controller' | 'accessory';
+  type: 'detector' | 'sensor' | 'controller' | 'alert' | 'accessory';
   unitPrice: number;
   productGroup: string;
   qty: number;

@@ -299,7 +299,7 @@ describe('2x2 Matrix Selection', () => {
     const c = ctrl();
     const result = selectProducts(inp({
       products: [sa], controllers: [c], totalDetectors: 4,
-      relations: [{ id: 'r1', fromCode: '10-100', toCode: '20-300', type: 'compatible_controller', mandatory: false, qtyRule: 'per_detector', condition: null, reason: 'test', priority: 0, createdAt: '' }],
+      relations: [{ id: 'r1', fromCode: '10-100', toCode: '20-300', type: 'compatible_controller', mandatory: false, qtyRule: 'per_detector', condition: null, reason: 'test', priority: 0 }],
     }));
     if (result.tiers.premiumStandalone && result.tiers.premiumCentralized) {
       // Centralized (standard) should cost MORE than standalone (premium) due to controller
