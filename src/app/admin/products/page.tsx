@@ -44,18 +44,32 @@ interface Product {
   modbusType: string | null;
   subCategory: string | null;
   compatibleFamilies: string;
+  variant: string | null;
+  subType: string | null;
+  function: string | null;
+  status: string;
+  ports: string;
+  connectionRules: string;
+  compatibleWith: string;
   createdAt: string;
   updatedAt: string;
 }
 
-const TYPES = ['detector', 'controller', 'accessory'] as const;
-const FAMILIES = ['MIDI', 'X5', 'RM', 'Aquis', 'G', 'TR', 'MP', 'Controller', 'Accessory'] as const;
+const TYPES = ['sensor', 'detector', 'controller', 'alert', 'accessory'] as const;
+const FAMILIES = [
+  'GLACIAR MIDI', 'GLACIAR MICRO', 'GLACIAR RM',
+  'X5 Direct Sensor Module', 'X5 Remote Sensor', 'X5 Transmitter',
+  'GLACIAR Controller 10',
+  '1992-R-LP Siren', 'BE Flashing Light', 'FL Combined Flashing Light and Siren', 'SOCK-H-R High Socket Beacon',
+  'Power Adapter', 'Protection Bracket', 'RMV Backbox', 'UPS Battery Backup',
+  'Flow Regulator', 'Calibration Kit', 'MIDI Accessories', 'X5 Accessories',
+] as const;
 const TIERS = ['standard', 'premium', 'economic'] as const;
 const GAS_OPTIONS = ['CO2', 'HFC1', 'HFC2', 'NH3', 'R290', 'CO', 'NO2', 'O2'] as const;
 const MOUNT_OPTIONS = ['wall', 'ceiling', 'floor', 'duct'] as const;
 
 const EMPTY_PRODUCT: Omit<Product, 'createdAt' | 'updatedAt'> = {
-  id: '', type: 'detector', family: 'MIDI', name: '', code: '', price: 0,
+  id: '', type: 'sensor', family: 'GLACIAR MIDI', name: '', code: '', price: 0,
   image: null, specs: '{}', tier: 'standard', productGroup: 'A',
   gas: '[]', refs: '[]', apps: '[]', range: null, sensorTech: null, sensorLife: null,
   power: null, voltage: null, ip: null, tempMin: null, tempMax: null,
@@ -63,6 +77,8 @@ const EMPTY_PRODUCT: Omit<Product, 'createdAt' | 'updatedAt'> = {
   mount: '[]', remote: false, features: null, connectTo: null, discontinued: false,
   channels: null, maxPower: null, powerDesc: null, relaySpec: null, analogType: null,
   modbusType: null, subCategory: null, compatibleFamilies: '[]',
+  variant: null, subType: null, function: null, status: 'active',
+  ports: '[]', connectionRules: '{}', compatibleWith: '[]',
 };
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -132,9 +148,11 @@ function tempRange(p: Product): string {
 }
 
 const TYPE_TABS = [
+  { value: 'sensor', label: 'Sensors' },
   { value: 'detector', label: 'Detectors' },
   { value: 'controller', label: 'Controllers' },
-  { value: 'accessory', label: 'Alarms & Accessories' },
+  { value: 'alert', label: 'Alerts' },
+  { value: 'accessory', label: 'Accessories' },
 ] as const;
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -142,7 +160,7 @@ const TYPE_TABS = [
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterType, setFilterType] = useState<string>('detector');
+  const [filterType, setFilterType] = useState<string>('sensor');
   const [filterFamily, setFilterFamily] = useState<string>('');
   const [filterGas, setFilterGas] = useState('');
   const [filterSubCat, setFilterSubCat] = useState('');
@@ -185,10 +203,12 @@ export default function ProductsPage() {
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
   // Derived
-  const totalAll = products.filter(p => !p.discontinued).length;
-  const detectors = products.filter(p => p.type === 'detector' && !p.discontinued).length;
-  const controllers = products.filter(p => p.type === 'controller' && !p.discontinued).length;
-  const accessories = products.filter(p => p.type === 'accessory' && !p.discontinued).length;
+  const totalAll = products.filter(p => p.status !== 'discontinued' && !p.discontinued).length;
+  const detectors = products.filter(p => p.type === 'detector' && p.status !== 'discontinued' && !p.discontinued).length;
+  const sensors = products.filter(p => p.type === 'sensor' && p.status !== 'discontinued' && !p.discontinued).length;
+  const controllers = products.filter(p => p.type === 'controller' && p.status !== 'discontinued' && !p.discontinued).length;
+  const alerts = products.filter(p => p.type === 'alert' && p.status !== 'discontinued' && !p.discontinued).length;
+  const accessories = products.filter(p => p.type === 'accessory' && p.status !== 'discontinued' && !p.discontinued).length;
   const families = useMemo(() => {
     const set = new Set(products.filter(p => p.type === filterType).map(p => p.family));
     return Array.from(set).sort();
@@ -203,11 +223,11 @@ export default function ProductsPage() {
     return Array.from(set).sort();
   }, [products, filterType]);
   const avgPrice = useMemo(() => {
-    const priced = products.filter(p => p.price > 0 && !p.discontinued);
+    const priced = products.filter(p => p.price > 0 && p.status !== 'discontinued' && !p.discontinued);
     return priced.length > 0 ? Math.round(priced.reduce((s, p) => s + p.price, 0) / priced.length) : 0;
   }, [products]);
-  const withImage = products.filter(p => p.image && !p.discontinued).length;
-  const missingPrice = products.filter(p => p.price <= 0 && !p.discontinued).length;
+  const withImage = products.filter(p => p.image && p.status !== 'discontinued' && !p.discontinued).length;
+  const missingPrice = products.filter(p => p.price <= 0 && p.status !== 'discontinued' && !p.discontinued).length;
 
   // Filter
   const filtered = useMemo(() => {
@@ -263,11 +283,13 @@ export default function ProductsPage() {
   return (
     <div className="p-5 max-w-[1800px] mx-auto">
       {/* Stats row — 8 cards */}
-      <div className="grid grid-cols-4 lg:grid-cols-8 gap-3 mb-5">
-        <StatCard value={totalAll} label="TOTAL PRODUCTS" />
+      <div className="grid grid-cols-5 lg:grid-cols-10 gap-3 mb-5">
+        <StatCard value={totalAll} label="TOTAL" />
+        <StatCard value={sensors} label="SENSORS" />
         <StatCard value={detectors} label="DETECTORS" />
         <StatCard value={controllers} label="CONTROLLERS" />
-        <StatCard value={accessories} label="ALARMS & ACC." />
+        <StatCard value={alerts} label="ALERTS" />
+        <StatCard value={accessories} label="ACCESSORIES" />
         <StatCard value={families.length} label="FAMILIES" />
         <StatCard value={gasTypes.length} label="GAS TYPES" />
         <StatCard value={`${avgPrice} \u20AC`} label="AVG PRICE" />
@@ -288,7 +310,7 @@ export default function ProductsPage() {
         </div>
         <button onClick={openNew}
           className="bg-[#E63946] hover:bg-red-700 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-colors">
-          + Add {filterType === 'detector' ? 'Detectors' : filterType === 'controller' ? 'Controllers' : 'Accessories'}
+          + Add {TYPE_TABS.find(t => t.value === filterType)?.label ?? 'Product'}
         </button>
       </div>
 
@@ -307,14 +329,14 @@ export default function ProductsPage() {
           <option value="">All Gases</option>
           {gasTypes.map(g => <option key={g} value={g}>{g}</option>)}
         </select>
-        {filterType === 'accessory' && subCategories.length > 0 && (
+        {(filterType === 'accessory' || filterType === 'alert') && subCategories.length > 0 && (
           <select value={filterSubCat} onChange={e => setFilterSubCat(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white">
             <option value="">All Sub-Categories</option>
             {subCategories.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         )}
-        {filterType === 'detector' && (
+        {(filterType === 'detector' || filterType === 'sensor') && (
           <>
             <select value={filterTier} onChange={e => setFilterTier(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white">
@@ -333,7 +355,7 @@ export default function ProductsPage() {
             </select>
           </>
         )}
-        {(filterType === 'accessory' || filterType === 'controller') && (
+        {(filterType === 'accessory' || filterType === 'alert' || filterType === 'controller') && (
           <select value={filterCompat} onChange={e => setFilterCompat(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white">
             <option value="">All Compatible</option>
@@ -369,6 +391,7 @@ export default function ProductsPage() {
                   <th className="px-2 py-2.5">ACTIONS</th>
                   <th className="px-2 py-2.5">IMAGE</th>
                   <th className="px-2 py-2.5">FAMILY</th>
+                  <th className="px-2 py-2.5">VARIANT</th>
                   <th className="px-2 py-2.5 min-w-[160px]">PRODUCT NAME</th>
                   <th className="px-2 py-2.5">ORDER CODE</th>
                   <th className="px-2 py-2.5 text-right">PRICE {'\u20AC'}</th>
@@ -386,8 +409,8 @@ export default function ProductsPage() {
                   <th className="px-2 py-2.5 text-center">POWER</th>
                   <th className="px-2 py-2.5">TEMP</th>
                   <th className="px-2 py-2.5">MOUNTING</th>
-                  {filterType === 'accessory' && <th className="px-2 py-2.5">SUB-CAT</th>}
-                  {filterType === 'accessory' && <th className="px-2 py-2.5">COMPATIBLE</th>}
+                  {(filterType === 'accessory' || filterType === 'alert') && <th className="px-2 py-2.5">SUB-CAT</th>}
+                  {(filterType === 'accessory' || filterType === 'alert') && <th className="px-2 py-2.5">COMPATIBLE</th>}
                 </tr>
               </thead>
               <tbody>
@@ -395,7 +418,7 @@ export default function ProductsPage() {
                   const gases: string[] = parseJson(p.gas, []);
                   const mounts: string[] = parseJson(p.mount, []);
                   return (
-                    <tr key={p.id} className={`border-b border-gray-100 hover:bg-blue-50/40 transition-colors ${p.discontinued ? 'opacity-40' : ''} ${idx % 2 === 1 ? 'bg-gray-50/50' : ''} ${selected.has(p.id) ? 'bg-red-50' : ''}`}>
+                    <tr key={p.id} className={`border-b border-gray-100 hover:bg-blue-50/40 transition-colors ${p.status === 'discontinued' ? 'opacity-40' : p.status === 'planned' ? 'opacity-30 italic' : p.discontinued ? 'opacity-40' : ''} ${idx % 2 === 1 ? 'bg-gray-50/50' : ''} ${selected.has(p.id) ? 'bg-red-50' : ''}`}>
                       <td className="px-2 py-1.5">
                         <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} className="rounded" />
                       </td>
@@ -417,6 +440,7 @@ export default function ProductsPage() {
                         )}
                       </td>
                       <td className="px-2 py-1.5"><span className="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-[10px] font-bold">{p.family}</span></td>
+                      <td className="px-2 py-1.5 text-gray-500 text-[11px] max-w-[120px] truncate">{p.variant ?? '—'}</td>
                       <td className="px-2 py-1.5 font-semibold text-[#1a2332] max-w-[180px]">{p.name}</td>
                       <td className="px-2 py-1.5 font-mono text-gray-500">{p.code}</td>
                       <td className="px-2 py-1.5 text-right font-bold text-[#1a2332]">{p.price > 0 ? <>{p.price.toFixed(0)} <span className="text-gray-400 font-normal">{'\u20AC'}</span></> : '\u2014'}</td>
@@ -446,8 +470,8 @@ export default function ProductsPage() {
                       <td className="px-2 py-1.5 text-center text-gray-600">{p.power ? `${p.power}W` : '\u2014'}</td>
                       <td className="px-2 py-1.5 text-gray-600 whitespace-nowrap">{tempRange(p)}</td>
                       <td className="px-2 py-1.5 text-gray-600">{mounts.length > 0 ? mounts.join(', ') : '\u2014'}</td>
-                      {filterType === 'accessory' && <td className="px-2 py-1.5 text-gray-600">{p.subCategory ?? '\u2014'}</td>}
-                      {filterType === 'accessory' && <td className="px-2 py-1.5 text-gray-500 text-[10px]">{parseJson<string[]>(p.compatibleFamilies, []).join(', ') || '\u2014'}</td>}
+                      {(filterType === 'accessory' || filterType === 'alert') && <td className="px-2 py-1.5 text-gray-600">{p.subCategory ?? '\u2014'}</td>}
+                      {(filterType === 'accessory' || filterType === 'alert') && <td className="px-2 py-1.5 text-gray-500 text-[10px]">{parseJson<string[]>(p.compatibleFamilies, []).join(', ') || '\u2014'}</td>}
                     </tr>
                   );
                 })}
@@ -478,8 +502,13 @@ export default function ProductsPage() {
                   <F label="Family" value={form.family} onChange={v => setForm({ ...form, family: v })} />
                   <F label="Product Name" value={form.name} onChange={v => setForm({ ...form, name: v })} />
                   <F label="Order Code" value={form.code} onChange={v => setForm({ ...form, code: v })} mono />
+                  <F label="Variant" value={form.variant ?? ''} onChange={v => setForm({ ...form, variant: v || null })} placeholder="e.g. CO2 Integrated" />
+                  <Sel label="Status" value={form.status} options={['active', 'planned', 'discontinued']} onChange={v => setForm({ ...form, status: v })} />
+                  {(form.type === 'detector' || form.type === 'sensor' || form.type === 'alert' || form.type === 'accessory') && (
+                    <F label="Sub-Type" value={form.subType ?? ''} onChange={v => setForm({ ...form, subType: v || null })} placeholder="e.g. gas_detector, beacon, power_adapter" />
+                  )}
                   {/* Sub-Category + Compatibility — shown early for accessories/controllers */}
-                  {form.type === 'accessory' && (
+                  {(form.type === 'accessory' || form.type === 'alert') && (
                     <>
                       <Sel label="Sub-Category" value={form.subCategory ?? ''} options={['', 'mounting', 'alert', 'spare', 'service', 'power', 'cable', 'other']} onChange={v => setForm({ ...form, subCategory: v || null })} />
                       <F label="Compatible Families" value={form.compatibleFamilies} onChange={v => setForm({ ...form, compatibleFamilies: v })} mono placeholder='["MIDI","X5"] or ["ALL"]' />
@@ -531,8 +560,8 @@ export default function ProductsPage() {
                 <TA label="Compatible Applications (JSON)" value={form.apps} onChange={v => setForm({ ...form, apps: v })} rows={2} mono />
               </Section>
 
-              {/* ═══ DETECTION ═══ (detectors only) */}
-              {form.type === 'detector' && <Section title="DETECTION" color="text-[#1a2332]">
+              {/* ═══ DETECTION ═══ (detectors + sensors) */}
+              {(form.type === 'detector' || form.type === 'sensor') && <Section title="DETECTION" color="text-[#1a2332]">
                 <div className="grid grid-cols-2 gap-4">
                   <F label="Range" value={form.range ?? ''} onChange={v => setForm({ ...form, range: v || null })} placeholder="e.g. 0-10000ppm" />
                   <F label="Sensor Tech" value={form.sensorTech ?? ''} onChange={v => setForm({ ...form, sensorTech: v || null })} placeholder="IR / SC / EC / pH" />
@@ -541,18 +570,19 @@ export default function ProductsPage() {
                   <N label="Temp Min (C)" value={form.tempMin ?? 0} onChange={v => setForm({ ...form, tempMin: v || null })} />
                   <N label="Temp Max (C)" value={form.tempMax ?? 0} onChange={v => setForm({ ...form, tempMax: v || null })} />
                 </div>
+                <TA label="Function" value={form.function ?? ''} onChange={v => setForm({ ...form, function: v || null })} rows={2} placeholder="Gas detection — standalone or via controller..." />
               </Section>}
 
-              {/* ═══ ELECTRICAL ═══ (detectors + controllers) */}
-              {(form.type === 'detector' || form.type === 'controller') && <Section title="ELECTRICAL" color="text-[#1a2332]">
+              {/* ═══ ELECTRICAL ═══ (detectors + sensors + controllers + alerts) */}
+              {(form.type === 'detector' || form.type === 'sensor' || form.type === 'controller' || form.type === 'alert') && <Section title="ELECTRICAL" color="text-[#1a2332]">
                 <div className="grid grid-cols-2 gap-4">
                   <F label="Voltage" value={form.voltage ?? ''} onChange={v => setForm({ ...form, voltage: v || null })} placeholder="e.g. 15-24V" />
                   <N label="Power (W)" value={form.power ?? 0} onChange={v => setForm({ ...form, power: v || null })} />
                 </div>
               </Section>}
 
-              {/* ═══ OUTPUTS ═══ (detectors only) */}
-              {form.type === 'detector' && <Section title="OUTPUTS" color="text-[#1a2332]">
+              {/* ═══ OUTPUTS ═══ (detectors + sensors) */}
+              {(form.type === 'detector' || form.type === 'sensor') && <Section title="OUTPUTS" color="text-[#1a2332]">
                 <div className="grid grid-cols-2 gap-4">
                   <N label="Relay count" value={form.relay} onChange={v => setForm({ ...form, relay: Math.round(v) })} />
                   <F label="Analog" value={form.analog ?? ''} onChange={v => setForm({ ...form, analog: v || null })} placeholder="selectable / 4-20mA / 0-10V" />
@@ -564,8 +594,8 @@ export default function ProductsPage() {
                 </div>
               </Section>}
 
-              {/* ═══ CONNECTION ═══ (controllers only) */}
-              {(form.type === 'controller' || form.type === 'detector') && <Section title="CONNECTION" color="text-[#1a2332]">
+              {/* ═══ CONNECTION ═══ (controllers + detectors + sensors) */}
+              {(form.type === 'controller' || form.type === 'detector' || form.type === 'sensor') && <Section title="CONNECTION" color="text-[#1a2332]">
                 <div className="grid grid-cols-2 gap-4">
                   <F label="Connect To" value={form.connectTo ?? ''} onChange={v => setForm({ ...form, connectTo: v || null })} placeholder="e.g. MPU/SPU/SPLS" />
                   <F label="Compatible Families" value={form.compatibleFamilies} onChange={v => setForm({ ...form, compatibleFamilies: v })} mono placeholder='["MIDI","X5"] or ["ALL"]' />
@@ -576,8 +606,8 @@ export default function ProductsPage() {
                 </div>
               </Section>}
 
-              {/* ═══ MOUNTING ═══ (detectors only) */}
-              {form.type === 'detector' && <Section title="MOUNTING" color="text-[#1a2332]">
+              {/* ═══ MOUNTING ═══ (detectors + sensors + alerts) */}
+              {(form.type === 'detector' || form.type === 'sensor' || form.type === 'alert') && <Section title="MOUNTING" color="text-[#1a2332]">
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-2">Mount Types</label>
                   <div className="flex flex-wrap gap-3">
@@ -600,11 +630,18 @@ export default function ProductsPage() {
                 <TA label="Features" value={form.features ?? ''} onChange={v => setForm({ ...form, features: v || null })} rows={3} placeholder="LED display, Bluetooth app, etc." />
               </Section>
 
+              {/* ═══ COMPATIBILITY (V2) ═══ */}
+              <Section title="COMPATIBILITY (V2)" color="text-[#E63946]">
+                <TA label="Compatible With (JSON)" value={form.compatibleWith} onChange={v => setForm({ ...form, compatibleWith: v })} rows={2} mono placeholder='["GLACIAR MIDI", "GLACIAR Controller 10"]' />
+                <TA label="Connection Rules (JSON)" value={form.connectionRules} onChange={v => setForm({ ...form, connectionRules: v })} rows={3} mono placeholder='{"maxDetectors": 10, "beaconsNeeded": 1}' />
+                <TA label="Ports (JSON)" value={form.ports} onChange={v => setForm({ ...form, ports: v })} rows={3} mono placeholder='[{"name": "...", "direction": "input"}]' />
+              </Section>
+
               {/* ═══ STATUS ═══ */}
               <div className="pt-4 border-t border-gray-200">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.discontinued} onChange={e => setForm({ ...form, discontinued: e.target.checked })} className="rounded" />
-                  <span className="text-sm font-semibold text-red-600">Discontinued (End of Life)</span>
+                  <span className="text-sm font-semibold text-red-600">Discontinued (End of Life — legacy flag)</span>
                 </label>
               </div>
 
