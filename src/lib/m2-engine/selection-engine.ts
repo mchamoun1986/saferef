@@ -1,6 +1,18 @@
 // selection-engine.ts — M2 Product Selection Engine V3
 // Full filter pipeline F0-F9, 2x2 matrix output (4 solutions), scoring /21, controller combo
 // Adapted from DetectBuilder for SafeRef
+//
+// ─── NEW API (V2) — use SystemDesigner for new consumers ───────────────────────
+// The legacy selectProducts() function below is kept for backwards compatibility.
+// New code should use SystemDesigner directly:
+//
+//   import { SystemDesigner } from '@/lib/m2-engine/selection-engine';
+//   const designer = new SystemDesigner(products);
+//   const solutions = designer.generate({ gas, atex, voltage, location, outputs, measType, points });
+//
+export { SystemDesigner } from './designer';
+export type { DesignerInputs, Solution, ProductV2, BomComponent } from './designer-types';
+// ──────────────────────────────────────────────────────────────────────────────
 
 import type {
   SelectionInput,
