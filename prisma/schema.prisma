@@ -98,7 +98,7 @@ model CalcSheet {
 
 model Product {
   id           String   @id @default(cuid())
-  type         String                        // "detector", "controller", "accessory"
+  type         String                        // "detector", "sensor", "controller", "alert", "accessory"
   family       String                        // "MIDI", "X5", "RM", "Aquis", "Controller", "Accessory"
   name         String
   code         String   @unique
@@ -138,6 +138,15 @@ model Product {
   modbusType   String?
   subCategory        String?                 // "alert", "service", "mounting", "power", "spare"
   compatibleFamilies String  @default("[]")  // JSON: ["MIDI","X5"] or ["ALL"]
+
+  // ─── V2 fields ───
+  variant         String?
+  subType         String?
+  function        String?
+  status          String   @default("active")
+  ports           String   @default("[]")
+  connectionRules String   @default("{}")
+  compatibleWith  String   @default("[]")
 }
 
 model DiscountMatrix {
@@ -186,17 +195,3 @@ model LoginLog {
   createdAt DateTime @default(now())
 }
 
-model ProductRelation {
-  id          String   @id @default(cuid())
-  fromCode    String
-  toCode      String
-  type        String
-  mandatory   Boolean  @default(false)
-  qtyRule     String   @default("per_detector")
-  condition   String?
-  reason      String?
-  priority    Int      @default(0)
-  createdAt   DateTime @default(now())
-
-  @@unique([fromCode, toCode, type])
-}
