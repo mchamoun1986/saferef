@@ -11,6 +11,7 @@ import StepGasApp from '@/components/configurator/StepGasApp';
 import StepZones from '@/components/configurator/StepZones';
 import StepCalcSheet from '@/components/configurator/StepCalcSheet';
 import StepProducts from '@/components/configurator/StepProducts';
+import StepTechnical from '@/components/selector/StepTechnical';
 import StepProgress from '@/components/configurator/StepProgress';
 import { calculateAllZones } from '@/lib/m1-engine';
 import { en378RuleSet } from '@/lib/rules/en378';
@@ -68,6 +69,11 @@ export default function ConfiguratorPage() {
   const [clientData, setClientData] = useState<ClientData>(defaultClientData);
   const [gasAppData, setGasAppData] = useState<GasAppData>(defaultGasAppData);
   const [zones, setZones] = useState<ZoneData[]>([]);
+
+  // Technical step state (Step 5)
+  const [siteVoltage, setSiteVoltage] = useState<'12V' | '24V' | '230V'>('24V');
+  const [atexRequired, setAtexRequired] = useState(false);
+  const [mountType, setMountType] = useState('ambient');
 
   // Validation errors
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -321,7 +327,7 @@ export default function ConfiguratorPage() {
       return;
     }
 
-    setStep((s) => Math.min(s + 1, 4));
+    setStep((s) => Math.min(s + 1, 5));
   }
 
   function prevStep() {
@@ -442,11 +448,23 @@ export default function ConfiguratorPage() {
           />
         )}
 
-        {/* Step 5 — Products */}
-        {step === 5 && calcResult && selectedRefrigerant && (
+        {/* Step 5 — Technical */}
+        {step === 5 && (
+          <StepTechnical
+            voltage={siteVoltage}
+            atexRequired={atexRequired}
+            mountType={mountType}
+            onVoltageChange={setSiteVoltage}
+            onAtexChange={setAtexRequired}
+            onMountChange={setMountType}
+          />
+        )}
+
+        {/* Step 6 — Products */}
+        {step === 6 && calcResult && selectedRefrigerant && (
           <StepProducts
             clientData={clientData}
-            gasAppData={gasAppData}
+            gasAppData={{ ...gasAppData, sitePowerVoltage: siteVoltage, zoneAtex: atexRequired, mountingType: mountType }}
             zones={zones}
             refrigerant={selectedRefrigerant}
             zoneRegulations={calcResult.zoneResults}
@@ -487,7 +505,7 @@ export default function ConfiguratorPage() {
           </div>
         )}
 
-        {/* Back + Quote buttons on Step 4 */}
+        {/* Back + Continue on Step 4 (CalcSheet → Technical) */}
         {step === 4 && (
           <div className="mt-6 print:hidden flex gap-3">
             <button
@@ -500,16 +518,34 @@ export default function ConfiguratorPage() {
               onClick={() => setStep(5)}
               className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold px-8 py-3 rounded-lg transition-all shadow-lg shadow-[#A7C031]/30"
             >
-              Continue to Product Selection &rarr;
+              Continue to Technical &rarr;
             </button>
           </div>
         )}
 
-        {/* Back button on Step 5 */}
+        {/* Back + Continue on Step 5 (Technical → Products) */}
         {step === 5 && (
-          <div className="mt-6 print:hidden">
+          <div className="flex justify-between mt-8 print:hidden">
             <button
               onClick={() => setStep(4)}
+              className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold px-8 py-3 rounded-lg transition-colors"
+            >
+              {NAV[lang].back}
+            </button>
+            <button
+              onClick={() => setStep(6)}
+              className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold px-8 py-3 rounded-lg transition-all shadow-lg shadow-[#A7C031]/30"
+            >
+              View Product Recommendations &rarr;
+            </button>
+          </div>
+        )}
+
+        {/* Back button on Step 6 (Products) */}
+        {step === 6 && (
+          <div className="mt-6 print:hidden">
+            <button
+              onClick={() => setStep(5)}
               className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold px-8 py-3 rounded-lg transition-colors"
             >
               {NAV[lang].back}

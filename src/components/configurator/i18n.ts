@@ -101,11 +101,11 @@ export const VALIDATION = {
 // ─── Step Progress ───────────────────────────────────────────────────────────
 
 export const STEPS = {
-  en: ['Client', 'Gas & App', 'Zones', 'Calc Sheet', 'Products'],
-  fr: ['Client', 'Gaz & App', 'Zones', 'Fiche Calcul', 'Produits'],
-  sv: ['Kund', 'Gas & App', 'Zoner', 'Ber\u00e4kningsblad', 'Produkter'],
-  de: ['Kunde', 'Gas & App', 'Zonen', 'Berechnungsblatt', 'Produkte'],
-  es: ['Cliente', 'Gas & App', 'Zonas', 'Hoja de C\u00e1lculo', 'Productos'],
+  en: ['Client', 'Gas & App', 'Zones', 'Calc Sheet', 'Technical', 'Products'],
+  fr: ['Client', 'Gaz & App', 'Zones', 'Fiche Calcul', 'Technique', 'Produits'],
+  sv: ['Kund', 'Gas & App', 'Zoner', 'Ber\u00e4kningsblad', 'Teknik', 'Produkter'],
+  de: ['Kunde', 'Gas & App', 'Zonen', 'Berechnungsblatt', 'Technik', 'Produkte'],
+  es: ['Cliente', 'Gas & App', 'Zonas', 'Hoja de C\u00e1lculo', 'T\u00e9cnico', 'Productos'],
 } as const;
 
 // ─── StepClient ──────────────────────────────────────────────────────────────

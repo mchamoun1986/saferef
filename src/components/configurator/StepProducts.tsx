@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Zap, MapPin, ShieldAlert } from 'lucide-react';
 import type { ClientData, GasAppData, ZoneData } from './types';
 import type { RefrigerantV5, ZoneRegulationResult } from '@/lib/engine-types';
 import type { ProductRecord } from '@/lib/m2-engine/types';
@@ -82,14 +81,6 @@ export default function StepProducts({
   clientData, gasAppData, zones, refrigerant, zoneRegulations, application, spaceTypes = [], lang = 'en',
 }: Props) {
   const [rawProducts, setRawProducts] = useState<ProductRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Technical inputs — local state (user adjustable)
-  const [siteVoltage, setSiteVoltage] = useState<'12V' | '24V' | '230V'>(gasAppData.sitePowerVoltage || '24V');
-  const [detectionLocation, setDetectionLocation] = useState<'ambient' | 'duct' | 'pipe'>(
-    gasAppData.mountingType === 'duct' ? 'duct' : gasAppData.mountingType === 'pipe' || gasAppData.mountingType === 'pipe_valve' ? 'pipe' : 'ambient'
-  );
-  const [atexOverride, setAtexOverride] = useState<boolean>(gasAppData.zoneAtex || false);
 
   useEffect(() => {
     fetch('/api/products?status=active')
@@ -107,17 +98,19 @@ export default function StepProducts({
     [zoneRegulations],
   );
 
-  // Determine ATEX requirement from regulation results
-  const atexFromM1 = useMemo(
-    () => zoneRegulations.some(zr =>
+  const [loading, setLoading] = useState(true);
+
+  // Determine ATEX requirement from regulation results + user input
+  const atexRequired = useMemo(
+    () => gasAppData.zoneAtex || zoneRegulations.some(zr =>
       zr.result.extraRequirements.some(er => er.id === 'ATEX' && er.mandatory)
     ),
-    [zoneRegulations],
+    [zoneRegulations, gasAppData.zoneAtex],
   );
-  const atexRequired = atexOverride || atexFromM1;
 
-  // Map voltage format for V2 engine
-  const voltageV2 = siteVoltage === '12V' ? '12V DC' : siteVoltage === '230V' ? '230V AC' : '24V DC/AC';
+  // Map voltage/location from gasAppData (set by Technical step)
+  const voltageV2 = gasAppData.sitePowerVoltage === '12V' ? '12V DC' : gasAppData.sitePowerVoltage === '230V' ? '230V AC' : '24V DC/AC';
+  const locationV2 = gasAppData.mountingType === 'duct' ? 'duct' : gasAppData.mountingType === 'pipe' || gasAppData.mountingType === 'pipe_valve' ? 'pipe' : 'ambient';
 
   // Run SystemDesigner V2
   const solutions = useMemo((): Solution[] => {
@@ -128,13 +121,13 @@ export default function StepProducts({
       gas: refrigerant.id,
       atex: atexRequired,
       voltage: voltageV2,
-      location: detectionLocation,
+      location: locationV2 as 'ambient' | 'duct' | 'pipe',
       outputs: [],
       measType: '',
       points: totalDetectors,
       application: gasAppData.zoneType || undefined,
     });
-  }, [rawProducts, refrigerant, gasAppData.zoneType, atexRequired, totalDetectors, voltageV2, detectionLocation]);
+  }, [rawProducts, refrigerant, gasAppData.zoneType, atexRequired, totalDetectors, voltageV2, locationV2]);
 
   // Build zone calc data for PDF report
   const zoneCalcData = useMemo(() => {
@@ -186,70 +179,6 @@ export default function StepProducts({
         </div>
       </details>
 
-      {/* Technical Parameters — user adjustable */}
-      <div className="bg-white rounded-xl shadow-[0_2px_12px_rgba(22,53,75,0.08)] p-5">
-        <h3 className="text-sm font-bold text-[#16354B] mb-4 flex items-center gap-2">
-          <Zap className="w-4 h-4 text-[#E63946]" />
-          Site Configuration
-          <span className="text-xs font-normal text-gray-400 ml-2">
-            {totalDetectors} detector{totalDetectors !== 1 ? 's' : ''} required by regulation
-          </span>
-        </h3>
-        <div className="grid grid-cols-3 gap-4">
-          {/* Voltage */}
-          <div>
-            <label className="block text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider mb-2">Site Voltage</label>
-            <div className="flex gap-1.5">
-              {(['12V', '24V', '230V'] as const).map(v => (
-                <button key={v} type="button" onClick={() => setSiteVoltage(v)}
-                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-                    siteVoltage === v
-                      ? 'bg-[#16354B] text-white shadow-sm'
-                      : 'bg-[#f8fafc] border border-[#e2e8f0] text-[#6b8da5] hover:border-[#16354B]'
-                  }`}>
-                  {v}
-                </button>
-              ))}
-            </div>
-          </div>
-          {/* Detection Location */}
-          <div>
-            <label className="block text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider mb-2">Detection Location</label>
-            <div className="flex gap-1.5">
-              {([
-                { value: 'ambient' as const, label: 'Ambient' },
-                { value: 'duct' as const, label: 'Duct' },
-                { value: 'pipe' as const, label: 'Pipe' },
-              ]).map(loc => (
-                <button key={loc.value} type="button" onClick={() => setDetectionLocation(loc.value)}
-                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 ${
-                    detectionLocation === loc.value
-                      ? 'bg-[#16354B] text-white shadow-sm'
-                      : 'bg-[#f8fafc] border border-[#e2e8f0] text-[#6b8da5] hover:border-[#16354B]'
-                  }`}>
-                  <MapPin className="w-3 h-3" />
-                  {loc.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          {/* ATEX */}
-          <div>
-            <label className="block text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider mb-2">ATEX Zone</label>
-            <button type="button" onClick={() => setAtexOverride(!atexOverride)}
-              className={`w-full py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 ${
-                atexRequired
-                  ? 'bg-red-50 border-2 border-red-300 text-red-700'
-                  : 'bg-[#f8fafc] border border-[#e2e8f0] text-[#6b8da5] hover:border-[#16354B]'
-              }`}>
-              <ShieldAlert className="w-3.5 h-3.5" />
-              {atexRequired ? 'ATEX Required' : 'Non-ATEX'}
-              {atexFromM1 && <span className="text-[9px] opacity-60">(from regulation)</span>}
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Product Recommendation using V2 solutions */}
       <StepTieredBOM
         solutions={solutions}
@@ -258,9 +187,9 @@ export default function StepProducts({
           zoneType: gasAppData.zoneType || '',
           selectedRefrigerant: refrigerant.id,
           selectedRange: '',
-          sitePowerVoltage: siteVoltage,
+          sitePowerVoltage: gasAppData.sitePowerVoltage || '24V',
           zoneAtex: atexRequired,
-          mountingType: detectionLocation,
+          mountingType: gasAppData.mountingType || 'ambient',
         }}
         zoneCalcData={zoneCalcData}
       />
