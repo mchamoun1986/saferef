@@ -12,9 +12,8 @@ import { REFRIGERANTS_V5 } from "./seed-data/refrigerants-v5";
 import { GAS_CATEGORIES } from "./seed-data/gas-categories";
 import { APPLICATIONS } from "./seed-data/applications";
 import { SPACE_TYPES } from "./seed-data/space-types";
-import { PRODUCTS, DISCONTINUED_CODES } from './seed-data/products';
+import { PRODUCTS_V2 as PRODUCTS, DISCONTINUED_CODES } from './seed-data/products-v2';
 import { DISCOUNT_MATRIX } from './seed-data/discount-matrix';
-import { PRODUCT_RELATIONS } from './seed-data/product-relations';
 
 function createPrismaClient() {
   // DATABASE_URL from .env: "file:./saferef.db"
@@ -37,7 +36,6 @@ const prisma = createPrismaClient();
 async function main() {
   // ── Clear all tables ──
   console.log("Clearing existing data...");
-  await prisma.productRelation.deleteMany();
   await prisma.discountMatrix.deleteMany();
   await prisma.product.deleteMany();
   await prisma.calcSheet.deleteMany();
@@ -88,24 +86,21 @@ async function main() {
   });
   console.log("  ✓ Admin user created: admin@saferef.com");
 
-  // Seed Products
-  for (const p of PRODUCTS) {
+  // Remove discontinued products from DB
+  const discSet = new Set(DISCONTINUED_CODES);
+  await prisma.product.deleteMany({ where: { code: { in: DISCONTINUED_CODES } } });
+  console.log(`  Deleted ${DISCONTINUED_CODES.length} discontinued codes from DB`);
+
+  // Seed Products (skip discontinued)
+  const activeProducts = PRODUCTS.filter(p => !discSet.has(p.code));
+  for (const p of activeProducts) {
     await prisma.product.upsert({
       where: { code: p.code },
       update: { ...p },
       create: { ...p },
     });
   }
-  console.log('  Products:    ', PRODUCTS.length);
-
-  // Mark out-of-scope products as discontinued
-  for (const code of DISCONTINUED_CODES) {
-    await prisma.product.updateMany({
-      where: { code },
-      data: { discontinued: true },
-    });
-  }
-  console.log(`Marked ${DISCONTINUED_CODES.length} products as discontinued`);
+  console.log('  Products:    ', activeProducts.length, `(${PRODUCTS.length - activeProducts.length} discontinued skipped)`);
 
   // Seed Discount Matrix
   await prisma.discountMatrix.deleteMany();
@@ -114,13 +109,6 @@ async function main() {
   }
   console.log('  Discounts:   ', DISCOUNT_MATRIX.length);
 
-  // Seed Product Relations
-  await prisma.productRelation.deleteMany();
-  for (const r of PRODUCT_RELATIONS) {
-    await prisma.productRelation.create({ data: r });
-  }
-  console.log('  Relations:   ', PRODUCT_RELATIONS.length);
-
   console.log("\nSeed complete!");
   console.log(`  Refrigerants:   ${REFRIGERANTS_V5.length}`);
   console.log(`  Gas Categories: ${GAS_CATEGORIES.length}`);
@@ -128,8 +116,7 @@ async function main() {
   console.log(`  Space Types:    ${SPACE_TYPES.length}`);
   console.log(`  Products:       ${PRODUCTS.length}`);
   console.log(`  Discounts:      ${DISCOUNT_MATRIX.length}`);
-  console.log(`  Relations:      ${PRODUCT_RELATIONS.length}`);
-  console.log(`  Admin user:     admin@samon.com`);
+  console.log(`  Admin user:     admin@saferef.com`);
 }
 
 main()
