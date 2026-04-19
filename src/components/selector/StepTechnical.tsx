@@ -16,16 +16,14 @@ interface Props {
   voltage: '12V' | '24V' | '230V';
   atexRequired: boolean;
   mountType: string;
-  standalone: boolean;
   onVoltageChange: (v: '12V' | '24V' | '230V') => void;
   onAtexChange: (v: boolean) => void;
   onMountChange: (v: string) => void;
-  onStandaloneChange: (v: boolean) => void;
 }
 
 export default function StepTechnical({
-  voltage, atexRequired, mountType, standalone,
-  onVoltageChange, onAtexChange, onMountChange, onStandaloneChange,
+  voltage, atexRequired, mountType,
+  onVoltageChange, onAtexChange, onMountChange,
 }: Props) {
   return (
     <div className="space-y-5">
@@ -178,65 +176,7 @@ export default function StepTechnical({
         </div>
       </div>
 
-      {/* ── 4. Operation Mode ──────────────────────────────────── */}
-      <div className="bg-white rounded-xl shadow-[0_2px_12px_rgba(22,53,75,0.08)] p-5 space-y-4">
-        <div className="flex items-center gap-2.5">
-          <span className="w-1 h-5 bg-[#16354B] rounded-full flex-shrink-0" />
-          <Cpu className="w-4 h-4 text-[#16354B]" />
-          <h3 className="text-base font-bold text-[#16354B]">Operation Mode</h3>
-        </div>
-
-        <div>
-          <label className={labelClass}>Select system architecture</label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => onStandaloneChange(false)}
-              className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                !standalone
-                  ? 'border-[#16354B] bg-[#16354B]/5 shadow-sm'
-                  : 'border-[#e2e8f0] bg-white hover:border-[#16354B]/40 hover:shadow-sm'
-              }`}
-            >
-              {!standalone && (
-                <span className="absolute top-1.5 right-1.5 w-5 h-5 bg-[#16354B] rounded-full flex items-center justify-center">
-                  <Check className="w-3.5 h-3.5 text-white" />
-                </span>
-              )}
-              <Cpu className={`w-6 h-6 ${!standalone ? 'text-[#16354B]' : 'text-[#6b8da5]'}`} />
-              <span className={`text-sm font-bold ${!standalone ? 'text-[#16354B]' : 'text-[#6b8da5]'}`}>
-                With Controller
-              </span>
-              <span className="text-[10px] text-[#6b8da5] text-center leading-tight">
-                Detectors connected to a central unit
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onStandaloneChange(true)}
-              className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                standalone
-                  ? 'border-[#16354B] bg-[#16354B]/5 shadow-sm'
-                  : 'border-[#e2e8f0] bg-white hover:border-[#16354B]/40 hover:shadow-sm'
-              }`}
-            >
-              {standalone && (
-                <span className="absolute top-1.5 right-1.5 w-5 h-5 bg-[#16354B] rounded-full flex items-center justify-center">
-                  <Check className="w-3.5 h-3.5 text-white" />
-                </span>
-              )}
-              <Monitor className={`w-6 h-6 ${standalone ? 'text-[#16354B]' : 'text-[#6b8da5]'}`} />
-              <span className={`text-sm font-bold ${standalone ? 'text-[#16354B]' : 'text-[#6b8da5]'}`}>
-                Standalone
-              </span>
-              <span className="text-[10px] text-[#6b8da5] text-center leading-tight">
-                Independent detector with built-in relay
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Operation Mode removed — engine generates both standalone + centralized */}
     </div>
   );
 }

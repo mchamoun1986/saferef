@@ -336,11 +336,9 @@ export default function SelectorWizard() {
             voltage={voltage}
             atexRequired={atexRequired}
             mountType={mountType}
-            standalone={standalone}
             onVoltageChange={setVoltage}
             onAtexChange={setAtexRequired}
             onMountChange={setMountType}
-            onStandaloneChange={setStandalone}
           />
         )}
         {step === 4 && (
