@@ -13,6 +13,8 @@ export async function GET(request: Request) {
     const search = searchParams.get('search');
     const discontinued = searchParams.get('discontinued');
     const gas = searchParams.get('gas');
+    const status = searchParams.get('status');
+    const subType = searchParams.get('subType');
 
     // Build Prisma where clause for filterable DB columns
     const where: Record<string, unknown> = {};
@@ -20,6 +22,8 @@ export async function GET(request: Request) {
     if (family) where.family = family;
     if (discontinued === 'true') where.discontinued = true;
     if (discontinued === 'false') where.discontinued = false;
+    if (status) where.status = status;
+    if (subType) where.subType = subType;
 
     let products = await prisma.product.findMany({
       where,
@@ -103,7 +107,39 @@ export async function POST(request: Request) {
       );
     }
 
-    const product = await prisma.product.create({ data: body });
+    // Extract all known fields (V1 + V2) to avoid passing unknown keys to Prisma
+    const {
+      code, name, type, family, subCategory, description, price, currency,
+      gas, atex, refs, compatibleFamilies, datasheet, image, discontinued,
+      // V2 fields
+      variant, subType, function: functionField, status,
+      ports, connectionRules, compatibleWith,
+    } = body;
+
+    const data: Record<string, unknown> = {
+      code, name, type, family,
+      ...(subCategory !== undefined && { subCategory }),
+      ...(description !== undefined && { description }),
+      ...(price !== undefined && { price }),
+      ...(currency !== undefined && { currency }),
+      ...(gas !== undefined && { gas }),
+      ...(atex !== undefined && { atex }),
+      ...(refs !== undefined && { refs }),
+      ...(compatibleFamilies !== undefined && { compatibleFamilies }),
+      ...(datasheet !== undefined && { datasheet }),
+      ...(image !== undefined && { image }),
+      ...(discontinued !== undefined && { discontinued }),
+      // V2
+      ...(variant !== undefined && { variant }),
+      ...(subType !== undefined && { subType }),
+      ...(functionField !== undefined && { function: functionField }),
+      ...(status !== undefined && { status }),
+      ...(ports !== undefined && { ports }),
+      ...(connectionRules !== undefined && { connectionRules }),
+      ...(compatibleWith !== undefined && { compatibleWith }),
+    };
+
+    const product = await prisma.product.create({ data });
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
     console.error('[API] POST /products error:', error);
@@ -127,6 +163,8 @@ export async function PUT(request: Request) {
     delete rest.createdAt;
     delete rest.updatedAt;
 
+    // All known V1 + V2 fields (variant, subType, function, status, ports,
+    // connectionRules, compatibleWith) are forwarded as-is via `rest`.
     const product = await prisma.product.update({ where: { id }, data: rest });
     return NextResponse.json(product);
   } catch (error) {
