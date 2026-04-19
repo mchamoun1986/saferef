@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
-type Tab = 'filters' | 'selection' | 'pricing';
+type Tab = 'filters' | 'selection' | 'products';
 
 // ── Formula Card Component ─────────────────────────────────────────────
 
@@ -201,9 +201,9 @@ export default function EngineM2DocPage() {
   const [activeTab, setActiveTab] = useState<Tab>('filters');
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'filters', label: 'Filters & Scoring' },
-    { id: 'selection', label: 'Selection Rules' },
-    { id: 'pricing', label: 'Pricing Pipeline' },
+    { id: 'filters', label: 'Filter Pipeline' },
+    { id: 'selection', label: 'Solution Assembly' },
+    { id: 'products', label: 'Product Types & Families' },
   ];
 
   return (
@@ -212,14 +212,13 @@ export default function EngineM2DocPage() {
       <div className="bg-[#1a2332] text-white px-8 py-8">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-2xl font-bold">
-            M2 Selection + M3 Pricing Engine{' '}
-            <span className="text-gray-400 font-normal">/ Product & Quote Engine</span>
+            SystemDesigner V2{' '}
+            <span className="text-gray-400 font-normal">/ Product Selection Engine</span>
           </h1>
           <p className="text-gray-400 text-sm mt-2">
-            Technical reference for the product selection pipeline (M2), 2x2 matrix recommendation system,
-            and pricing engine (M3).
+            Technical reference for the V2 product selection engine (<code className="text-xs bg-white/10 px-1 py-0.5 rounded">SystemDesigner</code>).
             <br />
-            Covers filter chain F0-F9, scoring /21, BOM assembly, discount resolution, and quote generation.
+            Covers the filter pipeline, solution assembly (centralized + standalone), BOM generation, X5 config A/B/C, alert &amp; adapter selection.
           </p>
 
           {/* Tabs */}
@@ -248,212 +247,189 @@ export default function EngineM2DocPage() {
       <div className="max-w-7xl mx-auto px-8 py-8">
 
         {/* ═══════════════════════════════════════════════════════════════
-            TAB 1: FILTERS & SCORING
+            TAB 1: FILTER PIPELINE
             ═══════════════════════════════════════════════════════════════ */}
         {activeTab === 'filters' && (
           <div className="space-y-6">
             <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Filter Pipeline & Scoring</h2>
+              <h2 className="text-xl font-bold text-gray-900">V2 Filter Pipeline</h2>
               <p className="text-gray-500 text-sm mt-1">
-                Sequential filter chain that narrows the product catalog, followed by a /21 scoring system.
-                Source: <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">m2-engine/selection-engine.ts</code>
+                Sequential filter chain inside <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">filterDetectorsInternal()</code>.
+                Each filter narrows the candidate pool of detectors and sensors.
+                Source: <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">m2-engine/designer.ts</code>
               </p>
             </div>
 
             <FormulaCard
-              number="F0"
-              title="Application Filter"
-              description="Filters the product catalog by zone type to keep only product families relevant to the application. Uses the APP_DEFAULTS map to resolve zoneType to allowed product families (e.g. supermarket -> MIDI, MP). If appProductFamilies override is provided, it takes precedence."
-              inputs={['products[]', 'zoneType', 'appProductFamilies?']}
-              output="filtered products[]"
-              code={`// F0: Application filter
-const APP_DEFAULTS = {
-  supermarket:     ['MIDI', 'MP'],
-  cold_room:       ['MIDI', 'MP'],
-  machinery_room:  ['X5', 'GXR', 'GEX'],
-  cold_storage:    ['X5', 'MIDI', 'TR'],
-  hotel:           ['RM'],
-  office:          ['RM'],
-  parking:         ['X5'],
-  ice_rink:        ['X5', 'TR'],
-  heat_pump:       ['MIDI', 'G'],
-  pressure_relief: ['GR', 'TR'],
-  duct:            ['GK', 'TR'],
-  atex_zone:       ['X5', 'GXR', 'GEX'],
-  water_brine:     ['AQUIS'],
-};
-
-// Match by family or subFamily
+              number="F1"
+              title="Type Filter"
+              description="Keep only products of type 'detector' or 'sensor'. Controllers, accessories, and alerts are excluded from the detector pool. Only active products (status='active') pass through."
+              inputs={['products[]', 'type', 'status']}
+              output="detectors/sensors only, active only"
+              code={`// F1: Type + status filter
 pool = products.filter(p =>
-  allowed.includes(getFamily(p))
-  || allowed.includes(getSubFamily(p))
+  (p.type === 'detector' || p.type === 'sensor')
+  && p.status === 'active'
 );`}
             />
 
             <FormulaCard
               number="F2"
-              title="ATEX Filter"
-              description="If ATEX certification is required for the zone, keep only products that have atex=true. If ATEX is not required, all products pass through unchanged."
-              inputs={['products[]', 'atex (boolean)']}
-              output="filtered products[]"
-              code={`// F2: ATEX filter
-function f2_atex(
-  products: ProductEntry[],
-  atex: boolean
-): ProductEntry[] {
-  if (!atex) return products;
-  return products.filter(p => p.atex);
-}`}
+              title="Gas Filter"
+              description="Keep only detectors whose gas[] array includes the selected refrigerant. Each product stores a JSON array of individual refrigerant codes it detects (e.g. ['R744'], ['R32','R410A']). Individual refrigerants are matched directly — no gas group translation."
+              inputs={['products[]', 'gas (e.g. R744, R32, R717)']}
+              output="filtered detectors[]"
+              code={`// F2: Gas filter (individual refrigerant)
+function f2_gas(products, gas) {
+  if (!gas) return products;
+  return products.filter(p => {
+    const gases = JSON.parse(p.gas || '[]');
+    return gases.includes(gas);
+  });
+}
+
+// Example: gas = "R717"
+// Matches products with gas: ["R717"]
+// Does NOT use gas group translation`}
             />
 
             <FormulaCard
               number="F3"
-              title="Refrigerant Filter"
-              description="Keep only products whose refs array includes the selected refrigerant. Each product declares which refrigerant IDs it can detect (e.g. R744, R32, R717)."
-              inputs={['products[]', 'refrigerant']}
-              output="filtered products[]"
-              code={`// F3: Refrigerant compatibility
-function f3_refrigerant(
-  products: ProductEntry[],
-  refrigerant: string
-): ProductEntry[] {
-  return products.filter(
-    p => p.refs.includes(refrigerant)
-  );
+              title="ATEX Filter"
+              description="If ATEX certification is required (Zone 1/2), keep only products with atex=true. If ATEX is not required, all products pass through unchanged."
+              inputs={['products[]', 'atex (boolean)']}
+              output="filtered detectors[]"
+              code={`// F3: ATEX filter
+function f3_atex(products, atex) {
+  if (!atex) return products;
+  return products.filter(p => p.atex === true);
 }
 
-// REF_TO_GAS maps refrigerant -> gas group
-// R744 -> CO2, R32 -> HFC1, R717 -> NH3
-// R290/R600a/R1270 -> R290 (HC group)`}
-            />
-
-            <FormulaCard
-              number="F3b"
-              title="Range Filter"
-              description="Multi-range support for refrigerants with multiple measurement ranges. R717 has 4 ranges (0-100, 0-500, 0-1000, 0-5000 ppm). R744 has 4 ranges (0-5000, 0-10000, 0-30000 ppm, 0-5% vol). Fallback: if 0 results after filtering, the range filter is skipped entirely."
-              inputs={['products[]', 'range', 'refrigerant']}
-              output="filtered products[]"
-              code={`// F3b: Range filter with fallback
-const REF_RANGES = {
-  R717: ['0-100ppm', '0-500ppm',
-         '0-1000ppm', '0-5000ppm'],
-  R744: ['0-5000ppm', '0-10000ppm',
-         '0-30000ppm', '0-5%vol'],
-  CO:   ['0-100ppm', '0-300ppm'],
-  NO2:  ['0-5ppm', '0-20ppm'],
-};
-
-const kept = products.filter(
-  p => normalize(p.range) === normalize(range)
-);
-// Fallback: if 0 matches, skip filter
-return kept.length > 0 ? kept : products;`}
-              note="APP_DEFAULT_RANGE auto-selects range per zoneType (e.g. machinery_room + R717 = 0-1000ppm, cold_storage + R717 = 0-100ppm)."
+// ATEX-certified families:
+// X5 Direct Sensor Module (SIL/ATEX variants)
+// GLACIAR MIDI ATEX variants`}
             />
 
             <FormulaCard
               number="F4"
-              title="Output Filter"
-              description="Filter by required signal output type. Supports 8 output types: relay, 4-20mA, 0-10V, 2-10V, modbus, relay_analog_modbus, relay_dual_analog, and any (no filter)."
-              inputs={['products[]', 'outputRequired']}
-              output="filtered products[]"
-              code={`// F4: Output type filter
-switch (req) {
-  case 'relay':
-    return hasRelay && standalone;
-  case '420mA':
-    return hasAnalog && analog !== 'to MPU'
-           || family === 'TR';
-  case '010V':
-    return analog === 'selectable'
-           || analog === '4-20mA/0-10V';
-  case '210V':
-    return analog === 'selectable';
-  case 'modbus':
-    return product.modbus;
-  case 'relay_analog_modbus':
-    return hasRelay && hasAnalog && modbus;
-  case 'relay_dual_analog':
-    return analog === '4-20mA x2';
-  case 'any': return true;
+              title="Voltage Filter"
+              description="Keep only detectors compatible with the site voltage. X5 sensors (no voltage field) are powered by their transmitter — they always pass. For 230V AC sites, all detectors pass (adapters can be added). For 24V DC/AC, products with 24V or 12-24V voltage pass."
+              inputs={['products[]', 'voltage ("12V DC" | "24V DC/AC" | "230V AC")']}
+              output="filtered detectors[]"
+              code={`// F4: Voltage compatibility
+if (!product.voltage) {
+  // X5 sensors — powered by transmitter
+  return family.includes('X5');
+}
+if (voltage === '24V DC/AC') {
+  return pv.includes('24') || pv.includes('12-24');
+}
+if (voltage === '230V AC') {
+  // All detectors pass — adapter if needed
+  return true;
+}
+if (voltage === '12V DC') {
+  return pv.includes('12');
 }`}
+              note="GLACIAR MIDI on 230V AC sites automatically gets a Power Adapter added to the BOM during solution assembly."
             />
 
             <FormulaCard
-              number="F9"
-              title="Power / Voltage Filter"
-              description="Filter products by site voltage (12V, 24V, 230V). For 230V sites, MIDI, MP, and AQUIS families always pass (they accept power adapters). For 12V, a MIN_VOLTAGE lookup per family determines compatibility."
-              inputs={['products[]', 'voltage']}
-              output="filtered products[]"
-              code={`// F9: Power / Voltage filter
-if (voltage === '24V') {
-  // Exclude 230V-only products
-  return products.filter(p =>
-    p.voltage !== '230V');
+              number="F5"
+              title="Location Filter (ambient / duct / pipe)"
+              description="Filters by installation location. For duct or pipe installations: GLACIAR MIDI must be the Remote variant (variant includes 'remote'). X5 Direct Sensor Module is excluded (only X5 Remote Sensor works in duct/pipe). All other families pass for all locations."
+              inputs={['products[]', 'location ("ambient" | "duct" | "pipe")']}
+              output="filtered detectors[]"
+              code={`// F5: Location filter
+if (location === 'duct' || location === 'pipe') {
+  if (family === 'GLACIAR MIDI') {
+    // Must be Remote variant
+    const variantLower =
+      (p.variant || '').toLowerCase();
+    if (!variantLower.includes('remote'))
+      return false;
+  }
+  if (family === 'X5 Direct Sensor Module')
+    return false; // Only remote works
 }
-if (voltage === '230V') {
-  // MIDI/MP/AQUIS always OK (adapter)
-  // Others need voltage.includes('230')
-  return products.filter(p =>
-    isMidiFamily(p) || isMpFamily(p)
-    || isAquisFamily(p)
-    || p.voltage?.includes('230'));
-}
-if (voltage === '12V') {
-  const MIN_V = { MIDI: 15, X5: 18,
-    RM: 12, G: 12, TR: 12,
-    MP: 24, AQUIS: 230 };
-  return products.filter(p =>
-    MIN_V[family] <= 12);
-}`}
-              note="MIDI detectors on 230V sites get a Power Adapter (code 4000-0002, 99 EUR) added to the BOM automatically."
+// ambient: all families pass`}
             />
 
             <FormulaCard
-              number="S"
-              title="Scoring /21"
-              description="Each surviving product is scored out of 21 points across 6 components. The score determines tier ranking and the final recommendation."
-              inputs={['product', 'zoneType', 'outputRequired', 'zoneAtex']}
-              output="ScoreBreakdown { total: 0-21 }"
-              code={`// Scoring formula (max 21 points)
-tierPriority:     0-5  // premium=5,std=3,eco=1
-applicationFit:   0-3  // family in APP_DEFAULTS?
-outputMatch:      0-3  // exact output match
-simplicity:       0-2  // standalone=2, else 1
-maintenanceCost:  0-2  // IR/IONIC=2,SC/pH=1,EC=0
-featureRichness:  0-6  // modbus, analog, atex,
-                       // MIDI/X5 bonus, remote
+              number="F6"
+              title="Measurement Type Filter"
+              description="Keep only detectors whose measurement range matches the selected type. Measurement type is inferred from the product's range field: 'lel'/'lfl' → LEL, 'vol'/'% vol' → volume, 'ppm' → PPM. If the product has no range or type can't be determined, it passes."
+              inputs={['products[]', 'measType ("ppm" | "lel" | "vol" | "")']}
+              output="filtered detectors[]"
+              code={`// F6: Measurement type filter
+function getMeasType(product) {
+  const r = (product.range || '').toLowerCase();
+  if (r.includes('lel') || r.includes('lfl'))
+    return 'lel';
+  if (r.includes('vol') || r.includes('% vol'))
+    return 'vol';
+  if (r.includes('ppm')) return 'ppm';
+  return ''; // unknown — passes filter
+}
 
-total = sum(all components)
+if (!measType) return true; // no filter
+const prodType = getMeasType(product);
+if (!prodType) return true; // unknown passes
+return prodType === measType;`}
+            />
 
-// Tier assignment:
-// MIDI IR/EC = premium
-// X5 IR/IONIC = premium
-// GXR = standard, G IR = standard
-// RM, TR, MP = economic`}
+            <FormulaCard
+              number="F7"
+              title="Application Filter"
+              description="Filter by application type using the product's apps[] JSON array. If the product's apps array is empty, the product is considered universal and passes all application filters. If non-empty, the application must be in the array."
+              inputs={['products[]', 'application (optional)']}
+              output="filtered detectors[]"
+              code={`// F7: Application filter
+function f7_application(products, app) {
+  if (!app) return products; // no filter
+  return products.filter(p => {
+    const apps = JSON.parse(p.apps || '[]');
+    // Empty = universal product (passes all)
+    if (apps.length === 0) return true;
+    return apps.includes(app);
+  });
+}
+
+// Example applications:
+// supermarket, cold_room, machinery_room,
+// hotel, parking, ice_rink, heat_pump`}
             />
 
             {/* Constants reference */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Constants Reference</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Filter Pipeline Summary</h3>
+              <div className="bg-[#0a1628] rounded-lg p-4">
+                <pre className="text-emerald-400 font-mono text-xs leading-relaxed">{`// SystemDesigner.filterDetectorsInternal() — executed in order:
+F1: type = 'detector' | 'sensor'  &&  status = 'active'
+F2: gas array includes selected refrigerant  (individual code, e.g. "R744")
+F3: atex = true  (only if inputs.atex = true)
+F4: voltage compatible  (X5 sensors always pass)
+F5: location compatible  (duct/pipe → remote variants only)
+F6: measType matches range  (ppm / lel / vol)
+F7: apps includes application  (empty apps = universal)
+
+Result: ProductV2[] — compatible detectors/sensors`}</pre>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Power Adapter Price</div>
-                  <div className="text-2xl font-mono font-bold text-gray-900 mt-1">99 <span className="text-sm text-gray-500">EUR</span></div>
-                  <div className="text-[10px] font-mono text-gray-400 mt-1">code: 4000-0002</div>
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Engine Class</div>
+                  <div className="font-mono text-sm font-bold text-gray-900 mt-1">SystemDesigner</div>
+                  <div className="text-[10px] font-mono text-gray-400 mt-1">m2-engine/designer.ts</div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tier Score Map</div>
-                  <div className="mt-1 space-y-0.5">
-                    <div className="text-sm font-mono"><span className="text-red-600 font-bold">premium</span> = 5</div>
-                    <div className="text-sm font-mono"><span className="text-blue-600 font-bold">standard</span> = 3</div>
-                    <div className="text-sm font-mono"><span className="text-gray-600 font-bold">economic</span> = 1</div>
-                  </div>
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">API</div>
+                  <div className="font-mono text-sm font-bold text-gray-900 mt-1">designer.generate(inputs)</div>
+                  <div className="text-[10px] font-mono text-gray-400 mt-1">returns Solution[]</div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Controller Power Budget</div>
-                  <div className="text-2xl font-mono font-bold text-gray-900 mt-1">10 <span className="text-sm text-gray-500">W max</span></div>
-                  <div className="text-[10px] font-mono text-gray-400 mt-1">cap = min(channels, floor(maxPower / detPower))</div>
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Product source</div>
+                  <div className="font-mono text-sm font-bold text-gray-900 mt-1">/api/products?status=active</div>
+                  <div className="text-[10px] font-mono text-gray-400 mt-1">V2 ProductV2 type</div>
                 </div>
               </div>
             </div>
@@ -461,505 +437,380 @@ total = sum(all components)
         )}
 
         {/* ═══════════════════════════════════════════════════════════════
-            TAB 2: SELECTION RULES
+            TAB 2: SOLUTION ASSEMBLY
             ═══════════════════════════════════════════════════════════════ */}
         {activeTab === 'selection' && (
           <div className="space-y-8">
             <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900">2x2 Matrix Selection Rules</h2>
+              <h2 className="text-xl font-bold text-gray-900">Solution Assembly</h2>
               <p className="text-gray-500 text-sm mt-1">
-                After filtering and scoring, the engine picks up to 4 solutions in a 2x2 matrix: Premium Standalone, Premium Centralized, Eco Standalone, Eco Centralized.
-                Source: <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">m2-engine/selection-engine.ts</code>
+                After filtering, <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">generate()</code> builds
+                centralized and standalone solutions for each compatible detector. Each solution gets a full BOM.
+                Source: <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">m2-engine/designer.ts</code>
               </p>
             </div>
 
             <div className="grid gap-4">
               <RulePathCard
-                pathId="P"
-                title="PREMIUM Tier"
-                description="Best standalone product by score. Picks the highest-scoring product that can operate without a controller (standalone=true). This is the reference tier for cost comparison."
+                pathId="C"
+                title="Centralized Solution (detector + controller)"
+                description="For each compatible detector, find controllers it is compatible with (via compatibleWith JSON array). Each detector+controller pair generates one centralized solution. Controller quantity is calculated from connectionRules.maxDetectors or maxSensorModules."
                 conditions={[
-                  'standalone === true',
-                  'Sorted by score descending',
-                  'Pick first (best score)',
+                  'detector.compatibleWith[] lists compatible controller families',
+                  'Controller must be type=controller and status=active',
+                  'controllerQty = ceil(points / maxDetectors)',
+                  'For X5: ceil(points / maxSensorModules)',
                 ]}
-                result="Best score standalone"
-                ruleIds={['TIER-PREM-001']}
-                clauses={['Best technology recommendation']}
-                color="red"
-              />
-
-              <RulePathCard
-                pathId="S"
-                title="STANDARD Tier"
-                description="Cheapest total cost product that is STRICTLY cheaper than the Premium tier. Includes controller cost if non-standalone. Different product from Premium (no duplicate)."
-                conditions={[
-                  'All products (standalone or not)',
-                  'Sorted by estimateTotalCost ascending',
-                  'Must be strictly cheaper than Premium totalCost',
-                  'Must not be the same product as Premium',
-                ]}
-                result="Cheapest alternative"
-                ruleIds={['TIER-STD-001']}
-                clauses={['Best price/performance ratio']}
+                result="Solution (mode=centralized)"
+                ruleIds={['CTRL-COMPAT-001']}
+                clauses={['compatibleWith field on detector']}
                 color="blue"
               />
 
               <RulePathCard
-                pathId="C"
-                title="CENTRALIZED Tier"
-                description="Non-standalone product with MPU/SPU controller, only considered when totalDetectors > 1. Provides a centralized monitoring option with shared controller infrastructure."
+                pathId="SA"
+                title="Standalone Solution (detector only)"
+                description="A standalone solution is generated when detector.relay > 0 AND detector.standalone = true. No controller is needed. Alert accessories are added at 1 beacon + 1 siren per detection point."
                 conditions={[
-                  'standalone === false',
-                  'totalDetectors > 1',
-                  'Sorted by estimateTotalCost ascending',
-                  'Must not duplicate Premium or Standard pick',
+                  'detector.relay > 0',
+                  'detector.standalone = true',
+                  'Alerts: 1 beacon + 1 siren per point',
                 ]}
-                result="Cheapest centralized"
-                ruleIds={['TIER-CTRL-001']}
-                clauses={['Centralized monitoring option']}
+                result="Solution (mode=standalone)"
+                ruleIds={['SA-001']}
+                clauses={['relay field', 'standalone field']}
                 color="emerald"
               />
 
               <RulePathCard
-                pathId="F7"
-                title="Controller Combo (F7)"
-                description="Brute-force search for the cheapest MPU/SPU combination that covers all detectors. Respects connectTo compatibility (MPU vs SPU vs SPLS), voltage matching, and 10W power budget per controller. Hardcoded fallback defaults (SPU24/230, MPU2C/4C/6C) if the DB has no controllers."
+                pathId="AL"
+                title="Alert Products (beacons + sirens)"
+                description="Alert accessories are found via their compatibleWith[] field — they must list the detector family (for standalone) or both detector and controller families (for centralized). Rules from connectionRules control quantities: beaconsPerTransmitter, sirensPerTransmitter for X5, or beaconsNeeded/sirensNeeded for GC10-style controllers."
                 conditions={[
-                  'connectTo compatibility check (MPU/SPU/SPLS)',
-                  'Voltage match (230V controllers for 230V sites, 24V otherwise)',
-                  '10W power budget: cap = min(channels, floor(maxPower / detPower))',
-                  'Brute-force all MPU qty combinations + SPU remainder',
-                  'SPU-only fallback also tested',
+                  'alert.compatibleWith includes detector/controller family',
+                  'subType: beacon, siren, beacon_siren_combo, socket_beacon',
+                  'X5: qty = ceil(points / maxSensorModules) * beaconsPerTransmitter',
+                  'GC10: qty = beaconsNeeded (usually 1)',
+                  'Standalone: qty = points (1 per detection point)',
                 ]}
-                result="Cheapest combo"
-                ruleIds={['F7-COMBO-001', 'F7-FALLBACK-001']}
-                clauses={['SPU24: 20-350 (424 EUR)', 'SPU230: 20-355 (455 EUR)', 'MPU2C: 20-310 (1168 EUR)', 'MPU4C: 20-300 (1598 EUR)', 'MPU6C: 20-305 (2004 EUR)']}
+                result="BomComponent (role=alert)"
+                ruleIds={['ALERT-X5-001', 'ALERT-GC10-001', 'ALERT-SA-001']}
+                clauses={['connectionRules.beaconsPerTransmitter', 'connectionRules.beaconsNeeded']}
+                color="red"
+              />
+
+              <RulePathCard
+                pathId="PA"
+                title="Power Adapter"
+                description="Added when site voltage is 230V AC and detector voltage does not include 230V (i.e. the detector is 12V or 24V only). The accessory must have subType=power_adapter and be in compatibleWith the detector family. Quantity = ceil(points / powerAdapterCapacity) from detector connectionRules."
+                conditions={[
+                  'inputs.voltage = "230V AC"',
+                  '!detector.voltage.includes("230")',
+                  'Controller does NOT power detectors (connectionRules.powersDetectors)',
+                  'accessory.subType = "power_adapter"',
+                  'qty = ceil(points / powerAdapterCapacity)',
+                ]}
+                result="BomComponent (role=accessory)"
+                ruleIds={['ADAPTER-001']}
+                clauses={['connectionRules.powerAdapterCapacity (default: 5)', 'connectionRules.powersDetectors']}
                 color="amber"
               />
 
               <RulePathCard
-                pathId="B"
-                title="BOM Builder"
-                description="Per-tier BOM assembly. For each tier, the BOM includes: detector x qty, controller (if non-standalone), power adapters (F10), alert accessories EN 378 (F11), mounting accessories (F13), service tools (F14), and spare sensors (F15)."
+                pathId="X5"
+                title="X5 Config A / B / C"
+                description="When the controller is an X5 Transmitter, the required accessories depend on the sensor connection type. Config A (Direct Sensor Module only): no extra accessories. Config B (mixed): mixed accessories. Config C (Remote Sensor only): highway cable and remote accessories."
                 conditions={[
-                  'F10 Power: 230V MIDI -> Power Adapter 99 EUR per detector',
-                  'F11 Alert: FL-RL-R combined light+siren (150 EUR), 1 per controller or standalone',
-                  'F13 Mounting: back-box per detector (family-compatible)',
-                  'F14 Service: DT300 + calibration adapter, 1 per project',
-                  'F15 Spares: calibration gas matched by gas group (HFC/NH3/HC)',
+                  'Config A: X5 Direct Sensor Module only → no required accessories',
+                  'Config B: mixed direct + remote → uses configs[B] accessories',
+                  'Config C: X5 Remote Sensor only → highway cable + remote head',
+                  'Source: controller.connectionRules.configurations',
                 ]}
-                result="Complete BOM"
-                ruleIds={['BOM-F10', 'BOM-F11', 'BOM-F13', 'BOM-F14', 'BOM-F15']}
-                clauses={['EN 378 alert requirement', 'SafeRef recommended accessories']}
+                result="BomComponent[] (role=accessory)"
+                ruleIds={['X5-CONFIG-A', 'X5-CONFIG-B', 'X5-CONFIG-C']}
+                clauses={['connectionRules.configurations.A/B/C', 'requiredAccessories[]']}
                 color="purple"
               />
 
               <RulePathCard
-                pathId="FB"
-                title="Fallback Strategy"
-                description="Safety net when primary tier picks fail. If Premium is empty (no standalone products), pick the best remaining product by score. If Standard is empty, pick the cheapest remaining product that is still cheaper than Premium."
+                pathId="LC"
+                title="Location Accessories (duct / pipe)"
+                description="For duct and pipe installations, specific mounting adapters are required. GLACIAR MIDI in duct: code 62-9041 adapter per detector. GLACIAR MIDI in pipe: code 62-9031 pipe adapter per detector. X5 in duct: code 3500-0104 per transmitter. X5 in pipe: code 3500-0105 per transmitter."
                 conditions={[
-                  'Premium empty -> best remaining by score (any standalone status)',
-                  'Standard empty -> cheapest remaining (must be < Premium cost)',
-                  'Centralized empty -> skip (only applicable when totalDetectors > 1)',
+                  'location = "duct" or "pipe"',
+                  'GLACIAR MIDI duct: 62-9041 × detectorQty',
+                  'GLACIAR MIDI pipe: 62-9031 × detectorQty',
+                  'X5 duct: 3500-0104 × transmitterQty',
+                  'X5 pipe: 3500-0105 × transmitterQty',
                 ]}
-                result="Fallback pick"
-                ruleIds={['FALLBACK-PREM-001', 'FALLBACK-STD-001']}
-                clauses={['Guarantees at least 1 tier is populated']}
+                result="BomComponent[] (role=accessory, required)"
+                ruleIds={['LOC-DUCT-001', 'LOC-PIPE-001']}
+                clauses={['62-9041', '62-9031', '3500-0104', '3500-0105']}
+                color="blue"
+              />
+
+              <RulePathCard
+                pathId="OPT"
+                title="Optional Accessories"
+                description="Calibration kits, magnetic wands, and protection caps are added as optional BOM items (optional=true). Found via compatibleWith matching detector family and subType matching. These inflate the optionalTotal but NOT the required total."
+                conditions={[
+                  'calibration_kit: subType=calibration_kit or name includes "calibration kit"',
+                  'magnetic_wand: subType=magnetic_wand or name includes "magnetic wand"',
+                  'protection_cap: subType=protection_cap (excluding delivery caps)',
+                  'All matched by compatibleWith includes detectorFamily',
+                ]}
+                result="BomComponent[] (optional=true)"
+                ruleIds={['OPT-CAL-001', 'OPT-WAND-001', 'OPT-CAP-001']}
+                clauses={['optional=true', 'optionalTotal separate from total']}
                 color="amber"
               />
             </div>
 
-            {/* Comparison Table */}
+            {/* Solution output */}
             <div className="mt-8">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">2x2 Matrix Comparison</h2>
-              <p className="text-gray-500 text-sm mb-4">How the engine compares up to 4 solutions across the 2x2 matrix.</p>
-
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Solution Output Format</h2>
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-[#0a1628] text-white">
-                        <th className="text-left px-5 py-3 font-semibold w-[200px]">Aspect</th>
-                        <th className="text-left px-5 py-3 font-semibold">PREMIUM</th>
-                        <th className="text-left px-5 py-3 font-semibold">STANDARD</th>
-                        <th className="text-left px-5 py-3 font-semibold">CENTRALIZED</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      <tr>
-                        <td className="px-5 py-3 font-medium text-gray-700">Selection Criteria</td>
-                        <td className="px-5 py-3 text-gray-600">Best standalone by score</td>
-                        <td className="px-5 py-3 text-gray-600">Cheapest total cost</td>
-                        <td className="px-5 py-3 text-gray-600">Cheapest non-standalone + MPU</td>
-                      </tr>
-                      <tr className="bg-gray-50">
-                        <td className="px-5 py-3 font-medium text-gray-700">Standalone</td>
-                        <td className="px-5 py-3 text-gray-600">Yes (required)</td>
-                        <td className="px-5 py-3 text-gray-600">Any</td>
-                        <td className="px-5 py-3 text-gray-600">No (required)</td>
-                      </tr>
-                      <tr>
-                        <td className="px-5 py-3 font-medium text-gray-700">Controller</td>
-                        <td className="px-5 py-3 text-gray-600">None</td>
-                        <td className="px-5 py-3 text-gray-600">If needed</td>
-                        <td className="px-5 py-3 text-gray-600">Always (MPU/SPU)</td>
-                      </tr>
-                      <tr className="bg-gray-50">
-                        <td className="px-5 py-3 font-medium text-gray-700">Cost Constraint</td>
-                        <td className="px-5 py-3 text-gray-600">Reference price</td>
-                        <td className="px-5 py-3 text-gray-600">
-                          <span className="font-mono text-xs">cost &lt; premiumCost</span>
-                        </td>
-                        <td className="px-5 py-3 text-gray-600">No constraint</td>
-                      </tr>
-                      <tr>
-                        <td className="px-5 py-3 font-medium text-gray-700">Label</td>
-                        <td className="px-5 py-3 text-gray-600">
-                          <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded font-semibold">Best technology</span>
-                        </td>
-                        <td className="px-5 py-3 text-gray-600">
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-semibold">Balanced</span>
-                        </td>
-                        <td className="px-5 py-3 text-gray-600">
-                          <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-semibold">With controller</span>
-                        </td>
-                      </tr>
-                      <tr className="bg-gray-50">
-                        <td className="px-5 py-3 font-medium text-gray-700">Recommendation</td>
-                        <td className="px-5 py-3 text-gray-600 text-xs" colSpan={3}>
-                          Sort tiers by <span className="font-mono">score DESC</span> then <span className="font-mono">totalBom ASC</span>.
-                          Winner: score &ge; 15 = &quot;Best technology&quot;, else &quot;Best balance of score and price&quot;.
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div className="bg-[#0a1628] p-5">
+                  <pre className="text-emerald-400 font-mono text-xs leading-relaxed">{`Solution {
+  name:           string   // e.g. "GLACIAR MIDI + GC10 Controller"
+  subtitle:       string   // detector.name
+  tier:           string   // "premium" | "standard" | "economic"
+  mode:           string   // "centralized" | "standalone"
+  detector:       ProductV2
+  controller:     ProductV2 | null
+  controllerQty:  number
+  components:     BomComponent[]
+  total:          number   // required components only
+  optionalTotal:  number   // optional accessories
+  hasNaPrice:     boolean  // true if any required component has price=0
+  alertQty:       { beacons: number, sirens: number }
+  connectionLabel: string | null  // e.g. "4-20mA" or "Direct mount (Port A/B)"
+}
+
+BomComponent {
+  code:       string
+  name:       string
+  family:     string
+  type:       string
+  qty:        number
+  unitPrice:  number
+  subtotal:   number
+  role:       "detector" | "controller" | "alert" | "accessory"
+  optional:   boolean
+  reason?:    string  // e.g. "Config C: remote sensor cable"
+  image?:     string | null
+}`}</pre>
                 </div>
               </div>
             </div>
 
-            {/* Comparison Table Rows */}
+            {/* Sort order */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Comparison Table Rows</h3>
-              <p className="text-gray-600 text-sm mb-4">
-                The <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">buildComparisonTable()</code> function generates these rows for the UI:
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Solution Sorting</h3>
+              <p className="text-gray-600 text-sm">
+                Solutions are sorted by <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">total ASC</code> (cheapest first).
+                There is no 2x2 tier matrix in V2 — all compatible solutions are returned as a flat array.
+                The UI can group them by tier or mode as needed.
               </p>
-              <div className="bg-[#0a1628] rounded-lg p-4">
-                <pre className="text-emerald-400 font-mono text-xs leading-relaxed">{`ComparisonTable.rows = [
-  { label: 'Detector',    premium, standard, centralized },
-  { label: 'Qty',         ...detector.qty per tier },
-  { label: 'Sensor Tech', ...detector.sensorTech },
-  { label: 'Sensor Life', ...detector.sensorLife },
-  { label: 'Controller',  ...controller.name or 'None (standalone)' },
-  { label: 'Score',       ...solutionScore + '/21' },
-  { label: 'Total BOM',   ...totalBom + ' EUR' },
-]
+              <div className="bg-[#0a1628] rounded-lg p-4 mt-3">
+                <pre className="text-emerald-400 font-mono text-xs leading-relaxed">{`// Final sort — cheapest required total first
+solutions.sort((a, b) => a.total - b.total);
 
-// Recommendation logic:
-tiers.sort((a, b) => b.score - a.score || a.totalBom - b.totalBom)
-rec = tiers[0].key
-reason = score >= 15
-  ? "Highest score with best technology"
-  : "Best balance of score and price"`}</pre>
+// Multiple solutions per detector:
+// - 1 standalone (if detector.standalone + relay > 0)
+// - N centralized (one per compatible controller)
+
+// Typical output for R744 + 4pt:
+// [
+//   { name: "GLACIAR MIDI -- Standalone", mode: "standalone", tier: "premium", total: 1234 },
+//   { name: "GLACIAR MIDI + GC10",        mode: "centralized", tier: "premium", total: 2100 },
+//   { name: "GLACIAR RM -- Standalone",   mode: "standalone", tier: "economic", total: 890 },
+// ]`}</pre>
               </div>
             </div>
           </div>
         )}
 
         {/* ═══════════════════════════════════════════════════════════════
-            TAB 3: PRICING PIPELINE
+            TAB 3: PRODUCT TYPES & FAMILIES
             ═══════════════════════════════════════════════════════════════ */}
-        {activeTab === 'pricing' && (
+        {activeTab === 'products' && (
           <div className="space-y-8">
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">M3 Pricing Pipeline</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Product Types &amp; Families (V2 Model)</h2>
               <p className="text-gray-500 text-sm">
-                Takes M2 tier BOMs + discount data, applies price lookup, discount resolution,
-                and line calculation to produce a priced quote. EUR-only, HT-only.
+                The V2 product catalog replaces gas groups with individual refrigerant codes and uses new family names.
               </p>
             </div>
 
-            {/* Main Flowchart */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-              <div className="flex flex-col items-center max-w-2xl mx-auto">
-
-                <FlowNode type="start" label="START" sub="Input: M2 tiers, customerGroup, discountCode, priceDb" />
-                <FlowArrow />
-
-                <FlowNode type="process" label="P1: BOM Price Lookup" sub="Cross-check M2 price vs DB price per BOM line" />
-                <FlowArrow />
-
-                <FlowNode type="decision" label="Price Match?" />
-                <div className="flex w-full items-start justify-center">
-                  <div className="flex flex-col items-center w-1/2">
-                    <div className="flex items-center">
-                      <div className="w-12 h-0.5 bg-gray-400"></div>
-                      <span className="text-[10px] text-red-500 font-bold px-1">MISMATCH</span>
-                    </div>
-                    <div className="w-0.5 h-3 bg-gray-400"></div>
-                    <div className="bg-amber-100 border-2 border-amber-300 rounded-lg px-3 py-2 text-xs text-amber-900 text-center">
-                      <div className="font-semibold">Emit Warning</div>
-                      <div className="mt-0.5 text-[10px]">PRICE_MISMATCH / NOT_FOUND / DISCONTINUED</div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-center w-1/2">
-                    <div className="flex items-center">
-                      <span className="text-[10px] text-emerald-600 font-bold px-1">MATCH</span>
-                      <div className="w-12 h-0.5 bg-gray-400"></div>
-                    </div>
-                    <div className="w-0.5 h-3 bg-gray-400"></div>
-                    <div className="text-[10px] text-gray-500 font-medium">continue</div>
-                  </div>
-                </div>
-
-                <FlowArrow />
-
-                <FlowNode type="process" label="P2: Discount Resolution" sub="Group F=0% | customer override | standard matrix" />
-                <FlowArrow />
-
-                <FlowNode type="process" label="P3: Line Item Calculation" sub="lineTotal = R(listPrice * qty), net = lineTotal - discount" />
-                <FlowArrow />
-
-                <FlowNode type="process" label="P5: Tier Totals" sub="totalBeforeDiscount, totalDiscount, totalHt per tier" />
-                <FlowArrow />
-
-                <FlowNode type="decision" label="Compare Tiers" sub="Sort by score DESC, totalHt ASC" />
-                <FlowArrow />
-
-                <FlowNode type="process" label="Recommendation" sub="score >= 15 = best tech, else best balance" />
-                <FlowArrow />
-
-                <FlowNode type="output" label="OUTPUT: PricingResult" />
-
-                <div className="mt-3 bg-[#0a1628] rounded-lg p-4 w-full max-w-lg">
-                  <pre className="text-emerald-400 font-mono text-[11px] leading-relaxed">{`PricingResult {
-  quoteRef:       "SR-2026-xxxxxxxx"
-  quoteDate:      "2026-04-16"
-  quoteValidUntil:"2026-05-16" (30 days)
-  priceListVersion: "2026-R2"
-  tiers: {
-    premiumStandalone:   PricedTier | null
-    premiumCentralized:  PricedTier | null
-    ecoStandalone:       PricedTier | null
-    ecoCentralized:      PricedTier | null
-  }
-  comparison: {
-    rows: [...], savingsVsPremium: { premiumCentralized, ecoStandalone, ecoCentralized }
-  }
-  recommended: TierSlot | null
-  warnings:    string[]  // PRICE_MISMATCH, etc.
-}`}</pre>
-                </div>
-
-                <div className="mt-4">
-                  <FlowNode type="end" label="END" />
-                </div>
-              </div>
-            </div>
-
-            {/* P1 */}
-            <FormulaCard
-              number="P1"
-              title="BOM Price Lookup"
-              description="Cross-reference each BOM line code against the price database. Emits PRICE_MISMATCH if M2 price differs from DB, PRICE_NOT_FOUND if code is missing, and DISCONTINUED if product is flagged. The DB price (listPrice) always wins for calculation."
-              inputs={['code', 'priceDb Map']}
-              output="{ listPrice, productGroup, discontinued, found }"
-              code={`// P1: Price lookup with validation
-function p1_priceLookup(code, priceDb) {
-  const entry = priceDb.get(code);
-  if (!entry)
-    return { listPrice: 0,
-             productGroup: '?',
-             found: false };
-
-  return {
-    listPrice: entry.price,
-    productGroup: entry.productGroup,
-    discontinued: entry.discontinued,
-    found: true
-  };
-}
-
-// Warnings emitted per line:
-// PRICE_NOT_FOUND: code not in DB
-// PRICE_MISMATCH: M2 != DB price
-// DISCONTINUED: product flagged`}
-            />
-
-            {/* P2 */}
-            <FormulaCard
-              number="P2"
-              title="Discount Resolution"
-              description="Three-level discount resolution. Group F products always get 0% discount. Customer overrides (discountCode + productGroup -> ratePct) take precedence over the standard matrix. Standard matrix lookup uses customerGroup + productGroup."
-              inputs={['customerGroup', 'productGroup', 'discountMatrix[]', 'discountCode?', 'customerOverrides?']}
-              output="discountPct (number)"
-              code={`// P2: Discount resolution order
-function p2_resolveDiscount(
-  customerGroup, productGroup,
-  matrix, discountCode?, overrides?
-) {
-  // 1. Group F -> always 0%
-  if (productGroup === 'F') return 0;
-
-  // 2. Customer override (highest priority)
-  if (discountCode && overrides) {
-    const hit = overrides.find(o =>
-      o.discountCode === discountCode
-      && o.productGroup === productGroup);
-    if (hit) return hit.ratePct;
-  }
-
-  // 3. Standard matrix lookup
-  const cell = matrix.find(m =>
-    m.customerGroup === customerGroup
-    && m.productGroup === productGroup);
-  return cell ? cell.discountPct : 0;
-}`}
-              note="Customer groups: EDC, OEM, 1Fo, 2Fo, 3Fo, 1Contractor, 2Contractor, 3Contractor, AKund, BKund, NO."
-            />
-
-            {/* P3 */}
-            <FormulaCard
-              number="P3"
-              title="Line Item Calculation"
-              description="Calculate per-line totals. lineTotal = R(listPrice * qty). discountAmount = R(lineTotal * discountPct / 100). netTotal = R(lineTotal - discountAmount). R() rounds to 2 decimal places (EUR cents)."
-              inputs={['code', 'name', 'category', 'qty', 'listPrice', 'discountPct']}
-              output="PricedLine { lineTotal, discountAmount, netTotal }"
-              code={`// P3: Line calculation
-// R() = round to 2 decimals (EUR cents)
-const R = (n) =>
-  Math.round(n * 100) / 100;
-
-function p3_calculateLine(
-  code, name, category,
-  qty, listPrice, discountPct
-) {
-  const lineTotal = R(listPrice * qty);
-  const discountAmount =
-    R(lineTotal * (discountPct / 100));
-  const netTotal =
-    R(lineTotal - discountAmount);
-
-  return { code, name, category, qty,
-    listPrice, discountPct,
-    discountAmount, netTotal };
-}`}
-            />
-
-            {/* P5 */}
-            <FormulaCard
-              number="P5"
-              title="Tier Totals"
-              description="Aggregate all priced lines into tier-level totals: totalBeforeDiscount, totalDiscount, totalHt (hors taxes). Savings vs Premium is calculated as percentage: ((premiumHt - tierHt) / premiumHt) * 100."
-              inputs={['PricedLine[]']}
-              output="{ totalBeforeDiscount, totalDiscount, totalHt }"
-              code={`// P5: Tier totals aggregation
-function p5_totals(lines) {
-  const totalBeforeDiscount = R(
-    lines.reduce((s, l) =>
-      s + R(l.listPrice * l.qty), 0));
-  const totalDiscount = R(
-    lines.reduce((s, l) =>
-      s + l.discountAmount, 0));
-  const totalHt = R(
-    totalBeforeDiscount - totalDiscount);
-  return { totalBeforeDiscount,
-           totalDiscount, totalHt };
-}
-
-// Savings vs Premium:
-savingsStd = R(
-  ((premiumHt - standardHt)
-   / premiumHt) * 100);  // %`}
-            />
-
-            {/* Recommendation */}
-            <FormulaCard
-              number="R"
-              title="Recommendation Logic"
-              description="Sort all non-null tiers by score descending, then totalHt ascending. The winner becomes the recommended tier. If score >= 15, label as best technology; otherwise label as best balance."
-              inputs={['PricedTier[] (premiumStandalone, premiumCentralized, ecoStandalone, ecoCentralized)']}
-              output="recommended: TierSlot | null (no badge for now)"
-              code={`// Final recommendation
-candidates = tiers.filter(t => t !== null);
-
-candidates.sort((a, b) => {
-  // Primary: highest score
-  if (a.score !== b.score)
-    return b.score - a.score;
-  // Secondary: lowest price
-  return a.totalHt - b.totalHt;
-});
-
-recommended = candidates[0].key;
-
-// Label:
-// score >= 15 -> "Best technology"
-// score < 15  -> "Best balance"`}
-            />
-
-            {/* Comparison Table */}
+            {/* Product Types */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">Quote Comparison Rows</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Generated by calculatePricing() for the quote PDF and UI.</p>
+                <h3 className="font-semibold text-gray-900">Product Types</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Each product has a type field that controls how it is used in the engine.</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-[#0a1628] text-white">
-                      <th className="text-left px-4 py-2 font-medium">Row</th>
-                      <th className="text-left px-4 py-2 font-medium">Premium</th>
-                      <th className="text-left px-4 py-2 font-medium">Standard</th>
-                      <th className="text-left px-4 py-2 font-medium">Centralized</th>
+                      <th className="text-left px-4 py-2 font-medium">Type</th>
+                      <th className="text-left px-4 py-2 font-medium">Role in Engine</th>
+                      <th className="text-left px-4 py-2 font-medium">Key Fields</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     <tr>
-                      <td className="px-4 py-2 font-medium text-gray-700">Detector</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs">detector.name</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs">detector.name</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs">detector.name</td>
+                      <td className="px-4 py-2 font-mono font-semibold text-blue-700">detector</td>
+                      <td className="px-4 py-2 text-gray-600">Standalone detector (has relay, built-in sensor)</td>
+                      <td className="px-4 py-2 text-xs text-gray-500 font-mono">gas, relay, standalone, atex, voltage, compatibleWith</td>
                     </tr>
                     <tr className="bg-gray-50">
-                      <td className="px-4 py-2 font-medium text-gray-700">Controller</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs">Standalone</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs">controller.name or Standalone</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs">controller.name</td>
+                      <td className="px-4 py-2 font-mono font-semibold text-purple-700">sensor</td>
+                      <td className="px-4 py-2 text-gray-600">Sensor module (connects to X5 Transmitter)</td>
+                      <td className="px-4 py-2 text-xs text-gray-500 font-mono">gas, connectionRules.connectionType, compatibleWith</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-2 font-medium text-gray-700">Technical Score</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs font-mono">X/21</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs font-mono">X/21</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs font-mono">X/21</td>
+                      <td className="px-4 py-2 font-mono font-semibold text-green-700">controller</td>
+                      <td className="px-4 py-2 text-gray-600">Control unit (GC10, X5 Transmitter, SPU, MPU)</td>
+                      <td className="px-4 py-2 text-xs text-gray-500 font-mono">connectionRules.maxDetectors, maxSensorModules, beaconsNeeded</td>
                     </tr>
                     <tr className="bg-gray-50">
-                      <td className="px-4 py-2 font-medium text-gray-700">Total HT</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs font-mono">X.XX EUR</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs font-mono">X.XX EUR</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs font-mono">X.XX EUR</td>
+                      <td className="px-4 py-2 font-mono font-semibold text-red-700">alert</td>
+                      <td className="px-4 py-2 text-gray-600">Beacon, siren, or combo alarm device</td>
+                      <td className="px-4 py-2 text-xs text-gray-500 font-mono">subType (beacon/siren/beacon_siren_combo), compatibleWith</td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-2 font-medium text-gray-700">Savings vs Premium</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs">-</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs font-mono">X.X%</td>
-                      <td className="px-4 py-2 text-gray-500 text-xs font-mono">X.X%</td>
+                      <td className="px-4 py-2 font-mono font-semibold text-amber-700">accessory</td>
+                      <td className="px-4 py-2 text-gray-600">Adapter, cable, calibration kit, protection cap</td>
+                      <td className="px-4 py-2 text-xs text-gray-500 font-mono">subType (power_adapter, calibration_kit, magnetic_wand…), compatibleWith</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </div>
 
-            {/* Source File Reference */}
+            {/* Detector Families */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 className="font-semibold text-gray-900">Detector &amp; Sensor Families</h3>
+                <p className="text-xs text-gray-500 mt-0.5">V2 family names — these are the exact strings used in product.family and compatibleWith[] arrays.</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-[#0a1628] text-white">
+                      <th className="text-left px-4 py-2 font-medium">Family</th>
+                      <th className="text-left px-4 py-2 font-medium">Type</th>
+                      <th className="text-left px-4 py-2 font-medium">Tier</th>
+                      <th className="text-left px-4 py-2 font-medium">Key Gases</th>
+                      <th className="text-left px-4 py-2 font-medium">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    <tr>
+                      <td className="px-4 py-2 font-mono font-semibold text-red-700">GLACIAR MIDI</td>
+                      <td className="px-4 py-2 text-gray-600">detector</td>
+                      <td className="px-4 py-2"><span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">premium</span></td>
+                      <td className="px-4 py-2 text-xs text-gray-500">R744, R717, R32, R290, R134A, HFOs…</td>
+                      <td className="px-4 py-2 text-xs text-gray-500">IR/EC sensor. Remote variant for duct/pipe. ATEX variants available.</td>
+                    </tr>
+                    <tr className="bg-gray-50">
+                      <td className="px-4 py-2 font-mono font-semibold text-purple-700">X5 Direct Sensor Module</td>
+                      <td className="px-4 py-2 text-gray-600">sensor</td>
+                      <td className="px-4 py-2"><span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">premium</span></td>
+                      <td className="px-4 py-2 text-xs text-gray-500">R717, R290, R32, toxic gases</td>
+                      <td className="px-4 py-2 text-xs text-gray-500">Config A — direct mount on X5 Transmitter. ATEX versions. Excluded for duct/pipe.</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-2 font-mono font-semibold text-blue-700">X5 Remote Sensor</td>
+                      <td className="px-4 py-2 text-gray-600">sensor</td>
+                      <td className="px-4 py-2"><span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">premium</span></td>
+                      <td className="px-4 py-2 text-xs text-gray-500">R717, R290, R32, toxic gases</td>
+                      <td className="px-4 py-2 text-xs text-gray-500">Config C — remote highway cable. Works for duct/pipe installations.</td>
+                    </tr>
+                    <tr className="bg-gray-50">
+                      <td className="px-4 py-2 font-mono font-semibold text-green-700">GLACIAR RM</td>
+                      <td className="px-4 py-2 text-gray-600">detector</td>
+                      <td className="px-4 py-2"><span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded font-bold">economic</span></td>
+                      <td className="px-4 py-2 text-xs text-gray-500">R744, R32, HFCs</td>
+                      <td className="px-4 py-2 text-xs text-gray-500">Room monitor. Standalone with relay. Hotels, offices.</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-2 font-mono font-semibold text-amber-700">GLACIAR MIDI Remote</td>
+                      <td className="px-4 py-2 text-gray-600">detector</td>
+                      <td className="px-4 py-2"><span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">premium</span></td>
+                      <td className="px-4 py-2 text-xs text-gray-500">R744, R717, R32…</td>
+                      <td className="px-4 py-2 text-xs text-gray-500">Remote sensor head — used for duct and pipe detection. variant includes 'remote'.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Controller families */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 className="font-semibold text-gray-900">Controller Families</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-[#0a1628] text-white">
+                      <th className="text-left px-4 py-2 font-medium">Family</th>
+                      <th className="text-left px-4 py-2 font-medium">Max Detectors</th>
+                      <th className="text-left px-4 py-2 font-medium">Alerts</th>
+                      <th className="text-left px-4 py-2 font-medium">Compatible With</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    <tr>
+                      <td className="px-4 py-2 font-mono font-semibold">GC10 Controller</td>
+                      <td className="px-4 py-2 text-gray-600 font-mono">connectionRules.maxDetectors</td>
+                      <td className="px-4 py-2 text-gray-600 text-xs">beaconsNeeded=1, sirensNeeded=1</td>
+                      <td className="px-4 py-2 text-gray-600 text-xs">GLACIAR MIDI, GLACIAR RM</td>
+                    </tr>
+                    <tr className="bg-gray-50">
+                      <td className="px-4 py-2 font-mono font-semibold">X5 Transmitter</td>
+                      <td className="px-4 py-2 text-gray-600 font-mono">connectionRules.maxSensorModules</td>
+                      <td className="px-4 py-2 text-gray-600 text-xs">beaconsPerTransmitter, sirensPerTransmitter</td>
+                      <td className="px-4 py-2 text-gray-600 text-xs">X5 Direct Sensor Module, X5 Remote Sensor</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* V2 field reference */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">V2 Product Fields (key)</h3>
+              <div className="grid md:grid-cols-2 gap-3">
+                {[
+                  { field: 'gas: string (JSON)', desc: 'JSON array of individual refrigerant codes: ["R744"] or ["R32","R410A"]' },
+                  { field: 'apps: string (JSON)', desc: 'JSON array of application IDs. Empty = universal product.' },
+                  { field: 'compatibleWith: string (JSON)', desc: 'JSON array of compatible product family names (detectors list controllers; alerts list detectors)' },
+                  { field: 'connectionRules: string (JSON)', desc: 'JSON object: maxDetectors, maxSensorModules, beaconsNeeded, powersDetectors, configurations, etc.' },
+                  { field: 'status: string', desc: 'active | planned | discontinued. Engine only uses active products.' },
+                  { field: 'subType: string | null', desc: 'For accessories and alerts: power_adapter, beacon, siren, calibration_kit, magnetic_wand, etc.' },
+                  { field: 'variant: string | null', desc: 'For detectors: "Remote" variant enables duct/pipe filter (GLACIAR MIDI Remote)' },
+                  { field: 'tier: string', desc: 'premium | standard | economic. Stored on detector/sensor products.' },
+                ].map((f) => (
+                  <div key={f.field} className="flex items-start gap-3 bg-gray-50 rounded-lg px-4 py-3">
+                    <code className="text-xs bg-[#0a1628] text-emerald-400 px-2 py-0.5 rounded font-mono shrink-0 mt-0.5">{f.field}</code>
+                    <span className="text-xs text-gray-600">{f.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Source files */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Source Files</h3>
               <div className="grid md:grid-cols-2 gap-3">
                 {[
-                  { file: 'm2-engine/selection-engine.ts', desc: 'M2 full filter pipeline F0-F9, scoring /21, 2x2 matrix selection, BOM builder' },
-                  { file: 'm2-engine/pricing-engine.ts', desc: 'M3 pricing: P1 lookup, P2 discount, P3 line calc, P5 totals, recommendation' },
-                  { file: 'm2-engine/parse-product.ts', desc: 'Convert raw API ProductRecord to engine ProductEntry (JSON parse, defaults)' },
-                  { file: 'engine-types.ts', desc: 'Unified type definitions: ProductEntry, TierSolution, PricedLine, PricingResult, etc.' },
+                  { file: 'm2-engine/designer.ts', desc: 'SystemDesigner class — filter pipeline, solution assembly, BOM generation' },
+                  { file: 'm2-engine/designer-types.ts', desc: 'DesignerInputs, Solution, BomComponent, ProductV2, AlertQty types' },
+                  { file: 'm2-engine/selection-engine.ts', desc: 'Re-exports SystemDesigner + legacy selectProducts() for backwards compat' },
+                  { file: 'api/products/route.ts', desc: 'GET /api/products?status=active — returns ProductV2[] for the engine' },
                 ].map((f) => (
                   <div key={f.file} className="flex items-start gap-3 bg-gray-50 rounded-lg px-4 py-3">
                     <code className="text-xs bg-[#0a1628] text-emerald-400 px-2 py-0.5 rounded font-mono shrink-0">{f.file}</code>
