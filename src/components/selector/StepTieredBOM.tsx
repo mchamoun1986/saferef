@@ -33,10 +33,9 @@ function fmtEur(n: number): string {
 }
 
 function tierColor(sol: Solution): string {
-  if (sol.mode === 'standalone' && sol.tier === 'premium') return '#E63946';
-  if (sol.mode === 'centralized' && sol.tier === 'premium') return '#c2185b';
-  if (sol.mode === 'standalone') return '#2563eb';
-  return '#16a34a';
+  if (sol.tier === 'premium') return '#E63946';
+  if (sol.tier === 'economic') return '#16a34a';
+  return '#2563eb';
 }
 
 function tierLabel(sol: Solution): string {
@@ -326,30 +325,45 @@ export default function StepTieredBOM({
           const isExpanded = expandedCard === idx;
 
           return (
-            <div key={idx} className="border-2 rounded-xl overflow-hidden" style={{ borderColor: color }}>
+            <div key={idx} className="bg-white rounded-xl shadow-[0_2px_12px_rgba(22,53,75,0.08)] overflow-hidden border border-gray-200">
               {/* Solution Header — clickable */}
               <button
                 onClick={() => setExpandedCard(isExpanded ? null : idx)}
-                className="w-full px-5 py-3 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
-                style={{ background: color }}
+                className="w-full flex items-stretch cursor-pointer hover:bg-gray-50/50 transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  {isExpanded ? <ChevronDown className="w-4 h-4 text-white/70" /> : <ChevronRight className="w-4 h-4 text-white/70" />}
-                  <h3 className="text-white font-bold text-base text-left">{sol.name}</h3>
-                  <span className="bg-white/20 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                    {label}
-                  </span>
-                </div>
-                <div className="text-white text-right flex items-center gap-4">
-                  {sol.detector.range && (
-                    <span className="text-white/70 text-xs">{sol.detector.range}</span>
-                  )}
-                  <span className="text-white/70 text-xs">{mandatory.length} items</span>
-                  <div>
-                    <div className="font-bold text-lg">{fmtEur(mandatoryTotal)} EUR</div>
-                    {sol.optionalTotal > 0 && (
-                      <div className="text-[11px] opacity-70">+ {fmtEur(sol.optionalTotal)} opt</div>
+                {/* Left accent bar */}
+                <div className="w-1.5 flex-shrink-0 rounded-l-xl" style={{ background: color }} />
+                <div className="flex-1 px-5 py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {isExpanded
+                      ? <ChevronDown className="w-4 h-4 text-gray-400" />
+                      : <ChevronRight className="w-4 h-4 text-gray-400" />}
+                    {sol.detector.image && (
+                      <img
+                        src={sol.detector.image.startsWith('/') ? sol.detector.image : `/assets/${sol.detector.image}`}
+                        alt="" className="w-10 h-10 object-contain rounded bg-gray-50 border border-gray-100 p-0.5 flex-shrink-0"
+                      />
                     )}
+                    <div className="text-left">
+                      <h3 className="text-[#16354B] font-bold text-sm">{sol.name}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border" style={{ color, borderColor: color, background: `${color}10` }}>
+                          {label}
+                        </span>
+                        {sol.detector.range && (
+                          <span className="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{sol.detector.range}</span>
+                        )}
+                        {sol.detector.sensorTech && (
+                          <span className="text-[10px] text-gray-400">{sol.detector.sensorTech}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-4">
+                    <div className="font-bold text-lg text-[#16354B]">{fmtEur(mandatoryTotal)} <span className="text-sm font-normal text-gray-400">EUR</span></div>
+                    <div className="text-[11px] text-gray-400">
+                      {mandatory.length} items{sol.optionalTotal > 0 && <span className="text-amber-500 ml-2">+{fmtEur(sol.optionalTotal)} opt</span>}
+                    </div>
                   </div>
                 </div>
               </button>
@@ -358,27 +372,20 @@ export default function StepTieredBOM({
               {isExpanded && (
                 <>
                   {/* Detector summary */}
-                  <div className="px-5 py-3 bg-gray-50 flex items-center gap-4 border-b">
-                    {sol.detector.image && (
-                      <img
-                        src={sol.detector.image.startsWith('/') ? sol.detector.image : `/assets/${sol.detector.image}`}
-                        alt={sol.detector.name}
-                        className="w-16 h-16 object-contain rounded bg-white border border-gray-200 p-1 flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                      <span><b>Detector:</b> {sol.detector.name}</span>
-                      <span><b>Code:</b> {sol.detector.code}</span>
-                      {sol.detector.sensorTech && <span><b>Sensor:</b> {sol.detector.sensorTech}</span>}
-                      {sol.detector.range && <span><b>Range:</b> {sol.detector.range}</span>}
+                  <div className="px-6 py-3 bg-[#f8fafc] border-t border-b border-gray-100">
+                    <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-gray-600">
+                      <span><b className="text-[#16354B]">Detector:</b> {sol.detector.name}</span>
+                      <span><b className="text-[#16354B]">Code:</b> <span className="font-mono">{sol.detector.code}</span></span>
+                      {sol.detector.sensorTech && <span><b className="text-[#16354B]">Sensor:</b> {sol.detector.sensorTech}</span>}
+                      {sol.detector.range && <span><b className="text-[#16354B]">Range:</b> {sol.detector.range}</span>}
                       {sol.controller && (
-                        <span><b>Controller:</b> {sol.controllerQty}x {sol.controller.name}</span>
+                        <span><b className="text-[#16354B]">Controller:</b> {sol.controllerQty}x {sol.controller.name}</span>
                       )}
                       {!sol.controller && (
-                        <span className="text-green-600 font-semibold">Standalone</span>
+                        <span className="text-green-600 font-semibold">Standalone — no controller needed</span>
                       )}
                       {sol.connectionLabel && (
-                        <span><b>Connection:</b> {sol.connectionLabel}</span>
+                        <span><b className="text-[#16354B]">Connection:</b> {sol.connectionLabel}</span>
                       )}
                     </div>
                   </div>
@@ -416,10 +423,10 @@ export default function StepTieredBOM({
                   </table>
 
                   {/* Total row */}
-                  <div className="px-5 py-3 bg-gray-50 border-t flex justify-between items-center">
-                    <div className="text-xs text-gray-400 italic">List prices — contact your distributor for final pricing</div>
-                    <div className="text-lg font-bold" style={{ color }}>
-                      {fmtEur(mandatoryTotal)} EUR
+                  <div className="px-6 py-3 bg-[#16354B] flex justify-between items-center">
+                    <div className="text-xs text-white/50 italic">List prices — contact your distributor for final pricing</div>
+                    <div className="text-lg font-bold text-white">
+                      {fmtEur(mandatoryTotal)} <span className="text-sm font-normal text-white/60">EUR</span>
                     </div>
                   </div>
                 </>
