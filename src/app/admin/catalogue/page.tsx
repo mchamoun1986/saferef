@@ -66,16 +66,24 @@ const APP_ICONS: Record<string, string> = {
 };
 
 const GAS_GROUPS = [
-  { group: 'REFRIGERANTS', items: [
-    { id: 'CO2', label: 'CO2 (R744)', color: '#3b82f6' },
-    { id: 'HFC1', label: 'HFC/HFO Grp 1', color: '#22c55e' },
-    { id: 'HFC2', label: 'HFC/HFO Grp 2', color: '#14b8a6' },
+  { group: 'CO2', items: [
+    { id: 'R744', label: 'CO2 (R744)', color: '#3b82f6' },
+  ]},
+  { group: 'HFC / HFO', items: [
+    { id: 'R32', label: 'R32', color: '#22c55e' },
+    { id: 'R134A', label: 'R134A', color: '#14b8a6' },
+    { id: 'R410A', label: 'R410A', color: '#10b981' },
+    { id: 'R404A', label: 'R404A', color: '#059669' },
+    { id: 'R449A', label: 'R449A', color: '#047857' },
+    { id: 'R1234yf', label: 'R1234yf', color: '#22d3ee' },
+  ]},
+  { group: 'HC', items: [
     { id: 'R290', label: 'R290 Propane', color: '#f97316' },
   ]},
-  { group: 'AMMONIAC', items: [
-    { id: 'NH3', label: 'NH3 (R717)', color: '#a855f7' },
+  { group: 'NH3', items: [
+    { id: 'R717', label: 'NH3 (R717)', color: '#a855f7' },
   ]},
-  { group: 'TOXIQUES / SECURITE', items: [
+  { group: 'SAFETY / TOXIC', items: [
     { id: 'CO', label: 'CO', color: '#ef4444' },
     { id: 'NO2', label: 'NO2', color: '#eab308' },
     { id: 'O2', label: 'O2', color: '#06b6d4' },
@@ -86,10 +94,10 @@ const GAS_GROUPS = [
 
 function typeBadge(type: string) {
   const map: Record<string, string> = {
-    detector: 'bg-blue-600', controller: 'bg-green-600', accessory: 'bg-teal-600',
+    sensor: 'bg-purple-600', detector: 'bg-blue-600', controller: 'bg-green-600', alert: 'bg-red-600', accessory: 'bg-teal-600',
   };
   const labels: Record<string, string> = {
-    detector: 'Detector', controller: 'Controller', accessory: 'Accessoire',
+    sensor: 'Sensor', detector: 'Detector', controller: 'Controller', alert: 'Alert', accessory: 'Accessory',
   };
   return (
     <span className={`${map[type] ?? 'bg-gray-600'} text-white text-[9px] font-bold px-2 py-0.5 rounded`}>
@@ -126,8 +134,10 @@ export default function ProductCatalogPage() {
   }, []);
 
   // Counts
+  const sensors = products.filter(p => p.type === 'sensor').length;
   const detectors = products.filter(p => p.type === 'detector').length;
   const controllers = products.filter(p => p.type === 'controller').length;
+  const alerts = products.filter(p => p.type === 'alert').length;
   const accessories = products.filter(p => p.type === 'accessory').length;
 
   // Toggle gas filter
@@ -202,17 +212,25 @@ export default function ProductCatalogPage() {
           className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${!filterType ? 'bg-[#E63946] text-white' : 'bg-transparent text-gray-400 border border-[#2a4a60] hover:border-gray-500'}`}>
           Tous <span className="ml-1 opacity-70">{products.length}</span>
         </button>
+        <button onClick={() => setFilterType('sensor')}
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1.5 ${filterType === 'sensor' ? 'bg-[#E63946] text-white' : 'bg-transparent text-gray-400 border border-[#2a4a60] hover:border-gray-500'}`}>
+          <span className="w-2 h-2 rounded-full bg-purple-500" /> Sensor <span className="opacity-70">{sensors}</span>
+        </button>
         <button onClick={() => setFilterType('detector')}
           className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1.5 ${filterType === 'detector' ? 'bg-[#E63946] text-white' : 'bg-transparent text-gray-400 border border-[#2a4a60] hover:border-gray-500'}`}>
-          <span className="w-2 h-2 rounded-full bg-blue-500" /> Detecteur <span className="opacity-70">{detectors}</span>
+          <span className="w-2 h-2 rounded-full bg-blue-500" /> Detector <span className="opacity-70">{detectors}</span>
         </button>
         <button onClick={() => setFilterType('controller')}
           className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1.5 ${filterType === 'controller' ? 'bg-[#E63946] text-white' : 'bg-transparent text-gray-400 border border-[#2a4a60] hover:border-gray-500'}`}>
-          <span className="w-2 h-2 rounded-full bg-green-500" /> Controleur <span className="opacity-70">{controllers}</span>
+          <span className="w-2 h-2 rounded-full bg-green-500" /> Controller <span className="opacity-70">{controllers}</span>
+        </button>
+        <button onClick={() => setFilterType('alert')}
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1.5 ${filterType === 'alert' ? 'bg-[#E63946] text-white' : 'bg-transparent text-gray-400 border border-[#2a4a60] hover:border-gray-500'}`}>
+          <span className="w-2 h-2 rounded-full bg-red-500" /> Alert <span className="opacity-70">{alerts}</span>
         </button>
         <button onClick={() => setFilterType('accessory')}
           className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1.5 ${filterType === 'accessory' ? 'bg-[#E63946] text-white' : 'bg-transparent text-gray-400 border border-[#2a4a60] hover:border-gray-500'}`}>
-          <span className="w-2 h-2 rounded-full bg-teal-500" /> Accessoire <span className="opacity-70">{accessories}</span>
+          <span className="w-2 h-2 rounded-full bg-teal-500" /> Accessory <span className="opacity-70">{accessories}</span>
         </button>
       </div>
 
@@ -282,7 +300,7 @@ export default function ProductCatalogPage() {
                     {/* Name */}
                     <h3 className="text-sm font-bold text-white leading-tight mb-0.5 truncate">{p.name}</h3>
                     {/* Type + Family */}
-                    <div className="text-[10px] text-gray-500 mb-1.5">{p.type === 'detector' ? 'Detector' : p.type === 'controller' ? 'Controller' : 'Accessory'}</div>
+                    <div className="text-[10px] text-gray-500 mb-1.5">{{sensor:'Sensor',detector:'Detector',controller:'Controller',alert:'Alert',accessory:'Accessory'}[p.type] ?? p.type}</div>
                     {/* Brand */}
                     <div className="flex items-center gap-1 mb-1.5">
                       <span className="w-2 h-2 rounded-full bg-[#E63946]" />
