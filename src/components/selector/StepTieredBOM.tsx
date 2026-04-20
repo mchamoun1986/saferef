@@ -71,11 +71,12 @@ export default function StepTieredBOM({
     comments: '',
   });
   const [saving, setSaving] = useState(false);
-  const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const [filterMeas, setFilterMeas] = useState('');
   const [filterRange, setFilterRange] = useState('');
   const [filterMode, setFilterMode] = useState('');
   const [filterSensor, setFilterSensor] = useState('');
+  const [filterTier, setFilterTier] = useState('');
 
   // Parse measurement type from range string (e.g. "0-10000 ppm" → "ppm")
   function parseMeasType(range: string | null): string {
@@ -87,50 +88,88 @@ export default function StepTieredBOM({
     return '';
   }
 
-  // Available measurement types from solutions
-  const availMeasTypes = useMemo(() => {
-    const s = new Set<string>();
-    solutions.forEach(sol => { const m = parseMeasType(sol.detector.range); if (m) s.add(m); });
-    return Array.from(s).sort();
-  }, [solutions]);
+  // ── Cascading filters: each axis shows values available after ALL OTHER filters ──
 
-  // Available ranges (after meas filter)
-  const availRanges = useMemo(() => {
-    const s = new Set<string>();
-    solutions.forEach(sol => {
-      if (filterMeas && parseMeasType(sol.detector.range) !== filterMeas) return;
-      if (sol.detector.range) s.add(sol.detector.range);
-    });
-    return Array.from(s).sort();
-  }, [solutions, filterMeas]);
-
-  // Available modes
-  const availModes = useMemo(() => {
-    const s = new Set<string>();
-    solutions.forEach(sol => s.add(sol.mode));
-    return Array.from(s).sort();
-  }, [solutions]);
-
-  // Available sensor techs
-  const availSensors = useMemo(() => {
-    const s = new Set<string>();
-    solutions.forEach(sol => { if (sol.detector.sensorTech) s.add(sol.detector.sensorTech); });
-    return Array.from(s).sort();
-  }, [solutions]);
-
-  // Filtered solutions
-  const filteredSolutions = useMemo(() => {
-    return solutions.filter(sol => {
-      if (filterMeas && parseMeasType(sol.detector.range) !== filterMeas) return false;
-      if (filterRange && sol.detector.range !== filterRange) return false;
-      if (filterMode && sol.mode !== filterMode) return false;
-      if (filterSensor && sol.detector.sensorTech !== filterSensor) return false;
+  const applyFilters = useCallback((
+    pool: Solution[],
+    skip: 'meas' | 'range' | 'mode' | 'sensor' | 'tier' | ''
+  ) => {
+    return pool.filter(sol => {
+      if (skip !== 'meas' && filterMeas && parseMeasType(sol.detector.range) !== filterMeas) return false;
+      if (skip !== 'range' && filterRange && sol.detector.range !== filterRange) return false;
+      if (skip !== 'mode' && filterMode && sol.mode !== filterMode) return false;
+      if (skip !== 'sensor' && filterSensor && sol.detector.sensorTech !== filterSensor) return false;
+      if (skip !== 'tier' && filterTier && sol.tier !== filterTier) return false;
       return true;
     });
-  }, [solutions, filterMeas, filterRange, filterMode, filterSensor]);
+  }, [filterMeas, filterRange, filterMode, filterSensor, filterTier]);
+
+  // Available measurement types (considering all filters except meas)
+  const availMeasTypes = useMemo(() => {
+    const pool = applyFilters(solutions, 'meas');
+    const s = new Set<string>();
+    pool.forEach(sol => { const m = parseMeasType(sol.detector.range); if (m) s.add(m); });
+    return Array.from(s).sort();
+  }, [solutions, applyFilters]);
+
+  // Available ranges (considering all filters except range)
+  const availRanges = useMemo(() => {
+    const pool = applyFilters(solutions, 'range');
+    const s = new Set<string>();
+    pool.forEach(sol => { if (sol.detector.range) s.add(sol.detector.range); });
+    return Array.from(s).sort();
+  }, [solutions, applyFilters]);
+
+  // Available modes (considering all filters except mode)
+  const availModes = useMemo(() => {
+    const pool = applyFilters(solutions, 'mode');
+    const s = new Set<string>();
+    pool.forEach(sol => s.add(sol.mode));
+    return Array.from(s).sort();
+  }, [solutions, applyFilters]);
+
+  // Available sensor techs (considering all filters except sensor)
+  const availSensors = useMemo(() => {
+    const pool = applyFilters(solutions, 'sensor');
+    const s = new Set<string>();
+    pool.forEach(sol => { if (sol.detector.sensorTech) s.add(sol.detector.sensorTech); });
+    return Array.from(s).sort();
+  }, [solutions, applyFilters]);
+
+  // Available tiers (considering all filters except tier)
+  const availTiers = useMemo(() => {
+    const pool = applyFilters(solutions, 'tier');
+    const s = new Set<string>();
+    pool.forEach(sol => s.add(sol.tier));
+    return Array.from(s).sort();
+  }, [solutions, applyFilters]);
+
+  // Filtered solutions (all filters AND)
+  const filteredSolutions = useMemo(() => {
+    return applyFilters(solutions, '');
+  }, [solutions, applyFilters]);
+
+  // Counts per chip value (against filtered pool minus own axis)
+  const countFor = useCallback((axis: 'meas' | 'range' | 'mode' | 'sensor' | 'tier', value: string) => {
+    const pool = applyFilters(solutions, axis);
+    return pool.filter(sol => {
+      if (axis === 'meas') return parseMeasType(sol.detector.range) === value;
+      if (axis === 'range') return sol.detector.range === value;
+      if (axis === 'mode') return sol.mode === value;
+      if (axis === 'sensor') return sol.detector.sensorTech === value;
+      if (axis === 'tier') return sol.tier === value;
+      return false;
+    }).length;
+  }, [solutions, applyFilters]);
 
   function resetFilters() {
-    setFilterMeas(''); setFilterRange(''); setFilterMode(''); setFilterSensor('');
+    setFilterMeas(''); setFilterRange(''); setFilterMode(''); setFilterSensor(''); setFilterTier('');
+  }
+
+  // When changing measurement type, reset range (ranges depend on measurement)
+  function handleMeasChange(val: string) {
+    setFilterMeas(val);
+    setFilterRange('');
   }
 
   // Mandatory components only for total
@@ -304,10 +343,42 @@ export default function StepTieredBOM({
       {/* Filter bar */}
       {solutions.length > 0 && (
         <div className="bg-white rounded-xl shadow-[0_2px_12px_rgba(22,53,75,0.08)] p-4 space-y-2.5">
-          {/* Row 1: Mode */}
+          {/* Row 1: Measurement Type */}
+          {availMeasTypes.length > 1 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider w-24 flex-shrink-0">Measurement</span>
+              <button onClick={() => handleMeasChange('')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${!filterMeas ? 'bg-[#16354B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                All
+              </button>
+              {availMeasTypes.map(m => (
+                <button key={m} onClick={() => handleMeasChange(m)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filterMeas === m ? 'bg-[#16354B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                  {m === 'lel' ? '%LFL' : m === 'vol' ? '%Vol' : 'ppm'} ({countFor('meas', m)})
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Row 2: Range Level */}
+          {availRanges.length > 1 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider w-24 flex-shrink-0">Range</span>
+              <button onClick={() => setFilterRange('')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${!filterRange ? 'bg-[#E63946] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                All
+              </button>
+              {availRanges.map(r => (
+                <button key={r} onClick={() => setFilterRange(r)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filterRange === r ? 'bg-[#E63946] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                  {r} ({countFor('range', r)})
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Row 3: Mode */}
           {availModes.length > 1 && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider w-20 flex-shrink-0">Mode</span>
+              <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider w-24 flex-shrink-0">Mode</span>
               <button onClick={() => setFilterMode('')}
                 className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${!filterMode ? 'bg-[#16354B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                 All
@@ -315,15 +386,35 @@ export default function StepTieredBOM({
               {availModes.map(m => (
                 <button key={m} onClick={() => setFilterMode(m)}
                   className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filterMode === m ? 'bg-[#16354B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                  {m === 'standalone' ? 'Standalone' : 'Centralized'} ({solutions.filter(s => s.mode === m).length})
+                  {m === 'standalone' ? 'Standalone' : 'Centralized'} ({countFor('mode', m)})
                 </button>
               ))}
             </div>
           )}
-          {/* Row 2: Sensor tech */}
+          {/* Row 4: Tier */}
+          {availTiers.length > 1 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider w-24 flex-shrink-0">Tier</span>
+              <button onClick={() => setFilterTier('')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${!filterTier ? 'bg-[#16354B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                All
+              </button>
+              {availTiers.map(ti => (
+                <button key={ti} onClick={() => setFilterTier(ti)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filterTier === ti
+                    ? ti === 'premium' ? 'bg-[#E63946] text-white'
+                    : ti === 'economic' ? 'bg-[#16a34a] text-white'
+                    : 'bg-[#2563eb] text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                  {ti.charAt(0).toUpperCase() + ti.slice(1)} ({countFor('tier', ti)})
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Row 5: Sensor Tech */}
           {availSensors.length > 1 && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider w-20 flex-shrink-0">Sensor</span>
+              <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider w-24 flex-shrink-0">Sensor</span>
               <button onClick={() => setFilterSensor('')}
                 className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${!filterSensor ? 'bg-[#16354B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                 All
@@ -331,25 +422,16 @@ export default function StepTieredBOM({
               {availSensors.map(s => (
                 <button key={s} onClick={() => setFilterSensor(s)}
                   className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filterSensor === s ? 'bg-[#16354B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                  {s} ({solutions.filter(sol => sol.detector.sensorTech === s).length})
+                  {s} ({countFor('sensor', s)})
                 </button>
               ))}
             </div>
           )}
-          {/* Row 3: Range */}
-          {availRanges.length > 1 && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider w-20 flex-shrink-0">Range</span>
-              <button onClick={() => { setFilterRange(''); setFilterMeas(''); }}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${!filterRange && !filterMeas ? 'bg-[#E63946] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                All
-              </button>
-              {availRanges.map(r => (
-                <button key={r} onClick={() => setFilterRange(r)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filterRange === r ? 'bg-[#E63946] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                  {r}
-                </button>
-              ))}
+          {/* No results message */}
+          {filteredSolutions.length === 0 && solutions.length > 0 && (
+            <div className="text-center py-3 text-sm text-amber-600 font-semibold">
+              No solutions match these filters —{' '}
+              <button onClick={resetFilters} className="underline hover:text-amber-800">reset all</button>
             </div>
           )}
           {/* Summary + reset */}
@@ -357,7 +439,7 @@ export default function StepTieredBOM({
             <span className="text-xs text-gray-400">
               Showing {filteredSolutions.length} of {solutions.length} solutions
             </span>
-            {(filterMeas || filterRange || filterMode || filterSensor) && (
+            {(filterMeas || filterRange || filterMode || filterSensor || filterTier) && (
               <button onClick={resetFilters} className="text-xs text-[#E63946] font-semibold hover:underline">
                 Reset filters
               </button>
@@ -374,13 +456,17 @@ export default function StepTieredBOM({
           const mandatoryTotal = getMandatoryTotal(sol);
           const mandatory = sol.components.filter(c => !c.optional);
           const optional = sol.components.filter(c => c.optional);
-          const isExpanded = expandedCard === idx;
+          const isExpanded = expandedCards.has(idx);
 
           return (
             <div key={idx} className="bg-white rounded-xl shadow-[0_2px_12px_rgba(22,53,75,0.08)] overflow-hidden border border-gray-200">
               {/* Solution Header — clickable */}
               <button
-                onClick={() => setExpandedCard(isExpanded ? null : idx)}
+                onClick={() => setExpandedCards(prev => {
+                  const next = new Set(prev);
+                  if (next.has(idx)) next.delete(idx); else next.add(idx);
+                  return next;
+                })}
                 className="w-full flex items-stretch cursor-pointer hover:bg-gray-50/50 transition-colors"
               >
                 {/* Left accent bar */}
