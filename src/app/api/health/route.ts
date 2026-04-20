@@ -14,7 +14,8 @@ export async function GET() {
   try {
     const { createClient } = await import('@libsql/client');
     const httpUrl = tursoUrl?.replace('libsql://', 'https://') ?? '';
-    const client = createClient({ url: httpUrl, authToken: authToken ?? '' });
+    const cleanToken = authToken?.replace(/\s+/g, '') ?? '';
+    const client = createClient({ url: httpUrl, authToken: cleanToken });
     const result = await client.execute('SELECT COUNT(*) as c FROM Product');
     diag.libsqlDirect = { success: true, productCount: result.rows[0]?.c };
   } catch (e: any) {

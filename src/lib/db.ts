@@ -3,7 +3,7 @@ import { PrismaLibSql } from "@prisma/adapter-libsql";
 
 function createClient() {
   const tursoUrl = process.env.TURSO_DATABASE_URL;
-  const authToken = process.env.TURSO_AUTH_TOKEN;
+  const authToken = process.env.TURSO_AUTH_TOKEN?.replace(/\s+/g, "");
 
   // Turso remote: convert libsql:// to https:// for HTTP transport on Vercel
   if (tursoUrl && authToken) {
