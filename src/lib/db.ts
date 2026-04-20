@@ -2,8 +2,9 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 
 function createClient() {
-  const url = process.env.DATABASE_URL ?? "file:./saferef.db";
-  const adapter = new PrismaLibSql({ url });
+  const url = process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL ?? "file:./saferef.db";
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+  const adapter = new PrismaLibSql({ url, authToken });
   return new PrismaClient({ adapter });
 }
 

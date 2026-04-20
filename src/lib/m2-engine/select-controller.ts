@@ -1,7 +1,7 @@
 import type { ProductRecord } from './types';
 import type { ProductEntry } from '../engine-types';
 // Legacy: ProductRelation removed in V2 — inline type for backward compat
-type ProductRelation = { fromCode: string; toCode: string; relationType: string; condition?: string | null; qtyRule?: string | null };
+type ProductRelation = { fromCode: string; toCode: string; relationType: string; condition?: string | null; qtyRule?: string | null; reason?: string | null };
 function getRelationsFor(code: string, type: string, relations: ProductRelation[]): ProductRelation[] {
   return relations.filter(r => r.fromCode === code && r.relationType === type);
 }
@@ -76,7 +76,7 @@ export function selectControllerFromRelations(
   if (totalDetectors <= 0) return result;
 
   // 1. Find required base units (requires_base)
-  const baseRelations = getRelationsFor(relations, detector.code, 'requires_base');
+  const baseRelations = getRelationsFor(detector.code, 'requires_base', relations);
   if (baseRelations.length > 0) {
     // Pick the first matching base (sorted by priority already)
     for (const rel of baseRelations) {
@@ -93,7 +93,7 @@ export function selectControllerFromRelations(
   }
 
   // 2. Find optional centralized controller (compatible_controller)
-  const ctrlRelations = getRelationsFor(relations, detector.code, 'compatible_controller');
+  const ctrlRelations = getRelationsFor(detector.code, 'compatible_controller', relations);
   if (ctrlRelations.length > 0) {
     const compatCodes = new Set(ctrlRelations.map(r => r.toCode));
 

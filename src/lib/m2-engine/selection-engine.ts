@@ -31,7 +31,7 @@ import type {
 } from '../engine-types';
 
 // Legacy: ProductRelation removed in V2 — inline types for backward compat
-type ProductRelation = { fromCode: string; toCode: string; relationType: string; condition?: string | null; qtyRule?: string | null };
+type ProductRelation = { fromCode: string; toCode: string; relationType: string; condition?: string | null; qtyRule?: string | null; reason?: string | null };
 function getRelationsFor(code: string, type: string, relations: ProductRelation[] | undefined): ProductRelation[] {
   if (!relations || !Array.isArray(relations)) return [];
   return relations.filter(r => r.fromCode === code && r.relationType === type);
@@ -41,9 +41,12 @@ function conditionMatches(condition: string | null | undefined, context: Record<
   const [key, val] = condition.split(':');
   return context[key] === val;
 }
-function calculateQty(rule: string | null | undefined, detectorQty: number): number {
+function calculateQty(rule: string | null | undefined, qty: number | { detectors: number; controllers: number }): number {
+  const detectorQty = typeof qty === 'number' ? qty : qty.detectors;
+  const controllerQty = typeof qty === 'number' ? 1 : qty.controllers;
   if (!rule || rule === '1:1' || rule === 'per_detector') return detectorQty;
-  if (rule === 'per_controller' || rule === 'per_project') return 1;
+  if (rule === 'per_controller') return controllerQty;
+  if (rule === 'per_project') return 1;
   if (rule === 'ceil_n_5') return Math.ceil(detectorQty / 5);
   return 1;
 }
@@ -540,8 +543,8 @@ function buildTierBom(
   // Two separate concerns:
   //   1. requires_base (e.g. X5 sensor → X5 Transmitter) — ALWAYS included, even in standalone tier
   //   2. compatible_controller (e.g. MIDI → Controller 10) — only in centralized tier (skipController = false)
-  const hasCtrlRelations = hasRelations && getRelationsFor(relations, detector.code, 'compatible_controller').length > 0;
-  const hasBaseRelations = hasRelations && getRelationsFor(relations, detector.code, 'requires_base').length > 0;
+  const hasCtrlRelations = hasRelations && getRelationsFor(detector.code, 'compatible_controller', relations).length > 0;
+  const hasBaseRelations = hasRelations && getRelationsFor(detector.code, 'requires_base', relations).length > 0;
   const needsController = !skipController && (!detector.standalone || hasCtrlRelations);
 
   if (hasBaseRelations || needsController) {
@@ -640,14 +643,14 @@ function buildTierBom(
     return cf.includes('ALL') || cf.includes(family);
   }
 
-  const condCtx = { voltage, mount: input.mountingType, atex: input.zoneAtex };
+  const condCtx: Record<string, string> = { voltage, mount: input.mountingType, atex: String(input.zoneAtex) };
   const qtyCounts = { detectors: totalDets, controllers: Math.max(1, mpuCount) };
 
   // ─── F10: Power accessories ───────────────────────────────────────────
   const powerAccessories: BomLine[] = [];
   if (hasRelations) {
     // Relation-based: query required_accessory with voltage condition
-    const powerRels = getRelationsFor(relations, detector.code, 'required_accessory')
+    const powerRels = getRelationsFor(detector.code, 'required_accessory', relations)
       .filter(r => conditionMatches(r.condition, condCtx));
     for (const rel of powerRels) {
       // Only include power-related accessories (condition contains voltage)
@@ -664,7 +667,7 @@ function buildTierBom(
       }
     }
     // Also pick up unconditional required_accessory that are power subCategory
-    const uncondPowerRels = getRelationsFor(relations, detector.code, 'required_accessory')
+    const uncondPowerRels = getRelationsFor(detector.code, 'required_accessory', relations)
       .filter(r => !r.condition);
     for (const rel of uncondPowerRels) {
       const accProduct = allAccessories.find(a => a.code === rel.toCode && a.subCategory === 'power');
@@ -703,7 +706,7 @@ function buildTierBom(
   const alertAccessories: BomLine[] = [];
   if (hasRelations) {
     // Relation-based: query alert_device relations for this detector
-    const alertRels = getRelationsFor(relations, detector.code, 'alert_device')
+    const alertRels = getRelationsFor(detector.code, 'alert_device', relations)
       .filter(r => conditionMatches(r.condition, condCtx));
 
     for (const rel of alertRels) {
@@ -767,7 +770,7 @@ function buildTierBom(
   const mountingAccessories: BomLine[] = [];
   if (hasRelations) {
     // Relation-based: query required_accessory with mount condition
-    const mountRels = getRelationsFor(relations, detector.code, 'required_accessory')
+    const mountRels = getRelationsFor(detector.code, 'required_accessory', relations)
       .filter(r => {
         if (!r.condition) return false;
         if (r.condition.startsWith('mount:')) return conditionMatches(r.condition, condCtx);
@@ -844,7 +847,7 @@ function buildTierBom(
   // ─── F16: Suggested accessories (relations only — new feature) ────────
   const suggestedAccessories: BomLine[] = [];
   if (hasRelations) {
-    const suggestedRels = getRelationsFor(relations, detector.code, 'suggested_accessory')
+    const suggestedRels = getRelationsFor(detector.code, 'suggested_accessory', relations)
       .filter(r => conditionMatches(r.condition, condCtx));
     for (const rel of suggestedRels) {
       const accProduct = allAccessories.find(a => a.code === rel.toCode);
@@ -959,7 +962,7 @@ function estimateTotalCost(
   const relations = input.relations;
   const hasRelations = relations && relations.length > 0;
 
-  const hasCtrlRels = hasRelations && getRelationsFor(relations, detector.code, 'compatible_controller').length > 0;
+  const hasCtrlRels = hasRelations && getRelationsFor(detector.code, 'compatible_controller', relations).length > 0;
   if (!detector.standalone || hasCtrlRels) {
     if (hasRelations) {
       const relResult = selectControllerFromRelations(detector, totalDets, input.sitePowerVoltage, controllers, relations);
@@ -977,7 +980,7 @@ function estimateTotalCost(
   // When relations exist, power cost is handled in buildTierBom via relation lookups
   // For estimateTotalCost (used for tier ranking), we approximate with relation data
   if (hasRelations && input.sitePowerVoltage === '230V') {
-    const powerRels = getRelationsFor(relations, detector.code, 'required_accessory')
+    const powerRels = getRelationsFor(detector.code, 'required_accessory', relations)
       .filter(r => r.condition === `voltage:${input.sitePowerVoltage}`);
     for (const rel of powerRels) {
       const acc = (input.accessories || []).find(a => a.code === rel.toCode);
@@ -1088,7 +1091,7 @@ export function selectProducts(input: SelectionInput): SelectionResult {
   // ── 2. PREMIUM CENTRALIZED — Same detector + controller ──
   // Only when: totalDetectors > 1 AND detector has compatible_controller relations
   if (premiumPick && totalDetectors > 1) {
-    const ctrlRels = input.relations ? getRelationsFor(input.relations, premiumPick.product.code, 'compatible_controller') : [];
+    const ctrlRels = input.relations ? getRelationsFor(premiumPick.product.code, 'compatible_controller', input.relations) : [];
     if (ctrlRels.length > 0) {
       const r = buildSolution('PREMIUM_CENTRALIZED', premiumPick.product, totalDetectors, input, controllers, premiumPick.score, false);
       premiumCentralizedSol = r.solution; allBomTraces.push(...r.bomTrace);
@@ -1134,7 +1137,7 @@ export function selectProducts(input: SelectionInput): SelectionResult {
   // ── 4. ECO CENTRALIZED — Same eco detector + controller ──
   // Only when: totalDetectors > 1 AND eco detector has compatible_controller relations
   if (ecoPick && totalDetectors > 1) {
-    const ctrlRels = input.relations ? getRelationsFor(input.relations, ecoPick.product.code, 'compatible_controller') : [];
+    const ctrlRels = input.relations ? getRelationsFor(ecoPick.product.code, 'compatible_controller', input.relations) : [];
     if (ctrlRels.length > 0) {
       const r = buildSolution('ECO_CENTRALIZED', ecoPick.product, totalDetectors, input, controllers, ecoPick.score, false);
       ecoCentralizedSol = r.solution; allBomTraces.push(...r.bomTrace);

@@ -16,9 +16,9 @@ import { PRODUCTS_V2 as PRODUCTS, DISCONTINUED_CODES } from './seed-data/product
 import { DISCOUNT_MATRIX } from './seed-data/discount-matrix';
 
 function createPrismaClient() {
-  // DATABASE_URL from .env: "file:./saferef.db"
-  // Resolve relative to project root
-  const rawUrl = process.env.DATABASE_URL ?? "file:./saferef.db";
+  const tursoUrl = process.env.TURSO_DATABASE_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+  const rawUrl = tursoUrl ?? process.env.DATABASE_URL ?? "file:./saferef.db";
   let resolvedUrl: string;
   if (rawUrl.startsWith("file:")) {
     const filePath = rawUrl.slice("file:".length);
@@ -27,7 +27,7 @@ function createPrismaClient() {
   } else {
     resolvedUrl = rawUrl;
   }
-  const adapter = new PrismaLibSql({ url: resolvedUrl });
+  const adapter = new PrismaLibSql({ url: resolvedUrl, authToken });
   return new PrismaClient({ adapter });
 }
 
