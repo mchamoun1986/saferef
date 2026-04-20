@@ -153,6 +153,31 @@ function gasColor(gasId: string): string {
   return GAS_COLOR_MAP[gasId] ?? '#6b7280';
 }
 
+// ── Chip component ─────────────────────────────────────────────────────────────
+
+function Chip({
+  label, active, color, onClick,
+}: {
+  label: string;
+  active: boolean;
+  color?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-2 py-0.5 text-[10px] font-semibold rounded-full transition-all ${
+        active
+          ? 'text-white'
+          : 'bg-[#162a3d] text-gray-500 hover:text-gray-300'
+      }`}
+      style={active && color ? { backgroundColor: color + 'cc', border: `1px solid ${color}` } : active ? { backgroundColor: '#E63946cc', border: '1px solid #E63946' } : { border: '1px solid #1a3a50' }}
+    >
+      {label}
+    </button>
+  );
+}
+
 // ── Detail Modal ──────────────────────────────────────────────────────────────
 
 function ProductDetailModal({ product: p, onClose }: { product: Product; onClose: () => void }) {
@@ -474,6 +499,12 @@ export default function ProductCatalogPage() {
   const [filterType, setFilterType] = useState('');
   const [filterApp, setFilterApp] = useState('');
   const [filterGas, setFilterGas] = useState<string[]>([]);
+  const [filterFamily, setFilterFamily] = useState<string[]>([]);
+  const [filterTech, setFilterTech] = useState<string[]>([]);
+  const [filterOutput, setFilterOutput] = useState<string[]>([]);
+  const [filterCert, setFilterCert] = useState<string[]>([]);
+  const [filterTier, setFilterTier] = useState('');
+  const [gasSearch, setGasSearch] = useState('');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'family' | 'price' | 'name'>('family');
 
@@ -506,7 +537,7 @@ export default function ProductCatalogPage() {
     return counts;
   }, [products]);
 
-  // Count products matching each gas
+  // Count products matching each gas (based on all products, not filtered)
   const gasProductCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const group of GAS_GROUPS) {
@@ -526,20 +557,45 @@ export default function ProductCatalogPage() {
     setFilterGas(prev => prev.includes(gasId) ? prev.filter(g => g !== gasId) : [...prev, gasId]);
   }, []);
 
-  // Filtered + sorted
-  const filtered = useMemo(() => {
+  // Derive available families, techs from type-filtered + app-filtered products (before other filters)
+  const baseFiltered = useMemo(() => {
     let list = products;
-
-    // Type filter
     if (filterType) list = list.filter(p => p.type === filterType);
-
-    // Application filter — match by family name from app's productFamilies
     if (filterApp) {
       const families = appFamiliesMap[filterApp] ?? [];
       if (families.length > 0) {
         list = list.filter(p => families.some(f => p.family.toUpperCase().includes(f.toUpperCase())));
       }
     }
+    return list;
+  }, [products, filterType, filterApp, appFamiliesMap]);
+
+  const availableFamilies = useMemo(() => {
+    const seen = new Set<string>();
+    for (const p of baseFiltered) if (p.family) seen.add(p.family);
+    return Array.from(seen).sort();
+  }, [baseFiltered]);
+
+  const availableTechs = useMemo(() => {
+    const seen = new Set<string>();
+    for (const p of baseFiltered) if (p.sensorTech) seen.add(p.sensorTech);
+    return Array.from(seen).sort();
+  }, [baseFiltered]);
+
+  // Available gases in base-filtered set
+  const availableGasIds = useMemo(() => {
+    const seen = new Set<string>();
+    for (const p of baseFiltered) {
+      const gases = parseJson<string[]>(p.gas, []);
+      const refs = parseJson<string[]>(p.refs, []);
+      for (const g of [...gases, ...refs]) seen.add(g);
+    }
+    return seen;
+  }, [baseFiltered]);
+
+  // Filtered + sorted (all filters applied)
+  const filtered = useMemo(() => {
+    let list = baseFiltered;
 
     // Gas filter (OR)
     if (filterGas.length > 0) {
@@ -550,6 +606,27 @@ export default function ProductCatalogPage() {
         return filterGas.some(fg => allGases.includes(fg));
       });
     }
+
+    // Family filter
+    if (filterFamily.length > 0) list = list.filter(p => filterFamily.includes(p.family));
+
+    // Tech filter
+    if (filterTech.length > 0) list = list.filter(p => p.sensorTech && filterTech.includes(p.sensorTech));
+
+    // Output filters
+    if (filterOutput.includes('relay')) list = list.filter(p => p.relay > 0);
+    if (filterOutput.includes('4-20mA')) list = list.filter(p => p.analog?.includes('4-20mA'));
+    if (filterOutput.includes('modbus')) list = list.filter(p => p.modbus);
+
+    // Certifications
+    if (filterCert.includes('atex')) list = list.filter(p => p.atex);
+    if (filterCert.includes('standalone')) list = list.filter(p => p.standalone);
+
+    // Tier
+    if (filterTier) list = list.filter(p => {
+      const tierNorm = p.tier?.toLowerCase() ?? '';
+      return tierNorm.includes(filterTier.toLowerCase());
+    });
 
     // Text search
     if (search) {
@@ -571,7 +648,7 @@ export default function ProductCatalogPage() {
       return a.family.localeCompare(b.family) || a.name.localeCompare(b.name);
     });
     return list;
-  }, [products, filterType, filterApp, filterGas, search, sortBy, appFamiliesMap]);
+  }, [baseFiltered, filterGas, filterFamily, filterTech, filterOutput, filterCert, filterTier, search, sortBy]);
 
   // Count products matching selected application
   const appProductCount = useCallback((appId: string) => {
@@ -579,6 +656,34 @@ export default function ProductCatalogPage() {
     if (families.length === 0) return 0;
     return products.filter(p => families.some(f => p.family.toUpperCase().includes(f.toUpperCase()))).length;
   }, [products, appFamiliesMap]);
+
+  // Any filter active?
+  const anyFilterActive = filterApp || filterGas.length > 0 || filterFamily.length > 0 ||
+    filterTech.length > 0 || filterOutput.length > 0 || filterCert.length > 0 || filterTier || search;
+
+  const clearAllFilters = useCallback(() => {
+    setFilterApp('');
+    setFilterGas([]);
+    setFilterFamily([]);
+    setFilterTech([]);
+    setFilterOutput([]);
+    setFilterCert([]);
+    setFilterTier('');
+    setGasSearch('');
+    setSearch('');
+  }, []);
+
+  // Filtered gas groups for the compact searchable gas list
+  const filteredGasGroups = useMemo(() => {
+    const q = gasSearch.toLowerCase();
+    return GAS_GROUPS.map(group => ({
+      ...group,
+      items: group.items.filter(item =>
+        availableGasIds.has(item.id) &&
+        (q === '' || item.label.toLowerCase().includes(q) || item.id.toLowerCase().includes(q))
+      ),
+    })).filter(group => group.items.length > 0);
+  }, [gasSearch, availableGasIds]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0c1824]">
@@ -638,8 +743,19 @@ export default function ProductCatalogPage() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* ── Left Sidebar ── */}
-        <aside className="w-[220px] shrink-0 bg-[#0c1824] border-r border-[#1a3348] overflow-y-auto p-4 space-y-6">
-          {/* Application filter */}
+        <aside className="w-[200px] shrink-0 bg-[#0c1824] border-r border-[#1a3348] overflow-y-auto p-3 space-y-4">
+
+          {/* Reset link */}
+          {anyFilterActive && (
+            <button
+              onClick={clearAllFilters}
+              className="w-full text-left text-[9px] font-bold text-[#E63946] hover:text-red-400 uppercase tracking-widest transition-colors"
+            >
+              ✕ Reset all filters
+            </button>
+          )}
+
+          {/* ── 1. APPLICATION ── */}
           <div>
             <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Application</div>
             <div className="space-y-0.5">
@@ -647,10 +763,10 @@ export default function ProductCatalogPage() {
                 const count = appProductCount(app.id);
                 return (
                   <button key={app.id} onClick={() => setFilterApp(filterApp === app.id ? '' : app.id)}
-                    className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors flex items-center gap-2 ${
+                    className={`w-full text-left px-2 py-1 rounded text-[10px] transition-colors flex items-center gap-1.5 ${
                       filterApp === app.id ? 'bg-[#1a3a50] text-white' : 'text-gray-400 hover:text-gray-200 hover:bg-[#111d2b]'
                     }`}>
-                    <span className="text-sm">{APP_ICONS[app.id] ?? app.icon}</span>
+                    <span className="text-xs">{APP_ICONS[app.id] ?? app.icon}</span>
                     <span className="truncate flex-1">{lang === 'fr' ? app.labelFr : app.labelEn}</span>
                     {count > 0 && (
                       <span className="text-[9px] font-mono text-gray-600 shrink-0">{count}</span>
@@ -661,28 +777,157 @@ export default function ProductCatalogPage() {
             </div>
           </div>
 
-          {/* Gas group filter */}
-          <div>
-            <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Groupe de gaz</div>
-            {GAS_GROUPS.map(group => (
-              <div key={group.group} className="mb-3">
-                <div className="text-[9px] font-bold text-[#E63946] uppercase tracking-wider mb-1">{group.group}</div>
-                {group.items.map(item => {
-                  const count = gasProductCounts[item.id] ?? 0;
-                  return (
-                    <label key={item.id} className="flex items-center gap-2 px-2 py-1 text-xs text-gray-400 hover:text-gray-200 cursor-pointer">
-                      <input type="checkbox" checked={filterGas.includes(item.id)}
-                        onChange={() => toggleGas(item.id)}
-                        className="rounded border-gray-600 bg-transparent text-[#E63946] focus:ring-0 w-3 h-3" />
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: item.color }} />
-                      <span className="truncate flex-1">{item.label}</span>
-                      <span className="text-[9px] font-mono text-gray-600 shrink-0">{count}</span>
-                    </label>
-                  );
-                })}
+          {/* ── 2. FAMILY ── */}
+          {availableFamilies.length > 0 && (
+            <div className="border-t border-[#1a3348] pt-3">
+              <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Family</div>
+              <div className="flex flex-wrap gap-1">
+                {availableFamilies.map(fam => (
+                  <Chip
+                    key={fam}
+                    label={fam}
+                    active={filterFamily.includes(fam)}
+                    onClick={() => setFilterFamily(prev =>
+                      prev.includes(fam) ? prev.filter(f => f !== fam) : [...prev, fam]
+                    )}
+                  />
+                ))}
               </div>
-            ))}
+            </div>
+          )}
+
+          {/* ── 3. TECHNOLOGY ── */}
+          {availableTechs.length > 0 && (
+            <div className="border-t border-[#1a3348] pt-3">
+              <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Technology</div>
+              <div className="flex flex-wrap gap-1">
+                {availableTechs.map(tech => (
+                  <Chip
+                    key={tech}
+                    label={tech}
+                    active={filterTech.includes(tech)}
+                    color="#7c3aed"
+                    onClick={() => setFilterTech(prev =>
+                      prev.includes(tech) ? prev.filter(t => t !== tech) : [...prev, tech]
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── 4. REFRIGERANT ── */}
+          <div className="border-t border-[#1a3348] pt-3">
+            <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Refrigerant</div>
+            {/* Search input */}
+            <div className="relative mb-1.5">
+              <input
+                type="text"
+                placeholder="Search gas..."
+                value={gasSearch}
+                onChange={e => setGasSearch(e.target.value)}
+                className="w-full px-2 py-1 text-[10px] bg-[#162a3d] border border-[#1a3a50] rounded text-white placeholder-gray-600 focus:outline-none focus:border-[#E63946]"
+              />
+            </div>
+            {/* Scrollable gas list */}
+            <div className="overflow-y-auto" style={{ maxHeight: '120px' }}>
+              {filteredGasGroups.map(group => (
+                <div key={group.group} className="mb-2">
+                  <div className="text-[8px] font-bold text-[#E63946]/70 uppercase tracking-wider mb-0.5 px-1">{group.group}</div>
+                  {group.items.map(item => {
+                    const count = gasProductCounts[item.id] ?? 0;
+                    return (
+                      <label key={item.id} className="flex items-center gap-1.5 px-1 py-0.5 text-[10px] text-gray-400 hover:text-gray-200 cursor-pointer rounded hover:bg-[#111d2b]">
+                        <input
+                          type="checkbox"
+                          checked={filterGas.includes(item.id)}
+                          onChange={() => toggleGas(item.id)}
+                          className="rounded border-gray-600 bg-transparent text-[#E63946] focus:ring-0 w-2.5 h-2.5 shrink-0"
+                        />
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: item.color }} />
+                        <span className="truncate flex-1">{item.label}</span>
+                        <span className="text-[8px] font-mono text-gray-600 shrink-0">{count}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ))}
+              {filteredGasGroups.length === 0 && (
+                <div className="text-[9px] text-gray-600 px-1 py-1">No match</div>
+              )}
+            </div>
           </div>
+
+          {/* ── 5. OUTPUT ── */}
+          <div className="border-t border-[#1a3348] pt-3">
+            <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Output</div>
+            <div className="flex flex-wrap gap-1">
+              {[
+                { id: 'relay', label: 'Relay', color: '#f59e0b' },
+                { id: '4-20mA', label: '4-20mA', color: '#06b6d4' },
+                { id: 'modbus', label: 'Modbus', color: '#8b5cf6' },
+              ].map(opt => (
+                <Chip
+                  key={opt.id}
+                  label={opt.label}
+                  active={filterOutput.includes(opt.id)}
+                  color={opt.color}
+                  onClick={() => setFilterOutput(prev =>
+                    prev.includes(opt.id) ? prev.filter(o => o !== opt.id) : [...prev, opt.id]
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* ── 6. CERTIFICATIONS ── */}
+          <div className="border-t border-[#1a3348] pt-3">
+            <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Certifications</div>
+            <div className="flex flex-wrap gap-1">
+              <Chip
+                label="ATEX"
+                active={filterCert.includes('atex')}
+                color="#f97316"
+                onClick={() => setFilterCert(prev =>
+                  prev.includes('atex') ? prev.filter(c => c !== 'atex') : [...prev, 'atex']
+                )}
+              />
+              <Chip
+                label="Standalone"
+                active={filterCert.includes('standalone')}
+                color="#22c55e"
+                onClick={() => setFilterCert(prev =>
+                  prev.includes('standalone') ? prev.filter(c => c !== 'standalone') : [...prev, 'standalone']
+                )}
+              />
+            </div>
+          </div>
+
+          {/* ── 7. TIER ── */}
+          <div className="border-t border-[#1a3348] pt-3">
+            <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Tier</div>
+            <div className="flex flex-wrap gap-1">
+              <Chip
+                label="Premium"
+                active={filterTier === 'premium'}
+                color="#E63946"
+                onClick={() => setFilterTier(prev => prev === 'premium' ? '' : 'premium')}
+              />
+              <Chip
+                label="Standard"
+                active={filterTier === 'standard'}
+                color="#2563eb"
+                onClick={() => setFilterTier(prev => prev === 'standard' ? '' : 'standard')}
+              />
+              <Chip
+                label="Economic"
+                active={filterTier === 'economic'}
+                color="#16a34a"
+                onClick={() => setFilterTier(prev => prev === 'economic' ? '' : 'economic')}
+              />
+            </div>
+          </div>
+
         </aside>
 
         {/* ── Product Grid ── */}
