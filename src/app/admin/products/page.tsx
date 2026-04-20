@@ -359,11 +359,13 @@ export default function ProductsPage() {
           <select value={filterCompat} onChange={e => setFilterCompat(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white">
             <option value="">All Compatible</option>
-            <option value="MIDI">MIDI</option>
-            <option value="X5">X5</option>
-            <option value="RM">RM</option>
-            <option value="AQUIS">AQUIS</option>
-            <option value="ALL">ALL</option>
+            <option value="GLACIAR MIDI">GLACIAR MIDI</option>
+            <option value="GLACIAR MICRO">GLACIAR MICRO</option>
+            <option value="GLACIAR RM">GLACIAR RM</option>
+            <option value="GLACIAR Controller 10">GLACIAR Controller 10</option>
+            <option value="X5 Transmitter">X5 Transmitter</option>
+            <option value="X5 Direct Sensor Module">X5 Direct Sensor Module</option>
+            <option value="X5 Remote Sensor">X5 Remote Sensor</option>
           </select>
         )}
         {selected.size > 0 && (
@@ -511,7 +513,7 @@ export default function ProductsPage() {
                   {(form.type === 'accessory' || form.type === 'alert') && (
                     <>
                       <Sel label="Sub-Category" value={form.subCategory ?? ''} options={['', 'mounting', 'alert', 'spare', 'service', 'power', 'cable', 'other']} onChange={v => setForm({ ...form, subCategory: v || null })} />
-                      <F label="Compatible Families" value={form.compatibleFamilies} onChange={v => setForm({ ...form, compatibleFamilies: v })} mono placeholder='["MIDI","X5"] or ["ALL"]' />
+                      <F label="Compatible Families" value={form.compatibleFamilies} onChange={v => setForm({ ...form, compatibleFamilies: v })} mono placeholder='["GLACIAR MIDI","X5 Transmitter"]' />
                     </>
                   )}
                   <N label="Price (EUR)" value={form.price} onChange={v => setForm({ ...form, price: v })} />
@@ -598,7 +600,7 @@ export default function ProductsPage() {
               {(form.type === 'controller' || form.type === 'detector' || form.type === 'sensor') && <Section title="CONNECTION" color="text-[#1a2332]">
                 <div className="grid grid-cols-2 gap-4">
                   <F label="Connect To" value={form.connectTo ?? ''} onChange={v => setForm({ ...form, connectTo: v || null })} placeholder="e.g. MPU/SPU/SPLS" />
-                  <F label="Compatible Families" value={form.compatibleFamilies} onChange={v => setForm({ ...form, compatibleFamilies: v })} mono placeholder='["MIDI","X5"] or ["ALL"]' />
+                  <F label="Compatible Families" value={form.compatibleFamilies} onChange={v => setForm({ ...form, compatibleFamilies: v })} mono placeholder='["GLACIAR MIDI","X5 Transmitter"]' />
                 </div>
                 <div className="grid grid-cols-2 gap-4 mt-3">
                   <N label="Channels" value={form.channels ?? 0} onChange={v => setForm({ ...form, channels: v || null })} />

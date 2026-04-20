@@ -139,7 +139,7 @@ export async function POST(request: Request) {
       ...(compatibleWith !== undefined && { compatibleWith }),
     };
 
-    const product = await prisma.product.create({ data });
+    const product = await prisma.product.create({ data: data as Parameters<typeof prisma.product.create>[0]['data'] });
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
     console.error('[API] POST /products error:', error);
