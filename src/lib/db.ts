@@ -4,6 +4,7 @@ import { PrismaLibSql } from "@prisma/adapter-libsql";
 function createClient() {
   const url = process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL ?? "file:./saferef.db";
   const authToken = process.env.TURSO_AUTH_TOKEN;
+  console.log("[DB] Connecting to:", url.substring(0, 30) + "...", "authToken:", authToken ? "set" : "missing");
   const adapter = new PrismaLibSql({ url, authToken });
   return new PrismaClient({ adapter });
 }
