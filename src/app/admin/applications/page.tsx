@@ -66,15 +66,16 @@ export default function ApplicationsPage() {
       const [appsRes, stRes, prodsRes] = await Promise.all([
         fetch('/api/applications'),
         fetch('/api/space-types'),
-        fetch('/api/products?type=detector&discontinued=false'),
+        fetch('/api/products?status=active'),
       ]);
       const appsData = await appsRes.json();
       const stData = await stRes.json();
       const prodsData = await prodsRes.json();
       setApps(Array.isArray(appsData) ? appsData : []);
       setAllSpaceTypes(Array.isArray(stData) ? stData : []);
-      // Extract real families from products DB
-      const families = [...new Set((Array.isArray(prodsData) ? prodsData : []).map((p: { family: string }) => p.family))].sort() as string[];
+      // Extract real families from detectors + sensors in products DB
+      const detSensor = (Array.isArray(prodsData) ? prodsData : []).filter((p: { type: string }) => p.type === 'detector' || p.type === 'sensor');
+      const families = [...new Set(detSensor.map((p: { family: string }) => p.family))].sort() as string[];
       setRealFamilies(families);
     } catch { /* ignore */ }
     setLoading(false);
