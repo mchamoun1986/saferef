@@ -777,46 +777,7 @@ export default function ProductCatalogPage() {
             </div>
           </div>
 
-          {/* ── 2. FAMILY ── */}
-          {availableFamilies.length > 0 && (
-            <div className="border-t border-[#1a3348] pt-3">
-              <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Family</div>
-              <div className="flex flex-wrap gap-1">
-                {availableFamilies.map(fam => (
-                  <Chip
-                    key={fam}
-                    label={fam}
-                    active={filterFamily.includes(fam)}
-                    onClick={() => setFilterFamily(prev =>
-                      prev.includes(fam) ? prev.filter(f => f !== fam) : [...prev, fam]
-                    )}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── 3. TECHNOLOGY ── */}
-          {availableTechs.length > 0 && (
-            <div className="border-t border-[#1a3348] pt-3">
-              <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Technology</div>
-              <div className="flex flex-wrap gap-1">
-                {availableTechs.map(tech => (
-                  <Chip
-                    key={tech}
-                    label={tech}
-                    active={filterTech.includes(tech)}
-                    color="#7c3aed"
-                    onClick={() => setFilterTech(prev =>
-                      prev.includes(tech) ? prev.filter(t => t !== tech) : [...prev, tech]
-                    )}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── 4. REFRIGERANT ── */}
+          {/* ── 2. REFRIGERANT ── */}
           <div className="border-t border-[#1a3348] pt-3">
             <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Refrigerant</div>
             {/* Search input */}
@@ -858,7 +819,27 @@ export default function ProductCatalogPage() {
             </div>
           </div>
 
-          {/* ── 5. OUTPUT ── */}
+          {/* ── 3. TECHNOLOGY ── */}
+          {availableTechs.length > 0 && (
+            <div className="border-t border-[#1a3348] pt-3">
+              <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Technology</div>
+              <div className="flex flex-wrap gap-1">
+                {availableTechs.map(tech => (
+                  <Chip
+                    key={tech}
+                    label={tech}
+                    active={filterTech.includes(tech)}
+                    color="#7c3aed"
+                    onClick={() => setFilterTech(prev =>
+                      prev.includes(tech) ? prev.filter(t => t !== tech) : [...prev, tech]
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── 4. OUTPUT ── */}
           <div className="border-t border-[#1a3348] pt-3">
             <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Output</div>
             <div className="flex flex-wrap gap-1">
@@ -927,6 +908,25 @@ export default function ProductCatalogPage() {
               />
             </div>
           </div>
+
+          {/* ── 8. FAMILY (last — for advanced filtering) ── */}
+          {availableFamilies.length > 0 && (
+            <div className="border-t border-[#1a3348] pt-3">
+              <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Family</div>
+              <div className="flex flex-wrap gap-1">
+                {availableFamilies.map(fam => (
+                  <Chip
+                    key={fam}
+                    label={fam.replace('GLACIAR ', '').replace(' Sensor Module', '').replace(' Sensor', '')}
+                    active={filterFamily.includes(fam)}
+                    onClick={() => setFilterFamily(prev =>
+                      prev.includes(fam) ? prev.filter(f => f !== fam) : [...prev, fam]
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
         </aside>
 
