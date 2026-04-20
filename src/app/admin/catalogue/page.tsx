@@ -133,6 +133,17 @@ const TYPE_LABELS: Record<string, string> = {
   sensor: 'Sensor', detector: 'Detector', controller: 'Controller', alert: 'Alert', accessory: 'Accessory',
 };
 
+function safetyBadgeColor(sc: string): string {
+  const u = sc.toUpperCase();
+  if (u === 'A1') return 'bg-emerald-900/40 text-emerald-400 border-emerald-700';
+  if (u === 'A2L') return 'bg-amber-900/40 text-amber-400 border-amber-700';
+  if (u === 'A2') return 'bg-orange-900/40 text-orange-400 border-orange-700';
+  if (u === 'A3') return 'bg-red-900/40 text-red-400 border-red-700';
+  if (u === 'B1') return 'bg-blue-900/40 text-blue-400 border-blue-700';
+  if (u === 'B2L') return 'bg-pink-900/40 text-pink-400 border-pink-700';
+  return 'bg-gray-800 text-gray-400 border-gray-600';
+}
+
 function typeBadge(type: string) {
   return (
     <span className={`${TYPE_COLORS[type] ?? 'bg-gray-600'} text-white text-[9px] font-bold px-2 py-0.5 rounded`}>
@@ -505,6 +516,8 @@ export default function ProductCatalogPage() {
   const [filterCert, setFilterCert] = useState<string[]>([]);
   const [filterTier, setFilterTier] = useState('');
   const [gasSearch, setGasSearch] = useState('');
+  const [refDropdownOpen, setRefDropdownOpen] = useState(false);
+  const [allRefrigerants, setAllRefrigerants] = useState<{ id: string; safetyClass: string }[]>([]);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'family' | 'price' | 'name'>('family');
 
@@ -512,8 +525,10 @@ export default function ProductCatalogPage() {
     Promise.all([
       fetch('/api/products').then(r => r.json()),
       fetch('/api/applications').then(r => r.json()).catch(() => []),
-    ]).then(([prods, apps]) => {
+      fetch('/api/refrigerants-v5').then(r => r.json()).catch(() => []),
+    ]).then(([prods, apps, refs]) => {
       setProducts(Array.isArray(prods) ? prods : []);
+      setAllRefrigerants(Array.isArray(refs) ? refs.map((r: { id: string; safetyClass: string }) => ({ id: r.id, safetyClass: r.safetyClass })) : []);
       setApplications(Array.isArray(apps) ? apps : []);
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -777,63 +792,82 @@ export default function ProductCatalogPage() {
             </div>
           </div>
 
-          {/* ── 2. REFRIGERANT ── */}
+          {/* ── 2. REFRIGERANT — collapsible dropdown with safety class ── */}
           <div className="border-t border-[#1a3348] pt-3">
-            <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Refrigerant</div>
-            {/* Search input */}
-            <div className="relative mb-1.5">
-              <input
-                type="text"
-                placeholder="Search gas..."
-                value={gasSearch}
-                onChange={e => setGasSearch(e.target.value)}
-                className="w-full px-2 py-1 text-[10px] bg-[#162a3d] border border-[#1a3a50] rounded text-white placeholder-gray-600 focus:outline-none focus:border-[#E63946]"
-              />
-            </div>
-            {/* Scrollable gas list */}
-            <div className="overflow-y-auto" style={{ maxHeight: '120px' }}>
-              {filteredGasGroups.map(group => (
-                <div key={group.group} className="mb-2">
-                  <div className="text-[8px] font-bold text-[#E63946]/70 uppercase tracking-wider mb-0.5 px-1">{group.group}</div>
-                  {group.items.map(item => {
-                    const count = gasProductCounts[item.id] ?? 0;
-                    return (
-                      <label key={item.id} className="flex items-center gap-1.5 px-1 py-0.5 text-[10px] text-gray-400 hover:text-gray-200 cursor-pointer rounded hover:bg-[#111d2b]">
-                        <input
-                          type="checkbox"
-                          checked={filterGas.includes(item.id)}
-                          onChange={() => toggleGas(item.id)}
-                          className="rounded border-gray-600 bg-transparent text-[#E63946] focus:ring-0 w-2.5 h-2.5 shrink-0"
-                        />
-                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: item.color }} />
-                        <span className="truncate flex-1">{item.label}</span>
-                        <span className="text-[8px] font-mono text-gray-600 shrink-0">{count}</span>
-                      </label>
-                    );
-                  })}
+            <button
+              onClick={() => setRefDropdownOpen(!refDropdownOpen)}
+              className="w-full flex items-center justify-between mb-2"
+            >
+              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Refrigerant</span>
+              <span className="text-gray-500 text-[10px]">{refDropdownOpen ? '▼' : '▶'}</span>
+            </button>
+            {/* Selected gas chips */}
+            {filterGas.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {filterGas.map(g => (
+                  <span key={g} className="inline-flex items-center gap-1 bg-[#E63946]/20 text-[#E63946] text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
+                    {g}
+                    <button onClick={() => toggleGas(g)} className="hover:text-white">×</button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {refDropdownOpen && (
+              <div className="bg-[#0a1620] border border-[#1a3348] rounded-lg overflow-hidden">
+                <div className="p-1.5">
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={gasSearch}
+                    onChange={e => setGasSearch(e.target.value)}
+                    className="w-full px-2 py-1 text-[10px] bg-[#162a3d] border border-[#1a3a50] rounded text-white placeholder-gray-600 focus:outline-none focus:border-[#E63946]"
+                  />
                 </div>
-              ))}
-              {filteredGasGroups.length === 0 && (
-                <div className="text-[9px] text-gray-600 px-1 py-1">No match</div>
-              )}
-            </div>
+                <div className="overflow-y-auto" style={{ maxHeight: '200px' }}>
+                  {filteredGasGroups.map(group => (
+                    <div key={group.group}>
+                      <div className="text-[8px] font-bold text-[#E63946]/70 uppercase tracking-wider px-2 py-1 bg-[#0c1824] border-t border-[#1a3348]">{group.group}</div>
+                      {group.items.map(item => {
+                        const ref = allRefrigerants.find(r => r.id === item.id);
+                        const sc = ref?.safetyClass || '';
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => toggleGas(item.id)}
+                            className={`w-full flex items-center gap-1.5 px-2 py-1 text-[10px] transition-colors ${
+                              filterGas.includes(item.id) ? 'bg-[#1a3a50] text-white' : 'text-gray-400 hover:text-gray-200 hover:bg-[#111d2b]'
+                            }`}
+                          >
+                            <span className="font-semibold min-w-[45px]">{item.id}</span>
+                            {sc && <span className={`text-[8px] font-bold px-1 py-0.5 rounded border ${safetyBadgeColor(sc)}`}>{sc}</span>}
+                            <span className="text-[8px] font-mono text-gray-600 ml-auto">{gasProductCounts[item.id] ?? 0}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* ── 3. TECHNOLOGY ── */}
+          {/* ── 3. TECHNOLOGY — clickable list ── */}
           {availableTechs.length > 0 && (
             <div className="border-t border-[#1a3348] pt-3">
               <div className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Technology</div>
-              <div className="flex flex-wrap gap-1">
+              <div className="space-y-0.5">
                 {availableTechs.map(tech => (
-                  <Chip
+                  <button
                     key={tech}
-                    label={tech}
-                    active={filterTech.includes(tech)}
-                    color="#7c3aed"
                     onClick={() => setFilterTech(prev =>
                       prev.includes(tech) ? prev.filter(t => t !== tech) : [...prev, tech]
                     )}
-                  />
+                    className={`w-full text-left px-2 py-1 rounded text-[10px] transition-colors ${
+                      filterTech.includes(tech) ? 'bg-purple-900/40 text-purple-300' : 'text-gray-400 hover:text-gray-200 hover:bg-[#111d2b]'
+                    }`}
+                  >
+                    {tech}
+                  </button>
                 ))}
               </div>
             </div>
