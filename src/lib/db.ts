@@ -2,10 +2,19 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 
 function createClient() {
-  const url = process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL ?? "file:./saferef.db";
+  const tursoUrl = process.env.TURSO_DATABASE_URL;
   const authToken = process.env.TURSO_AUTH_TOKEN;
-  console.log("[DB] Connecting to:", url.substring(0, 30) + "...", "authToken:", authToken ? "set" : "missing");
-  const adapter = new PrismaLibSql({ url, authToken });
+
+  // Turso remote: convert libsql:// to https:// for HTTP transport on Vercel
+  if (tursoUrl && authToken) {
+    const httpUrl = tursoUrl.replace("libsql://", "https://");
+    const adapter = new PrismaLibSql({ url: httpUrl, authToken });
+    return new PrismaClient({ adapter });
+  }
+
+  // Local dev: file-based SQLite
+  const url = process.env.DATABASE_URL ?? "file:./saferef.db";
+  const adapter = new PrismaLibSql({ url });
   return new PrismaClient({ adapter });
 }
 
