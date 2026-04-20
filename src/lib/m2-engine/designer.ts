@@ -327,6 +327,18 @@ export class SystemDesigner {
 
   private findAlertProducts(compatFamilies: string[]): { beacon: ProductV2 | null; siren: ProductV2 | null } {
     const alerts = this.products.filter(p => p.type === 'alert' && p.status === 'active');
+
+    // Priority 1: Find a combo (FLRL) — simpler installation, 1 device does both
+    for (const a of alerts) {
+      if (a.subType !== 'beacon_siren_combo') continue;
+      const aCompat = parseJson<string[]>(a.compatibleWith, []);
+      if (aCompat.length === 0) continue;
+      if (aCompat.some(f => compatFamilies.includes(f))) {
+        return { beacon: a, siren: a }; // Same product serves both roles
+      }
+    }
+
+    // Priority 2: Separate beacon + siren (fallback if no combo)
     let beacon: ProductV2 | null = null;
     let siren: ProductV2 | null = null;
 
@@ -341,10 +353,6 @@ export class SystemDesigner {
       }
       if (!siren && a.subType === 'siren') {
         siren = a;
-      }
-      if (a.subType === 'beacon_siren_combo') {
-        if (!beacon) beacon = a;
-        if (!siren) siren = a;
       }
       if (beacon && siren) break;
     }
