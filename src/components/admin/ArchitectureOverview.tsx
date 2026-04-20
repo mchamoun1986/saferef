@@ -145,7 +145,7 @@ function OverviewTab() {
     { title: "Public", color: "#A7C031", items: ["Calculator (5 steps)", "Selector (4 steps)", "Products catalog", "Homepage"] },
     { title: "M1 Engine", color: "#E63946", items: ["EN 378 rules", "ASHRAE 15 rules", "ISO 5149 rules", "Alarm thresholds", "Ventilation calc"] },
     { title: "Database", color: "#3b82f6", items: ["Refrigerants", "Applications", "Products", "Discount rules", "Quotes & sheets"] },
-    { title: "M2 Engine", color: "#E63946", items: ["F0–F9 filters", "Detector selection", "Controller match", "BOM assembly", "3-tier scoring"] },
+    { title: "M2 Engine", color: "#E63946", items: ["SystemDesigner V2", "Gas/ATEX/Voltage filters", "Controller match", "BOM assembly", "3-tier scoring"] },
     { title: "Output", color: "#f59e0b", items: ["3-tier BOM", "Pricing + discounts", "PDF quotes", "Calc sheets", "Audit trail"] },
   ];
   return (
@@ -198,8 +198,8 @@ function OrgTab() {
       <OrgBox label="RegulationResult" sub="detection · qty · placement · thresholds · alarms · ventilation · trace" color="#E63946" />
       <div className="text-gray-300">↓</div>
       <div className="flex gap-3 items-center">
-        <OrgBox label="Product DB" sub="227 products" color="#3b82f6" />
-        <OrgBox label="M2 Engine — selectionEngine()" sub="F0→F9 · scoring /21" color="#f59e0b" />
+        <OrgBox label="Product DB" sub="135 products" color="#3b82f6" />
+        <OrgBox label="M2 Engine — SystemDesigner" sub="Gas/ATEX/Voltage · 3-tier" color="#f59e0b" />
       </div>
       <div className="text-gray-300">↓</div>
       <div className="flex gap-3">
@@ -290,18 +290,30 @@ function VariablesTab() {
         ]} />
       </Section>
 
-      <Section title="M2 Filter Pipeline — F0→F9">
+      <Section title="M2 SystemDesigner V2 — Filter Pipeline">
         <VarTable rows={[
-          { name: "F0 Gas", type: "filter", note: "product.gas vs gasGroup" },
-          { name: "F1 Ref", type: "filter", note: "product.refs vs selectedRefrigerant" },
-          { name: "F2 App", type: "filter", note: "product.apps vs zoneType" },
-          { name: "F3 Range", type: "filter", note: "product.range vs selectedRange" },
+          { name: "Type", type: "filter", note: "detector or sensor only" },
+          { name: "Status", type: "filter", note: "active only (exclude planned/discontinued)" },
+          { name: "Gas", type: "filter", note: "product.gas includes selected refrigerant (R744, R717...)" },
+          { name: "MeasType", type: "filter", note: "product.measType vs IR/SC/EC/PID" },
+          { name: "ATEX", type: "filter", note: "product.atex vs zoneAtex requirement" },
+          { name: "Voltage", type: "filter", note: "product.voltage vs sitePowerVoltage" },
+          { name: "Location", type: "filter", note: "ambient=all, duct=MIDI remote only, pipe=MIDI remote" },
+          { name: "Tier", type: "scoring", note: "Premium / Standard / Centralized per family" },
+        ]} />
+      </Section>
+
+      <Section title="Legacy M2 Filter Pipeline — F0→F9 (selectProducts)">
+        <VarTable rows={[
+          { name: "F0 Application", type: "filter", note: "product.apps vs application" },
+          { name: "F1 Country", type: "filter", note: "product.countries vs country" },
+          { name: "F2 ATEX", type: "filter", note: "product.atex vs zoneAtex" },
+          { name: "F3 Refrigerant", type: "filter", note: "product.refs includes selectedRefrigerant" },
+          { name: "F3b Range", type: "filter", note: "product.range vs selectedRange" },
           { name: "F4 Output", type: "filter", note: "product.relay/analog/modbus" },
-          { name: "F5 Voltage", type: "filter", note: "product.voltage vs sitePowerVoltage" },
-          { name: "F6 Detection Location", type: "filter", note: "ambient=all, duct=MIDI remote only, pipe=MIDI remote+Aquis" },
-          { name: "F7 ATEX", type: "filter", note: "product.atex vs zoneAtex" },
-          { name: "F8 Standalone", type: "filter", note: "product.standalone requirement" },
-          { name: "F9 Score", type: "scoring", note: "21-point → tier assignment" },
+          { name: "F5 Mounting", type: "filter", note: "ambient/duct/pipe" },
+          { name: "F8 Temperature", type: "filter", note: "product.tempRange vs ambient temp" },
+          { name: "F9 Power", type: "filter", note: "product.voltage vs sitePowerVoltage" },
         ]} />
       </Section>
 
@@ -403,13 +415,14 @@ function DetailsTab({ data }: { data: ArchData | null }) {
         <table className="w-full text-[11px]">
           <tbody>
             {[
-              ["M1 Core Physics", "core.ts", "52"],
-              ["M1 EN 378", "en378.ts", "28"],
-              ["M1 ASHRAE 15", "ashrae15.ts", "18"],
-              ["M1 ISO 5149", "iso5149.ts", "14"],
-              ["M2 Selection", "selection-engine.ts", "22"],
-              ["M2 BOM Builder", "build-bom.ts", "12"],
-              ["M3 Pricing", "pricing-engine.ts", "8"],
+              ["M1 Core Physics", "core.ts", "15"],
+              ["M1 EN 378", "en378.ts", "9"],
+              ["M1 ASHRAE 15", "ashrae15.ts", "9"],
+              ["M1 ISO 5149", "iso5149.ts", "10"],
+              ["M2 Selection", "selection-engine.ts", "51"],
+              ["M2 Designer", "designer.ts", "55"],
+              ["M2 BOM Builder", "build-bom.ts", "3"],
+              ["M3 Pricing", "pricing-engine.ts", "10"],
             ].map(([name, file, tests]) => (
               <tr key={name} className="border-t border-gray-50">
                 <td className="py-1 font-semibold text-gray-600">{name}</td>
@@ -429,7 +442,7 @@ function ChangesTab() {
   return (
     <div>
       <div className="flex gap-2 mb-4">
-        <span className="px-3 py-1 rounded-md text-xs font-semibold bg-green-50 text-green-700">Tests: 154/154</span>
+        <span className="px-3 py-1 rounded-md text-xs font-semibold bg-green-50 text-green-700">Tests: 209/209</span>
         <span className="px-3 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-700">Lint: 55 warnings</span>
         <span className="px-3 py-1 rounded-md text-xs font-semibold bg-green-50 text-green-700">Build: green</span>
       </div>
@@ -450,7 +463,10 @@ function ChangesTab() {
           { icon: "🧪", text: "Gas Categories: HFC→HFC & HFO, refrigerants clickable, coverage removed", meta: "admin/gas/page.tsx" },
           { icon: "🏭", text: "Applications: families from DB (dynamic), all labels EN", meta: "admin/applications/page.tsx" },
           { icon: "🇬🇧", text: "All admin pages switched to English", meta: "Applications, Space Types, Engine, TestLab" },
-          { icon: "⚠️", text: "5 bugs open: M-4, N-1, N-4, N-5, voltage", meta: "Non-critical, pending fix" },
+          { icon: "🔄", text: "V2 Product Model: 227 → 135 products, 5 families, 47 refrigerants", meta: "New JSON Schema, seed-data/, product photos" },
+          { icon: "⚙️", text: "SystemDesigner V2 engine: replaces legacy F0-F9 pipeline", meta: "designer.ts — gas/ATEX/voltage/location filters, 55 tests" },
+          { icon: "🧹", text: "Legacy relation-types.ts removed, helpers inlined", meta: "select-controller.ts, selection-engine.ts" },
+          { icon: "✅", text: "QA pass: homepage counts, admin filters, TS errors fixed", meta: "209/209 tests passing" },
         ].map((c, i) => (
           <div key={i} className="flex items-start gap-3 py-2 border-b border-gray-50">
             <span className="text-sm">{c.icon}</span>
