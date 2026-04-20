@@ -1,7 +1,7 @@
 // engine/types.ts — SafeRef unified type definitions
 // All types for multi-regulation engine (EN 378, ASHRAE 15, ISO 5149)
 
-import type { ProductRelation } from '../m2-engine/relation-types';
+// ProductRelation removed in V2 — compatibleWith field replaces it
 
 // ─── Regulation Identifier ───────────────────────────────────────────
 export type RegulationId = 'en378' | 'ashrae15' | 'iso5149';
@@ -349,7 +349,7 @@ export interface SelectionInput {
   alertAccessory?: string;
   appProductFamilies?: string[];
   appDefaultRanges?: Record<string, string>;
-  relations?: ProductRelation[];
+  relations?: { fromCode: string; toCode: string; relationType: string; condition?: string | null; qtyRule?: string | null }[];
 }
 
 export interface FilterStep {

@@ -1,7 +1,10 @@
 import type { ProductRecord } from './types';
 import type { ProductEntry } from '../engine-types';
-import type { ProductRelation } from './relation-types';
-import { getRelationsFor } from './relation-types';
+// Legacy: ProductRelation removed in V2 — inline type for backward compat
+type ProductRelation = { fromCode: string; toCode: string; relationType: string; condition?: string | null; qtyRule?: string | null };
+function getRelationsFor(code: string, type: string, relations: ProductRelation[]): ProductRelation[] {
+  return relations.filter(r => r.fromCode === code && r.relationType === type);
+}
 
 // ─── Voltage helpers ────────────────────────────────────────────────────────
 

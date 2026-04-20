@@ -30,12 +30,23 @@ import type {
   ComparisonTable,
 } from '../engine-types';
 
-import type { ProductRelation } from './relation-types';
-import {
-  getRelationsFor,
-  conditionMatches,
-  calculateQty,
-} from './relation-types';
+// Legacy: ProductRelation removed in V2 — inline types for backward compat
+type ProductRelation = { fromCode: string; toCode: string; relationType: string; condition?: string | null; qtyRule?: string | null };
+function getRelationsFor(code: string, type: string, relations: ProductRelation[] | undefined): ProductRelation[] {
+  if (!relations || !Array.isArray(relations)) return [];
+  return relations.filter(r => r.fromCode === code && r.relationType === type);
+}
+function conditionMatches(condition: string | null | undefined, context: Record<string, string>): boolean {
+  if (!condition) return true;
+  const [key, val] = condition.split(':');
+  return context[key] === val;
+}
+function calculateQty(rule: string | null | undefined, detectorQty: number): number {
+  if (!rule || rule === '1:1' || rule === 'per_detector') return detectorQty;
+  if (rule === 'per_controller' || rule === 'per_project') return 1;
+  if (rule === 'ceil_n_5') return Math.ceil(detectorQty / 5);
+  return 1;
+}
 import { selectControllerFromRelations } from './select-controller';
 
 // ─── Reference Data ──────────────────────────────────────────────────────────
