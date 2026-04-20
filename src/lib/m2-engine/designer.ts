@@ -56,11 +56,20 @@ export class SystemDesigner {
         components.push(this.toBom(ctrl, ctrlQty, 'controller', false));
 
         // Alerts
+        const alertCount = beacon ? alertQty.beacons : 0;
         if (beacon) {
           components.push(this.toBom(beacon, alertQty.beacons, 'alert', false));
         }
         if (siren && (!beacon || siren.code !== beacon.code)) {
           components.push(this.toBom(siren, alertQty.sirens, 'alert', false));
+        }
+
+        // SOCK-H-R-230: required for each FLRL alert on 230V sites
+        if (inputs.voltage === '230V AC' && alertCount > 0) {
+          const sock = this.products.find(p => p.code === '40-420' && p.status === 'active');
+          if (sock) {
+            components.push(this.toBom(sock, alertCount, 'accessory', false));
+          }
         }
 
         // Power adapter (required)
@@ -126,11 +135,20 @@ export class SystemDesigner {
         components.push(this.toBom(det, points, 'detector', false));
 
         // Alerts
+        const saAlertCount = beacon ? alertQty.beacons : 0;
         if (beacon) {
           components.push(this.toBom(beacon, alertQty.beacons, 'alert', false));
         }
         if (siren && (!beacon || siren.code !== beacon.code)) {
           components.push(this.toBom(siren, alertQty.sirens, 'alert', false));
+        }
+
+        // SOCK-H-R-230: required for each FLRL alert on 230V sites
+        if (inputs.voltage === '230V AC' && saAlertCount > 0) {
+          const sock = this.products.find(p => p.code === '40-420' && p.status === 'active');
+          if (sock) {
+            components.push(this.toBom(sock, saAlertCount, 'accessory', false));
+          }
         }
 
         // Power adapter (required)
