@@ -92,10 +92,14 @@ export default function StepProducts({
       .catch(() => setLoading(false));
   }, []);
 
-  // Total detectors from M1 regulation results
+  // Total detectors — use planDetectorCount (from ZonePlan cluster analysis) if set,
+  // otherwise fall back to M1 recommendedDetectors. Same logic as StepCalcSheet.
   const totalDetectors = useMemo(
-    () => zoneRegulations.reduce((sum, zr) => sum + zr.result.recommendedDetectors, 0),
-    [zoneRegulations],
+    () => zoneRegulations.reduce((sum, zr) => {
+      const zone = zones.find(z => String(z.id) === zr.zoneId);
+      return sum + (zone?.planDetectorCount ?? zr.result.recommendedDetectors);
+    }, 0),
+    [zoneRegulations, zones],
   );
 
   const [loading, setLoading] = useState(true);
@@ -140,7 +144,7 @@ export default function StepProducts({
         charge: zone?.charge || 0,
         volume: zone?.volumeOverride || (zone?.surface || 0) * (zone?.height || 0),
         detectionRequired: zr.result.detectionRequired,
-        detectors: zr.result.recommendedDetectors,
+        detectors: zone?.planDetectorCount ?? zr.result.recommendedDetectors,
         thresholdPpm: zr.result.thresholdPpm,
         placement: zr.result.placementHeight,
         placementM: zr.result.placementHeightM,
