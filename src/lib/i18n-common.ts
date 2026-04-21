@@ -303,6 +303,64 @@ export const TIERED_BOM = {
   },
 } as const;
 
+export const LOGIN = {
+  en: {
+    restricted: 'Restricted access',
+    signIn: 'Sign in',
+    selectRole: 'Select your role and enter password',
+    role: 'Role',
+    password: 'Password',
+    signingIn: 'Signing in...',
+    signInAs: 'Sign in as',
+    backHome: 'Back to home',
+    networkError: 'Network error',
+  },
+  fr: {
+    restricted: 'Acces restreint',
+    signIn: 'Connexion',
+    selectRole: 'Selectionnez votre role et entrez le mot de passe',
+    role: 'Role',
+    password: 'Mot de passe',
+    signingIn: 'Connexion...',
+    signInAs: 'Se connecter en tant que',
+    backHome: 'Retour a l\'accueil',
+    networkError: 'Erreur reseau',
+  },
+  sv: {
+    restricted: 'Begransad atkomst',
+    signIn: 'Logga in',
+    selectRole: 'Valj din roll och ange losenord',
+    role: 'Roll',
+    password: 'Losenord',
+    signingIn: 'Loggar in...',
+    signInAs: 'Logga in som',
+    backHome: 'Tillbaka till start',
+    networkError: 'Natverksfel',
+  },
+  de: {
+    restricted: 'Eingeschrankter Zugang',
+    signIn: 'Anmelden',
+    selectRole: 'Wahlen Sie Ihre Rolle und geben Sie das Passwort ein',
+    role: 'Rolle',
+    password: 'Passwort',
+    signingIn: 'Anmeldung...',
+    signInAs: 'Anmelden als',
+    backHome: 'Zuruck zur Startseite',
+    networkError: 'Netzwerkfehler',
+  },
+  es: {
+    restricted: 'Acceso restringido',
+    signIn: 'Iniciar sesion',
+    selectRole: 'Seleccione su rol e ingrese la contrasena',
+    role: 'Rol',
+    password: 'Contrasena',
+    signingIn: 'Iniciando sesion...',
+    signInAs: 'Iniciar sesion como',
+    backHome: 'Volver al inicio',
+    networkError: 'Error de red',
+  },
+} as const;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function t(dict: Record<string, any>, lang: Lang): any {
   return dict[lang] ?? dict.en;

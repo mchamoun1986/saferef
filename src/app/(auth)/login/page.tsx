@@ -3,6 +3,9 @@
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useLang } from '@/lib/i18n-context';
+import { LOGIN, t } from '@/lib/i18n-common';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 const ROLE_DEFAULTS: Record<string, string> = {
   admin: '/admin',
@@ -18,6 +21,8 @@ function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const from = params.get('from');
+  const { lang } = useLang();
+  const l = t(LOGIN, lang);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,7 +45,7 @@ function LoginForm() {
       router.push(from || ROLE_DEFAULTS[role]);
       router.refresh();
     } catch {
-      setError('Network error');
+      setError(l.networkError);
     } finally {
       setLoading(false);
     }
@@ -61,13 +66,14 @@ function LoginForm() {
             <span className="text-[#E63946] font-extrabold text-3xl tracking-tight">Safe</span>
             <span className="text-[#16354B] font-extrabold text-3xl tracking-tight">Ref</span>
           </Link>
-          <p className="text-gray-500 text-sm mt-2">Restricted access</p>
+          <p className="text-gray-500 text-sm mt-2">{l.restricted}</p>
+          <div className="mt-3"><LanguageSwitcher compact /></div>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-md border border-gray-200 p-5 sm:p-8 space-y-5">
           <div>
-            <h2 className="text-lg font-bold text-[#16354B]">Sign in</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Select your role and enter password</p>
+            <h2 className="text-lg font-bold text-[#16354B]">{l.signIn}</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{l.selectRole}</p>
           </div>
 
           {error && (
@@ -78,7 +84,7 @@ function LoginForm() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Role</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">{l.role}</label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as typeof role)}
@@ -91,7 +97,7 @@ function LoginForm() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Password</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">{l.password}</label>
               <input
                 type="password"
                 value={password}
@@ -110,12 +116,12 @@ function LoginForm() {
             disabled={loading || !password}
             className={`w-full text-white py-2.5 rounded-lg font-semibold text-sm transition-colors disabled:opacity-50 ${roleColors[role]}`}
           >
-            {loading ? 'Signing in...' : `Sign in as ${role.charAt(0).toUpperCase() + role.slice(1)}`}
+            {loading ? l.signingIn : `${l.signInAs} ${role.charAt(0).toUpperCase() + role.slice(1)}`}
           </button>
         </form>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          <Link href="/" className="hover:text-gray-600 transition-colors">&larr; Back to home</Link>
+          <Link href="/" className="hover:text-gray-600 transition-colors">&larr; {l.backHome}</Link>
         </p>
       </div>
     </div>
