@@ -111,7 +111,6 @@ model Product {
   productGroup String   @default("A")
   gas          String   @default("[]")       // JSON: ["CO2","HFC1","HFC2","NH3","R290"]
   refs         String   @default("[]")       // JSON: ["R744","R32","R717"]
-  apps         String   @default("[]")       // JSON: ["supermarket","cold_room"]
   range        String?
   sensorTech   String?
   sensorLife   String?

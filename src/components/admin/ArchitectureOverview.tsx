@@ -305,7 +305,7 @@ function VariablesTab() {
 
       <Section title="Legacy M2 Filter Pipeline — F0→F9 (selectProducts)">
         <VarTable rows={[
-          { name: "F0 Application", type: "filter", note: "product.apps vs application" },
+          { name: "F0 Application", type: "filter", note: "Application.productFamilies vs product.family" },
           { name: "F1 Country", type: "filter", note: "product.countries vs country" },
           { name: "F2 ATEX", type: "filter", note: "product.atex vs zoneAtex" },
           { name: "F3 Refrigerant", type: "filter", note: "product.refs includes selectedRefrigerant" },

@@ -204,7 +204,16 @@ function f0_application(products: ProductEntry[], zoneType: string, appProductFa
       return allowed.includes(family) || allowed.includes(subFamily);
     });
   }
-  return products.filter(p => p.apps?.includes(zoneType));
+  // Fallback: use APP_DEFAULTS hardcoded families
+  const defaults = APP_DEFAULTS[zoneType];
+  if (defaults) {
+    const allowed = defaults.products.map(f => f.toUpperCase());
+    return products.filter(p => {
+      const family = getFamily(p).toUpperCase();
+      return allowed.includes(family);
+    });
+  }
+  return products; // No application filter at all
 }
 
 function f1_country(products: ProductEntry[], _country: string): ProductEntry[] {

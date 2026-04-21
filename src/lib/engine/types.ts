@@ -237,8 +237,6 @@ export interface ProductEntry {
   productGroup: string;
   gas: string[];
   refs: string[];
-  /** @deprecated — will be removed; use Application.productFamilies instead */
-  apps?: string[];
   range: string | null;
   sensorTech: string | null;
   sensorLife: string | null;
