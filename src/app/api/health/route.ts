@@ -31,5 +31,9 @@ export async function GET() {
     diag.prisma = { success: false, error: e.message, stack: e.stack?.split('\n').slice(0, 3) };
   }
 
+  // Check password hashes
+  const adminHash = process.env.ADMIN_PASSWORD_HASH;
+  diag.adminHash = adminHash ? `${adminHash.substring(0, 10)}... (${adminHash.length} chars)` : 'MISSING';
+
   return NextResponse.json(diag);
 }

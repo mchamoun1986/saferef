@@ -42,13 +42,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid password' }, { status: 400 });
     }
 
-    const hash = process.env[ROLE_ENV_VARS[role as Role]];
-    if (!hash) {
+    const rawHash = process.env[ROLE_ENV_VARS[role as Role]];
+    if (!rawHash) {
       return NextResponse.json(
         { error: `${role} role not configured — set ${ROLE_ENV_VARS[role as Role]} in .env` },
         { status: 500 },
       );
     }
+    // Vercel may mangle $ in env vars — restore bcrypt prefix if needed
+    const hash = rawHash.startsWith('$2b$') || rawHash.startsWith('$2a$') ? rawHash : `$2b${rawHash.startsWith('$') ? '' : '$'}${rawHash}`;
 
     const valid = await bcrypt.compare(password, hash);
     if (!valid) {
