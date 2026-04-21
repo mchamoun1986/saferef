@@ -188,6 +188,8 @@ export default function ProductsPage() {
   const [isNew, setIsNew] = useState(false);
   const [form, setForm] = useState<Omit<Product, 'createdAt' | 'updatedAt'>>(EMPTY_PRODUCT);
   const [saving, setSaving] = useState(false);
+  const [allRefrigerants, setAllRefrigerants] = useState<{ id: string; name: string }[]>([]);
+  const [allProductGroups, setAllProductGroups] = useState<string[]>([]);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -198,6 +200,19 @@ export default function ProductsPage() {
   }, []);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
+
+  // Fetch refrigerants + product groups for dropdowns
+  useEffect(() => {
+    fetch('/api/refrigerants-v5').then(r => r.json()).then(d => {
+      if (Array.isArray(d)) setAllRefrigerants(d.map((r: { id: string; name: string }) => ({ id: r.id, name: r.name })));
+    });
+    fetch('/api/discount-matrix').then(r => r.json()).then(d => {
+      if (Array.isArray(d)) {
+        const groups = [...new Set(d.map((r: { productGroup: string }) => r.productGroup))].sort() as string[];
+        setAllProductGroups(groups);
+      }
+    });
+  }, []);
 
   // Derived
   const totalAll = products.filter(p => p.status !== 'discontinued' && !p.discontinued).length;
@@ -538,9 +553,51 @@ export default function ProductsPage() {
               <Section title="CLASSIFICATION (M2)" color="text-[#E63946]" defaultOpen>
                 <div className="grid grid-cols-2 gap-4">
                   <Sel label="Tier" value={form.tier} options={[...TIERS]} onChange={v => setForm({ ...form, tier: v })} />
-                  <F label="Product Group" value={form.productGroup} onChange={v => setForm({ ...form, productGroup: v })} mono />
+                  <Sel label="Product Group" value={form.productGroup} options={allProductGroups.length > 0 ? allProductGroups : ['A', 'C', 'D', 'F', 'G']} onChange={v => setForm({ ...form, productGroup: v })} />
                 </div>
-                <TA label="Compatible Refrigerants (JSON)" value={form.refs} onChange={v => setForm({ ...form, refs: v })} rows={1} mono />
+                {/* Refrigerant tag picker */}
+                <div>
+                  <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Compatible Refrigerants</label>
+                  <div className="flex flex-wrap gap-1.5 mb-2 min-h-[32px] p-2 bg-gray-50 border border-gray-200 rounded-lg">
+                    {(() => {
+                      try {
+                        const selected: string[] = JSON.parse(form.refs || '[]');
+                        return selected.map(r => (
+                          <span key={r} className="inline-flex items-center gap-1 bg-[#16354B] text-white text-xs font-semibold px-2 py-1 rounded-md">
+                            {r}
+                            <button type="button" onClick={() => {
+                              const next = selected.filter(x => x !== r);
+                              setForm({ ...form, refs: JSON.stringify(next) });
+                            }} className="hover:text-red-300 ml-0.5">&times;</button>
+                          </span>
+                        ));
+                      } catch { return null; }
+                    })()}
+                    {(() => {
+                      try { return JSON.parse(form.refs || '[]').length === 0 && <span className="text-xs text-gray-400">No refrigerants selected</span>; } catch { return null; }
+                    })()}
+                  </div>
+                  <select
+                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white"
+                    value=""
+                    onChange={e => {
+                      if (!e.target.value) return;
+                      try {
+                        const current: string[] = JSON.parse(form.refs || '[]');
+                        if (!current.includes(e.target.value)) {
+                          setForm({ ...form, refs: JSON.stringify([...current, e.target.value]) });
+                        }
+                      } catch { /* ignore */ }
+                      e.target.value = '';
+                    }}
+                  >
+                    <option value="">+ Add refrigerant...</option>
+                    {allRefrigerants
+                      .filter(r => { try { return !JSON.parse(form.refs || '[]').includes(r.id); } catch { return true; } })
+                      .map(r => <option key={r.id} value={r.id}>{r.id} — {r.name}</option>)
+                    }
+                  </select>
+                </div>
               </Section>
 
               {/* ═══ DETECTION ═══ (detectors + sensors) */}
