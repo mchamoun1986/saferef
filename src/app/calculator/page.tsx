@@ -13,6 +13,7 @@ import StepCalcSheet from '@/components/configurator/StepCalcSheet';
 import StepProducts from '@/components/configurator/StepProducts';
 import StepTechnical from '@/components/selector/StepTechnical';
 import StepProgress from '@/components/configurator/StepProgress';
+import { createLead, updateLead } from '@/lib/lead-tracker';
 import { calculateAllZones } from '@/lib/m1-engine';
 import { en378RuleSet } from '@/lib/rules/en378';
 import { ashrae15RuleSet } from '@/lib/rules/ashrae15';
@@ -313,6 +314,25 @@ export default function ConfiguratorPage() {
     if (!validateStep(step)) return;
     setValidationErrors({});
 
+    if (step === 1) {
+      // Fire-and-forget: create lead on step 1 → 2
+      createLead({
+        source: 'calculator',
+        firstName: clientData.firstName,
+        lastName: clientData.lastName,
+        company: clientData.company,
+        email: clientData.email,
+        phone: clientData.phone,
+        country: clientData.country,
+        clientType: clientData.clientType,
+      });
+    }
+
+    if (step === 2) {
+      // Fire-and-forget: update lead on step 2 → 3
+      updateLead({ currentStep: 3, application: gasAppData.zoneType, refrigerant: gasAppData.selectedRefrigerant });
+    }
+
     if (step === 3) {
       // Run M1 calculation before entering Step 4
       const result = runCalculation();
@@ -322,6 +342,8 @@ export default function ConfiguratorPage() {
       }
       setCalcResult(result);
       setStep(4);
+      // Fire-and-forget: update lead on step 3 → 4
+      updateLead({ currentStep: 4, zonesJson: JSON.stringify(zones), totalDetectors: zones.reduce((s, z) => s + (z.leakSources?.length || 1), 0) });
       // Clear draft on successful calculation
       try { localStorage.removeItem('saferef-wizard-draft'); } catch { /* ignore */ }
       return;
@@ -515,7 +537,7 @@ export default function ConfiguratorPage() {
               {NAV[lang].back}
             </button>
             <button
-              onClick={() => setStep(5)}
+              onClick={() => { setStep(5); updateLead({ currentStep: 5 }); }}
               className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold w-full sm:w-auto px-8 py-3 rounded-lg transition-all shadow-lg shadow-[#A7C031]/30"
             >
               Continue to Technical &rarr;
@@ -533,7 +555,7 @@ export default function ConfiguratorPage() {
               {NAV[lang].back}
             </button>
             <button
-              onClick={() => setStep(6)}
+              onClick={() => { setStep(6); updateLead({ currentStep: 6, status: 'completed', voltage: siteVoltage, atex: atexRequired, mountingType: mountType }); }}
               className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold w-full sm:w-auto px-8 py-3 rounded-lg transition-all shadow-lg shadow-[#A7C031]/30"
             >
               View Product Recommendations &rarr;
