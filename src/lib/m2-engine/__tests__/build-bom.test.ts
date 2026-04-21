@@ -5,7 +5,7 @@ import type { ProductRecord, SelectorInput, BOMZone } from '../types';
 const midiCO2: ProductRecord = {
   id: '1', type: 'detector', family: 'MIDI', name: 'MIDI IR CO2',
   code: '31-210-32', price: 450, gas: '["CO2"]', refs: '["R744"]',
-  apps: '[]', range: '0-10000ppm', sensorTech: 'IR',
+  range: '0-10000ppm', sensorTech: 'IR',
   voltage: '15-24V', atex: false, mount: '["wall","ceiling"]', standalone: true,
   discontinued: false, channels: null, relay: 2, analog: 'selectable',
   modbus: true, productGroup: 'G', tier: 'standard', subCategory: null,
@@ -16,7 +16,7 @@ const midiCO2: ProductRecord = {
 
 const mpu4: ProductRecord = {
   id: 'c2', type: 'controller', family: 'Controller', name: 'MPU-4',
-  code: '21-2002', price: 800, gas: '[]', refs: '[]', apps: '[]',
+  code: '21-2002', price: 800, gas: '[]', refs: '[]',
   range: null, sensorTech: null, voltage: '24V', atex: false,
   mount: '["wall","DIN"]', standalone: false, discontinued: false,
   channels: 4, relay: 8, analog: null, modbus: true,
@@ -28,7 +28,7 @@ const mpu4: ProductRecord = {
 
 const bracket: ProductRecord = {
   id: 'a1', type: 'accessory', family: 'Accessory', name: 'Wall Bracket MIDI',
-  code: '40-901', price: 25, gas: '[]', refs: '[]', apps: '[]',
+  code: '40-901', price: 25, gas: '[]', refs: '[]',
   range: null, sensorTech: null, voltage: null, atex: false,
   mount: '[]', standalone: false, discontinued: false,
   channels: null, relay: 0, analog: null, modbus: false,
@@ -40,7 +40,7 @@ const bracket: ProductRecord = {
 
 const calGas: ProductRecord = {
   id: 'a2', type: 'accessory', family: 'Accessory', name: 'Cal Gas CO2',
-  code: '62-010', price: 150, gas: '["CO2"]', refs: '[]', apps: '[]',
+  code: '62-010', price: 150, gas: '["CO2"]', refs: '[]',
   range: null, sensorTech: null, voltage: null, atex: false,
   mount: '[]', standalone: false, discontinued: false,
   channels: null, relay: 0, analog: null, modbus: false,

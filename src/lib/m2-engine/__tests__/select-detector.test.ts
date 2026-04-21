@@ -5,7 +5,7 @@ import type { ProductRecord, SelectorInput } from '../types';
 const midiCO2: ProductRecord = {
   id: '1', type: 'detector', family: 'MIDI', name: 'MIDI IR CO2 0-10000ppm',
   code: '31-210-32', price: 450, gas: '["CO2"]', refs: '["R744"]',
-  apps: '["supermarket","cold_room"]', range: '0-10000ppm', sensorTech: 'IR',
+  range: '0-10000ppm', sensorTech: 'IR',
   voltage: '15-24V', atex: false, mount: '["wall","ceiling"]', standalone: true,
   discontinued: false, channels: null, relay: 2, analog: 'selectable',
   modbus: true, productGroup: 'G', tier: 'standard', subCategory: null,
@@ -17,7 +17,7 @@ const midiCO2: ProductRecord = {
 const x5NH3: ProductRecord = {
   id: '2', type: 'detector', family: 'X5', name: 'X5 IONIC NH3 0-1000ppm',
   code: '3500-0001', price: 1200, gas: '["NH3"]', refs: '["R717"]',
-  apps: '["machinery_room","cold_room"]', range: '0-1000ppm', sensorTech: 'IONIC',
+  range: '0-1000ppm', sensorTech: 'IONIC',
   voltage: '18-32V', atex: true, mount: '["wall","pipe","pole"]', standalone: false,
   discontinued: false, channels: null, relay: 3, analog: '4-20mA x2',
   modbus: true, productGroup: 'G', tier: 'premium', subCategory: null,
@@ -29,7 +29,7 @@ const x5NH3: ProductRecord = {
 const midiHFC: ProductRecord = {
   id: '3', type: 'detector', family: 'MIDI', name: 'MIDI SC HFC 0-1000ppm',
   code: '31-110-11', price: 400, gas: '["HFC1","HFC2"]', refs: '["R32","R410A","R134a","R404A"]',
-  apps: '["supermarket","cold_room"]', range: '0-1000ppm', sensorTech: 'SC',
+  range: '0-1000ppm', sensorTech: 'SC',
   voltage: '15-24V', atex: false, mount: '["wall","ceiling"]', standalone: true,
   discontinued: false, channels: null, relay: 2, analog: 'selectable',
   modbus: true, productGroup: 'G', tier: 'standard', subCategory: null,
@@ -41,7 +41,7 @@ const midiHFC: ProductRecord = {
 const rmHFC: ProductRecord = {
   id: '4', type: 'detector', family: 'RM', name: 'RM HFC Compact',
   code: '32-100-01', price: 180, gas: '["HFC1","HFC2"]', refs: '["R32","R410A","R134a"]',
-  apps: '["hotel","office"]', range: '0-5000ppm', sensorTech: 'SC',
+  range: '0-5000ppm', sensorTech: 'SC',
   voltage: '12-24V', atex: false, mount: '["wall","ceiling"]', standalone: true,
   discontinued: false, channels: null, relay: 1, analog: null,
   modbus: false, productGroup: 'G', tier: 'standard', subCategory: null,

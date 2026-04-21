@@ -11,7 +11,7 @@ function det(overrides: Partial<ProductEntry> = {}): ProductEntry {
     family: 'MIDI', type: 'detector', description: null,
     category: 'detector', price: 500, tier: 'standard',
     productGroup: 'G', gas: ['CO2'], refs: ['R744'],
-    apps: ['supermarket', 'cold_room'], range: '0-10000ppm',
+    range: '0-10000ppm',
     sensorTech: 'IR', sensorLife: '15 years', power: 2,
     voltage: '24V AC/DC', ip: 'IP54', tempMin: -40, tempMax: 50,
     relay: 2, analog: 'selectable', modbus: true,
@@ -28,7 +28,7 @@ function ctrl(overrides: Partial<ProductEntry> = {}): ProductEntry {
     id: 'ctrl-1', code: '20-300', name: 'MPU4C',
     family: 'Controller', type: 'controller', description: null,
     category: 'controller', price: 1598, tier: 'standard',
-    productGroup: 'D', gas: [], refs: [], apps: [],
+    productGroup: 'D', gas: [], refs: [],
     range: null, sensorTech: null, sensorLife: null,
     power: null, voltage: '24V AC/DC', ip: 'IP20',
     tempMin: -10, tempMax: 55, relay: 4, analog: null,
@@ -56,7 +56,7 @@ describe('M2 + M3 Integration', () => {
   it('full pipeline: selection -> pricing -> quote', () => {
     const premium = det({ id: 'p1', code: '10-100', price: 800, sensorTech: 'IR', standalone: true });
     const standard = det({ id: 'p2', code: '10-200', price: 300, sensorTech: 'SC', standalone: true });
-    const centralized = det({ id: 'p3', code: '10-300', price: 100, standalone: false, connectTo: 'MPU', family: 'MP', apps: ['supermarket', 'cold_room'] });
+    const centralized = det({ id: 'p3', code: '10-300', price: 100, standalone: false, connectTo: 'MPU', family: 'MP' });
     const controller = ctrl();
 
     // M2: Selection

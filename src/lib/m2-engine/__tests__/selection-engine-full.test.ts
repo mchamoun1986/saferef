@@ -10,7 +10,7 @@ function det(overrides: Partial<ProductEntry> = {}): ProductEntry {
     family: 'MIDI', type: 'detector', description: null,
     category: 'detector', price: 500, tier: 'standard',
     productGroup: 'G', gas: ['CO2'], refs: ['R744'],
-    apps: ['supermarket', 'cold_room'], range: '0-10000ppm',
+    range: '0-10000ppm',
     sensorTech: 'IR', sensorLife: '15 years', power: 2,
     voltage: '24V AC/DC', ip: 'IP54', tempMin: -40, tempMax: 50,
     relay: 2, analog: 'selectable', modbus: true,
@@ -27,7 +27,7 @@ function ctrl(overrides: Partial<ProductEntry> = {}): ProductEntry {
     id: 'ctrl-1', code: '20-300', name: 'MPU4C',
     family: 'Controller', type: 'controller', description: null,
     category: 'controller', price: 1598, tier: 'standard',
-    productGroup: 'D', gas: [], refs: [], apps: [],
+    productGroup: 'D', gas: [], refs: [],
     range: null, sensorTech: null, sensorLife: null,
     power: null, voltage: '24V AC/DC', ip: 'IP20',
     tempMin: -10, tempMax: 55, relay: 4, analog: null,
@@ -44,7 +44,7 @@ function acc(overrides: Partial<ProductEntry> = {}): ProductEntry {
     id: 'acc-1', code: '40-440', name: 'FL-RL-R Combined light+siren Red',
     family: 'Accessory', type: 'accessory', description: null,
     category: 'accessory', price: 150, tier: 'standard',
-    productGroup: 'A', gas: [], refs: [], apps: [],
+    productGroup: 'A', gas: [], refs: [],
     range: null, sensorTech: null, sensorLife: null,
     power: null, voltage: null, ip: null,
     tempMin: null, tempMax: null,
@@ -81,16 +81,17 @@ function inp(overrides: Partial<SelectionInput> = {}): SelectionInput {
 
 describe('Filter Pipeline', () => {
   describe('F0 Application', () => {
-    it('filters by apps array', () => {
-      const p1 = det({ id: 'p1', apps: ['supermarket'] });
-      const p2 = det({ id: 'p2', apps: ['parking'] });
-      const result = selectProducts(inp({ products: [p1, p2] }));
+    it('filters by APP_DEFAULTS families', () => {
+      // MIDI is in APP_DEFAULTS for supermarket, X5 is not
+      const p1 = det({ id: 'p1', family: 'MIDI' });
+      const p2 = det({ id: 'p2', family: 'X5' });
+      const result = selectProducts(inp({ products: [p1, p2], zoneType: 'supermarket' }));
       expect(result.trace!.filterPipeline.find(f => f.name === 'F0_application')!.eliminated).toBe(1);
     });
 
     it('filters by appProductFamilies override', () => {
-      const midi = det({ id: 'p1', family: 'MIDI', apps: [] });
-      const x5 = det({ id: 'p2', family: 'X5', apps: [] });
+      const midi = det({ id: 'p1', family: 'MIDI' });
+      const x5 = det({ id: 'p2', family: 'X5' });
       const result = selectProducts(inp({ products: [midi, x5], appProductFamilies: ['MIDI'] }));
       expect(result.trace!.filterPipeline.find(f => f.name === 'F0_application')!.outputCount).toBe(1);
     });
@@ -130,21 +131,21 @@ describe('Filter Pipeline', () => {
     });
 
     it('filters by range for R717', () => {
-      const p1 = det({ id: 'p1', refs: ['R717'], gas: ['NH3'], apps: ['machinery_room'], range: '0-1000ppm' });
-      const p2 = det({ id: 'p2', refs: ['R717'], gas: ['NH3'], apps: ['machinery_room'], range: '0-100ppm' });
+      const p1 = det({ id: 'p1', refs: ['R717'], gas: ['NH3'], range: '0-1000ppm' });
+      const p2 = det({ id: 'p2', refs: ['R717'], gas: ['NH3'], range: '0-100ppm' });
       const result = selectProducts(inp({
         products: [p1, p2], selectedRefrigerant: 'R717', selectedRange: '0-1000ppm',
-        zoneType: 'machinery_room',
+        zoneType: 'machinery_room', appProductFamilies: ['MIDI'],
       }));
       const f3b = result.trace!.filterPipeline.find(f => f.name === 'F3b_range')!;
       expect(f3b.outputCount).toBe(1);
     });
 
     it('falls back when range filter returns 0 results', () => {
-      const p1 = det({ id: 'p1', refs: ['R717'], gas: ['NH3'], apps: ['machinery_room'], range: '0-1000ppm' });
+      const p1 = det({ id: 'p1', refs: ['R717'], gas: ['NH3'], range: '0-1000ppm' });
       const result = selectProducts(inp({
         products: [p1], selectedRefrigerant: 'R717', selectedRange: '0-99999ppm',
-        zoneType: 'machinery_room',
+        zoneType: 'machinery_room', appProductFamilies: ['MIDI'],
       }));
       // Fallback: should keep all since no match
       const f3b = result.trace!.filterPipeline.find(f => f.name === 'F3b_range')!;
@@ -239,8 +240,8 @@ describe('Scoring /21', () => {
 
   it('MIDI/X5 get feature richness bonus', () => {
     const midi = det({ id: 'p1', family: 'MIDI', code: '10-100' });
-    const rm = det({ id: 'p2', family: 'RM', code: '10-200', apps: ['supermarket', 'hotel'] });
-    const result = selectProducts(inp({ products: [midi, rm] }));
+    const rm = det({ id: 'p2', family: 'RM', code: '10-200' });
+    const result = selectProducts(inp({ products: [midi, rm], appProductFamilies: ['MIDI', 'RM'] }));
     const midiFeatures = result.trace!.scored.find(s => s.code === '10-100')!.score.featureRichness;
     const rmFeatures = result.trace!.scored.find(s => s.code === '10-200')!.score.featureRichness;
     expect(midiFeatures).toBeGreaterThan(rmFeatures);
@@ -256,13 +257,17 @@ describe('Scoring /21', () => {
   });
 
   it('application fit bonus for matching family', () => {
-    const midi = det({ id: 'p1', family: 'MIDI', code: '10-100' }); // MIDI is in APP_DEFAULTS for supermarket
-    const rm = det({ id: 'p2', family: 'RM', code: '10-200', apps: ['supermarket'] }); // RM is not
-    const result = selectProducts(inp({ products: [midi, rm], zoneType: 'supermarket' }));
-    const midiFit = result.trace!.scored.find(s => s.code === '10-100')!.score.applicationFit;
-    const rmFit = result.trace!.scored.find(s => s.code === '10-200')!.score.applicationFit;
+    const midi = det({ id: 'p1', family: 'MIDI', code: '10-100' });
+    // With appProductFamilies: ['MIDI'], MIDI gets applicationFit=3
+    const resultMatch = selectProducts(inp({ products: [midi], appProductFamilies: ['MIDI'] }));
+    const midiFit = resultMatch.trace!.scored.find(s => s.code === '10-100')!.score.applicationFit;
     expect(midiFit).toBe(3);
-    expect(rmFit).toBe(1);
+    // With appProductFamilies: ['X5'], MIDI still passes F0 because 'MIDI' is not 'X5',
+    // but MIDI won't be in ['X5'] so it gets appFit=1. F0 filters it though.
+    // So test with no appProductFamilies and a zoneType that has MIDI → appFit=3 via APP_DEFAULTS
+    const resultDefault = selectProducts(inp({ products: [midi], zoneType: 'supermarket' }));
+    const midiDefaultFit = resultDefault.trace!.scored.find(s => s.code === '10-100')!.score.applicationFit;
+    expect(midiDefaultFit).toBe(3); // MIDI is in APP_DEFAULTS for supermarket
   });
 
   it('total score is sum of all 6 components', () => {
@@ -321,7 +326,7 @@ describe('2x2 Matrix Selection', () => {
 
   it('eco standalone tier skips controller even for non-standalone detectors', () => {
     // Eco standalone always uses skipController=true
-    const ns = det({ id: 'p1', standalone: false, connectTo: 'MPU', price: 100, family: 'MP', apps: ['supermarket', 'cold_room'] });
+    const ns = det({ id: 'p1', standalone: false, connectTo: 'MPU', price: 100, family: 'MP' });
     const sa = det({ id: 'p2', standalone: true, price: 800, code: '10-200' });
     const c = ctrl();
     const result = selectProducts(inp({ products: [ns, sa], controllers: [c], totalDetectors: 4 }));
@@ -334,7 +339,7 @@ describe('2x2 Matrix Selection', () => {
   it('cheapest tier picks cheaper detector than standalone', () => {
     // Cheapest (centralized slot) should use a cheaper detector than standalone (premium slot)
     const expensive = det({ id: 'p1', price: 800, standalone: true, code: '10-100', sensorTech: 'IR' });
-    const cheap = det({ id: 'p2', price: 200, standalone: true, code: '10-200', sensorTech: 'SC', apps: ['supermarket', 'cold_room'] });
+    const cheap = det({ id: 'p2', price: 200, standalone: true, code: '10-200', sensorTech: 'SC' });
     const result = selectProducts(inp({ products: [expensive, cheap] }));
     if (result.tiers.premiumStandalone && result.tiers.ecoStandalone) {
       expect(result.tiers.ecoStandalone.totalBom).toBeLessThan(result.tiers.premiumStandalone.totalBom);
@@ -342,7 +347,7 @@ describe('2x2 Matrix Selection', () => {
   });
 
   it('fallback picks best remaining when no standalone', () => {
-    const ns = det({ id: 'p1', standalone: false, connectTo: 'MPU', price: 100, family: 'MP', apps: ['supermarket', 'cold_room'] });
+    const ns = det({ id: 'p1', standalone: false, connectTo: 'MPU', price: 100, family: 'MP' });
     const c = ctrl();
     const result = selectProducts(inp({ products: [ns], controllers: [c] }));
     // With only non-standalone products, should produce at least one tier via fallback
@@ -359,7 +364,7 @@ describe('2x2 Matrix Selection', () => {
 describe('Eco Standalone Tier', () => {
   it('cheapest tier is strictly cheaper than standalone', () => {
     const expensive = det({ id: 'p1', standalone: true, price: 800, code: '10-100', sensorTech: 'IR' });
-    const cheap = det({ id: 'p2', standalone: true, price: 200, code: '10-200', sensorTech: 'SC', apps: ['supermarket', 'cold_room'] });
+    const cheap = det({ id: 'p2', standalone: true, price: 200, code: '10-200', sensorTech: 'SC' });
     const result = selectProducts(inp({ products: [expensive, cheap], totalDetectors: 4 }));
     if (result.tiers.ecoStandalone) {
       expect(result.tiers.ecoStandalone.totalBom).toBeLessThan(result.tiers.premiumStandalone!.totalBom);

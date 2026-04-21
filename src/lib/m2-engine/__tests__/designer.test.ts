@@ -23,7 +23,6 @@ function makeProduct(overrides: Partial<ProductV2>): ProductV2 {
     productGroup: 'A',
     gas: '[]',
     refs: '[]',
-    apps: '[]',
     range: null,
     sensorTech: null,
     sensorLife: null,
@@ -593,31 +592,23 @@ describe('SystemDesigner V2', () => {
   // ─── 6. Application filter ────────────────────────────────────────────────
 
   describe('Application filter', () => {
-    it('products with empty apps pass application filter (universal)', () => {
+    it('all products pass when no applicationFamilies specified', () => {
       const detectors = designer.filterDetectors({ gas: 'R744', application: 'machine_room' });
-      // All our test products have apps: '[]', so they should all pass
+      // No applicationFamilies constraint, so all R744-compatible detectors pass
       expect(detectors.length).toBeGreaterThan(0);
     });
 
-    it('products with specific apps are filtered', () => {
-      const specificProduct = makeProduct({
-        code: 'APP-TEST',
-        type: 'detector',
-        gas: '["R744"]',
-        status: 'active',
-        relay: 2,
-        standalone: true,
-        apps: '["cold_room"]',
+    it('products filtered by applicationFamilies', () => {
+      // Only GLACIAR MIDI family allowed
+      const detectors = designer.filterDetectors({
+        gas: 'R744',
+        application: 'supermarket',
+        applicationFamilies: ['GLACIAR MIDI'],
       });
-      const testDesigner = new SystemDesigner([...FULL_CATALOG, specificProduct]);
-
-      // Should include when matching
-      const matching = testDesigner.filterDetectors({ gas: 'R744', application: 'cold_room' });
-      expect(matching.some(d => d.code === 'APP-TEST')).toBe(true);
-
-      // Should exclude when not matching
-      const nonMatching = testDesigner.filterDetectors({ gas: 'R744', application: 'machine_room' });
-      expect(nonMatching.some(d => d.code === 'APP-TEST')).toBe(false);
+      expect(detectors.length).toBeGreaterThan(0);
+      for (const d of detectors) {
+        expect(d.family).toBe('GLACIAR MIDI');
+      }
     });
   });
 

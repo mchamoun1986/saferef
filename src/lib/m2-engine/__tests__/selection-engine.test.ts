@@ -10,7 +10,7 @@ function makeDetector(overrides: Partial<ProductEntry> = {}): ProductEntry {
     family: 'MIDI', type: 'detector', description: null,
     category: 'detector', price: 500, tier: 'standard',
     productGroup: 'G', gas: ['CO2'], refs: ['R744'],
-    apps: ['supermarket', 'cold_room'], range: '0-10000ppm',
+    range: '0-10000ppm',
     sensorTech: 'IR', sensorLife: '15 years', power: 2,
     voltage: '24V AC/DC', ip: 'IP54', tempMin: -40, tempMax: 50,
     relay: 2, analog: 'selectable', modbus: true,
@@ -27,7 +27,7 @@ function makeController(overrides: Partial<ProductEntry> = {}): ProductEntry {
     id: 'ctrl-1', code: '20-300', name: 'MPU4C',
     family: 'Controller', type: 'controller', description: null,
     category: 'controller', price: 1598, tier: 'standard',
-    productGroup: 'D', gas: [], refs: [], apps: [],
+    productGroup: 'D', gas: [], refs: [],
     range: null, sensorTech: null, sensorLife: null,
     power: null, voltage: '24V AC/DC', ip: 'IP20',
     tempMin: -10, tempMax: 55, relay: 4, analog: null,
@@ -63,7 +63,7 @@ describe('selectProducts', () => {
   it('returns 3-tier result with premium, standard, centralized', () => {
     const premium = makeDetector({ id: 'p1', code: '10-100', name: 'MIDI-IR-R744', family: 'MIDI', sensorTech: 'IR', price: 800, standalone: true });
     const standard = makeDetector({ id: 'p2', code: '10-200', name: 'MIDI-SC-R744', family: 'MIDI', sensorTech: 'SC', price: 300, standalone: true });
-    const nonStandalone = makeDetector({ id: 'p3', code: '10-300', name: 'MP-D-R744', family: 'MP', sensorTech: 'SC', price: 150, standalone: false, connectTo: 'MPU', apps: ['supermarket', 'cold_room'] });
+    const nonStandalone = makeDetector({ id: 'p3', code: '10-300', name: 'MP-D-R744', family: 'MP', sensorTech: 'SC', price: 150, standalone: false, connectTo: 'MPU' });
     const ctrl = makeController();
 
     const input = makeInput({
@@ -105,10 +105,10 @@ describe('selectProducts', () => {
   });
 
   it('applies filter pipeline F0-F9', () => {
-    const match = makeDetector({ id: 'p1', refs: ['R744'], gas: ['CO2'], apps: ['supermarket'] });
-    const noRef = makeDetector({ id: 'p2', refs: ['R32'], gas: ['HFC1'], apps: ['supermarket'] });
-    const noApp = makeDetector({ id: 'p3', refs: ['R744'], gas: ['CO2'], apps: ['parking'] });
-    const discontinued = makeDetector({ id: 'p4', refs: ['R744'], gas: ['CO2'], apps: ['supermarket'], discontinued: true, price: 0 });
+    const match = makeDetector({ id: 'p1', refs: ['R744'], gas: ['CO2'] });
+    const noRef = makeDetector({ id: 'p2', refs: ['R32'], gas: ['HFC1'] });
+    const noApp = makeDetector({ id: 'p3', refs: ['R744'], gas: ['CO2'], family: 'RM' }); // RM not in APP_DEFAULTS for supermarket
+    const discontinued = makeDetector({ id: 'p4', refs: ['R744'], gas: ['CO2'], discontinued: true, price: 0 });
 
     const input = makeInput({ products: [match, noRef, noApp, discontinued], controllers: [] });
     const result = selectProducts(input);
