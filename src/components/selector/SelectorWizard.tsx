@@ -11,6 +11,7 @@ import StepTechnical from './StepTechnical';
 import StepZoneQty from './StepZoneQty';
 import StepTieredBOM from './StepTieredBOM';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { createLead, updateLead } from '@/lib/lead-tracker';
 
 const STEP_LABELS = ['Client', 'Application & Gas', 'Technical', 'Zones', 'Products'];
 
@@ -259,9 +260,34 @@ export default function SelectorWizard() {
 
     setSolutions(sols);
     setStep(5);
+    // Fire-and-forget: update lead on step 4 → 5 (products)
+    updateLead({ currentStep: 5, status: 'completed', zonesJson: JSON.stringify(zones), totalDetectors });
   }
 
   function nextStep() {
+    if (step === 1) {
+      // Fire-and-forget: create lead on step 1 → 2
+      createLead({
+        source: 'selector',
+        firstName: clientData.firstName,
+        lastName: clientData.lastName,
+        company: clientData.company,
+        email: clientData.email,
+        phone: clientData.phone,
+        country: clientData.country,
+      });
+    }
+
+    if (step === 2) {
+      // Fire-and-forget: update lead on step 2 → 3
+      updateLead({ currentStep: 3, application, refrigerant, preferredFamily });
+    }
+
+    if (step === 3) {
+      // Fire-and-forget: update lead on step 3 → 4
+      updateLead({ currentStep: 4, voltage, atex: atexRequired, mountingType: mountType });
+    }
+
     if (step === 4) { generateQuote(); return; }
     setStep(s => Math.min(s + 1, 5));
   }
