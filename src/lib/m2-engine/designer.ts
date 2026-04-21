@@ -239,6 +239,12 @@ export class SystemDesigner {
       // Must be active (exclude planned and discontinued)
       if (p.status !== 'active') return false;
 
+      // Application filter: if product has apps defined, it must include the selected application
+      if (inputs.application) {
+        const apps = parseJson<string[]>(p.apps ?? '[]', []);
+        if (apps.length > 0 && !apps.includes(inputs.application)) return false;
+      }
+
       // Gas filter
       if (inputs.gas) {
         const gases = parseJson<string[]>(p.gas, []);
