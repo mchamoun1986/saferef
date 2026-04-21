@@ -276,7 +276,7 @@ pool = products.filter(p =>
             <FormulaCard
               number="F2"
               title="Gas Filter"
-              description="Keep only detectors whose gas[] array includes the selected refrigerant. Each product stores a JSON array of individual refrigerant codes it detects (e.g. ['R744'], ['R32','R410A']). Individual refrigerants are matched directly — no gas group translation."
+              description="Keep only detectors whose refs[] array includes the selected refrigerant. Each product stores a JSON array of individual refrigerant codes it detects (e.g. ['R744'], ['R32','R410A']). Individual refrigerants are matched directly — no gas group translation."
               inputs={['products[]', 'gas (e.g. R744, R32, R717)']}
               output="filtered detectors[]"
               code={`// F2: Gas filter (individual refrigerant)
@@ -289,7 +289,7 @@ function f2_gas(products, gas) {
 }
 
 // Example: gas = "R717"
-// Matches products with gas: ["R717"]
+// Matches products with refs: ["R717"]
 // Does NOT use gas group translation`}
             />
 
@@ -665,12 +665,12 @@ solutions.sort((a, b) => a.total - b.total);
                     <tr>
                       <td className="px-4 py-2 font-mono font-semibold text-blue-700">detector</td>
                       <td className="px-4 py-2 text-gray-600">Standalone detector (has relay, built-in sensor)</td>
-                      <td className="px-4 py-2 text-xs text-gray-500 font-mono">gas, relay, standalone, atex, voltage, compatibleWith</td>
+                      <td className="px-4 py-2 text-xs text-gray-500 font-mono">refs, relay, standalone, atex, voltage, compatibleWith</td>
                     </tr>
                     <tr className="bg-gray-50">
                       <td className="px-4 py-2 font-mono font-semibold text-purple-700">sensor</td>
                       <td className="px-4 py-2 text-gray-600">Sensor module (connects to X5 Transmitter)</td>
-                      <td className="px-4 py-2 text-xs text-gray-500 font-mono">gas, connectionRules.connectionType, compatibleWith</td>
+                      <td className="px-4 py-2 text-xs text-gray-500 font-mono">refs, connectionRules.connectionType, compatibleWith</td>
                     </tr>
                     <tr>
                       <td className="px-4 py-2 font-mono font-semibold text-green-700">controller</td>
@@ -788,7 +788,7 @@ solutions.sort((a, b) => a.total - b.total);
               <h3 className="text-lg font-semibold text-gray-900 mb-4">V2 Product Fields (key)</h3>
               <div className="grid md:grid-cols-2 gap-3">
                 {[
-                  { field: 'gas: string (JSON)', desc: 'JSON array of individual refrigerant codes: ["R744"] or ["R32","R410A"]' },
+                  { field: 'refs: string (JSON)', desc: 'JSON array of individual refrigerant codes: ["R744"] or ["R32","R410A"]' },
                   { field: 'Application.productFamilies', desc: 'JSON array of product family names per application. Replaces the legacy per-product apps field.' },
                   { field: 'compatibleWith: string (JSON)', desc: 'JSON array of compatible product family names (detectors list controllers; alerts list detectors)' },
                   { field: 'connectionRules: string (JSON)', desc: 'JSON object: maxDetectors, maxSensorModules, beaconsNeeded, powersDetectors, configurations, etc.' },

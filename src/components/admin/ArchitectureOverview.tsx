@@ -97,7 +97,7 @@ export default function ArchitectureOverview({ defaultExpanded = false }: { defa
             {[
               { value: d ? data.pages.total + 1 : "—", label: "Pages", sub: d ? `${data.pages.public} public · ${data.pages.admin + 1} admin` : "" },
               { value: d ? data.api.total + 1 : "—", label: "API Routes", sub: d ? `${data.api.public} public · ${data.api.auth + 1} auth` : "" },
-              { value: d ? data.models : "—", label: "DB Models", sub: "6 seed · 3 runtime" },
+              { value: d ? data.models : "—", label: "DB Models", sub: "6 seed · 4 runtime" },
               { value: d ? d.products.total : "—", label: "Products", sub: d ? `${d.products.detectors} det · ${d.products.controllers} ctrl · ${d.products.accessories} acc` : "" },
               { value: d ? d.refrigerants : "—", label: "Refrigerants", sub: d ? `${d.gasCategories} categories` : "" },
               { value: data?.regulations ?? "—", label: "Regulations", sub: "EN378 · ASHRAE · ISO" },
@@ -375,6 +375,7 @@ function DetailsTab({ data }: { data: ArchData | null }) {
               ["GasCategory", d.gasCategories, "seed"],
               ["Quote", d.quotes.total, "runtime"],
               ["CalcSheet", d.calcSheets, "runtime"],
+              ["Lead", "—", "runtime"],
             ].map(([model, count, type]) => (
               <tr key={String(model)} className="border-t border-gray-50">
                 <td className="py-1 text-gray-600">{model}</td>
@@ -398,6 +399,7 @@ function DetailsTab({ data }: { data: ArchData | null }) {
               ["/api/discount-matrix", "GET POST PUT DEL", "admin"],
               ["/api/login", "POST", "public"],
               ["/api/architecture", "GET", "admin"],
+              ["/api/leads", "GET POST", "mixed"],
             ].map(([ep, methods, auth]) => (
               <tr key={ep} className="border-t border-gray-50">
                 <td className="py-1 font-mono text-[10px] text-gray-500">{ep}</td>

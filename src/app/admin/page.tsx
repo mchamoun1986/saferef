@@ -32,6 +32,7 @@ interface DashboardData {
   spaceTypes: { id: string }[];
   calcSheets: CalcSheet[];
   quotes: Quote[];
+  leads: { id: string }[];
 }
 
 /* ───── helpers ───── */
@@ -91,6 +92,7 @@ const QUICK_LINKS = [
   { href: "/admin/space-types", label: "Space Types", icon: "📐", desc: "Zone types with regulatory defaults" },
   { href: "/admin/calc-sheets", label: "Calc Sheets", icon: "📄", desc: "Saved calculation sheets" },
   { href: "/admin/quotes", label: "Quotes", icon: "💰", desc: "Sales quotes & pricing" },
+  { href: "/admin/leads", label: "Leads", icon: "🎯", desc: "Lead capture & tracking" },
 ];
 
 /* ───── component ───── */
@@ -102,20 +104,22 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [refRes, appRes, stRes, csRes, qtRes] = await Promise.all([
+        const [refRes, appRes, stRes, csRes, qtRes, ldRes] = await Promise.all([
           fetch("/api/refrigerants-v5"),
           fetch("/api/applications"),
           fetch("/api/space-types"),
           fetch("/api/calc-sheets"),
           fetch("/api/quotes"),
+          fetch("/api/leads"),
         ]);
 
-        const [refrigerants, applications, spaceTypes, calcSheets, quotesData] = await Promise.all([
+        const [refrigerants, applications, spaceTypes, calcSheets, quotesData, leadsData] = await Promise.all([
           refRes.ok ? refRes.json() : [],
           appRes.ok ? appRes.json() : [],
           stRes.ok ? stRes.json() : [],
           csRes.ok ? csRes.json() : [],
           qtRes.ok ? qtRes.json() : { quotes: [], total: 0 },
+          ldRes.ok ? ldRes.json() : { leads: [], total: 0 },
         ]);
 
         setData({
@@ -124,6 +128,7 @@ export default function AdminDashboardPage() {
           spaceTypes: Array.isArray(spaceTypes) ? spaceTypes : [],
           calcSheets: Array.isArray(calcSheets) ? calcSheets : calcSheets.data ?? [],
           quotes: Array.isArray(quotesData) ? quotesData : quotesData.quotes ?? [],
+          leads: Array.isArray(leadsData) ? leadsData : leadsData.leads ?? [],
         });
       } catch (e) {
         setError(String(e));
@@ -148,6 +153,7 @@ export default function AdminDashboardPage() {
         quotesDraft: data.quotes.filter((q) => q.status === "draft").length,
         quotesSent: data.quotes.filter((q) => q.status === "sent").length,
         quotesAccepted: data.quotes.filter((q) => q.status === "accepted").length,
+        totalLeads: data.leads.length,
       }
     : null;
 
@@ -170,7 +176,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* KPI cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
         {loading ? (
           <>
             <KpiSkeleton />
@@ -222,6 +228,13 @@ export default function AdminDashboardPage() {
                 <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded">{stats.quotesSent} sent</span>
                 <span className="bg-green-500/20 text-green-300 px-2 py-0.5 rounded">{stats.quotesAccepted} accepted</span>
               </div>
+            </div>
+
+            {/* Leads */}
+            <div className="rounded-xl bg-[#0a1628] text-white p-6 border border-white/5">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Leads</p>
+              <p className="text-3xl font-bold">{stats.totalLeads}</p>
+              <p className="mt-3 text-xs text-gray-500">From Calculator & Selector</p>
             </div>
           </>
         ) : null}

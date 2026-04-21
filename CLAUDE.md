@@ -26,7 +26,7 @@ Objectif : devenir LA référence en ligne pour la conformité EN378 / EN14624 d
 | `src/app/products/` | Catalogue produits SAMON (détecteurs, contrôleurs, accessoires) |
 | `src/app/admin/` | Panneau admin complet (voir ci-dessous) |
 | `src/app/(auth)/login/` | Authentification admin |
-| `src/app/api/` | 12 routes API REST (CRUD produits, gaz, devis, calculs, sessions) |
+| `src/app/api/` | 14 routes API REST (CRUD produits, gaz, devis, calculs, sessions, leads) |
 
 ## Structure app — admin (modules)
 
@@ -45,6 +45,7 @@ Objectif : devenir LA référence en ligne pour la conformité EN378 / EN14624 d
 | `admin/testlab-m2/` | Labo de test M2 |
 | `admin/discount-matrix/` | Matrice de remises par groupe client/produit |
 | `admin/traceability/` | Traçabilité des calculs |
+| `admin/leads/` | Lead capture depuis Calculator/Selector |
 
 ## Les 2 moteurs de calcul
 
@@ -60,6 +61,8 @@ Objectif : devenir LA référence en ligne pour la conformité EN378 / EN14624 d
 - `select-detector.ts` — choix du bon détecteur selon gaz/application
 - `select-controller.ts` — choix du contrôleur compatible
 - `select-accessories.ts` — accessoires nécessaires
+- `designer.ts` — SystemDesigner V2 (filter pipeline, solution assembly, BOM)
+- `designer-types.ts` — types DesignerInputs, Solution, BomComponent, ProductV2
 - `build-bom.ts` — génération Bill of Materials (BOM)
 - `pricing-engine.ts` — calcul prix avec remises
 - `pricing.ts` + `parse-product.ts` — helpers pricing
@@ -84,11 +87,12 @@ Objectif : devenir LA référence en ligne pour la conformité EN378 / EN14624 d
 | `CalcSheet` | Fiches de calcul sauvegardées (input + résultat) | runtime |
 | `Quote` | Devis commerciaux (BOM + pricing + client) | runtime |
 | `AdminUser` | Utilisateurs admin | runtime |
+| `Lead` | Lead capture from Calculator/Selector wizard flows | runtime |
 
 ## Produits SAMON intégrés
-Familles de détecteurs : MIDI, X5, RM, Aquis
+Familles de détecteurs : GLACIAR MIDI, GLACIAR MICRO, GLACIAR RM, X5 Direct Sensor Module, X5 Remote Sensor, X5 Transmitter, GLACIAR Controller 10
 Contrôleurs, accessoires, pièces détachées
-Chaque produit a : code, prix, gaz compatibles, applications, specs techniques, montage
+Chaque produit a : code, prix, refs (réfrigérants compatibles), specs techniques, montage
 
 ## Normes & standards (détail)
 - **EN378** : sécurité systèmes frigorifiques — méthodes M1 (charge max), M2 (détection), M3 (ventilation)
