@@ -43,7 +43,6 @@ function toProductV2(p: ProductRecord): ProductV2 {
     productGroup: p.productGroup || 'G',
     gas: p.gas,
     refs: p.refs,
-    apps: p.apps,
     range: p.range,
     sensorTech: p.sensorTech,
     sensorLife: p.sensorLife ?? null,
@@ -81,15 +80,17 @@ export default function StepProducts({
   clientData, gasAppData, zones, refrigerant, zoneRegulations, application, spaceTypes = [], lang = 'en',
 }: Props) {
   const [rawProducts, setRawProducts] = useState<ProductRecord[]>([]);
+  const [applications, setApplications] = useState<{ id: string; productFamilies?: string }[]>([]);
 
   useEffect(() => {
-    fetch('/api/products?status=active')
-      .then(r => r.json())
-      .then((prods) => {
-        setRawProducts(Array.isArray(prods) ? prods : []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    Promise.all([
+      fetch('/api/products?status=active').then(r => r.json()),
+      fetch('/api/applications').then(r => r.json()),
+    ]).then(([prods, apps]) => {
+      setRawProducts(Array.isArray(prods) ? prods : []);
+      setApplications(Array.isArray(apps) ? apps : []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
   // Total detectors — use planDetectorCount (from ZonePlan cluster analysis) if set,
@@ -116,6 +117,15 @@ export default function StepProducts({
   const voltageV2 = gasAppData.sitePowerVoltage === '12V' ? '12V DC' : gasAppData.sitePowerVoltage === '230V' ? '230V AC' : '24V DC/AC';
   const locationV2 = gasAppData.mountingType === 'duct' ? 'duct' : gasAppData.mountingType === 'pipe' || gasAppData.mountingType === 'pipe_valve' ? 'pipe' : 'ambient';
 
+  // Look up application families for the selected application
+  const applicationFamilies = useMemo(() => {
+    const appId = gasAppData.zoneType;
+    if (!appId) return undefined;
+    const selectedApp = applications.find(a => a.id === appId);
+    if (!selectedApp?.productFamilies) return undefined;
+    try { return JSON.parse(selectedApp.productFamilies) as string[]; } catch { return undefined; }
+  }, [gasAppData.zoneType, applications]);
+
   // Run SystemDesigner V2
   const solutions = useMemo((): Solution[] => {
     if (rawProducts.length === 0 || totalDetectors === 0) return [];
@@ -130,8 +140,9 @@ export default function StepProducts({
       measType: '',
       points: totalDetectors,
       application: gasAppData.zoneType || undefined,
+      applicationFamilies,
     });
-  }, [rawProducts, refrigerant, gasAppData.zoneType, atexRequired, totalDetectors, voltageV2, locationV2]);
+  }, [rawProducts, refrigerant, gasAppData.zoneType, atexRequired, totalDetectors, voltageV2, locationV2, applicationFamilies]);
 
   // Build zone calc data for PDF report
   const zoneCalcData = useMemo(() => {

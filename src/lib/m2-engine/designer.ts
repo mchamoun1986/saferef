@@ -239,10 +239,9 @@ export class SystemDesigner {
       // Must be active (exclude planned and discontinued)
       if (p.status !== 'active') return false;
 
-      // Application filter: if product has apps defined, it must include the selected application
-      if (inputs.application) {
-        const apps = parseJson<string[]>(p.apps ?? '[]', []);
-        if (apps.length > 0 && !apps.includes(inputs.application)) return false;
+      // Application filter: use applicationFamilies to restrict by family
+      if (inputs.applicationFamilies && inputs.applicationFamilies.length > 0) {
+        if (!inputs.applicationFamilies.includes(p.family)) return false;
       }
 
       // Gas filter
@@ -273,15 +272,6 @@ export class SystemDesigner {
           if (!variantLower.includes('remote')) return false;
         }
         if (p.family === 'X5 Direct Sensor Module') return false;
-      }
-
-      // Application filter
-      if (inputs.application) {
-        const apps = parseJson<string[]>(p.apps, []);
-        // If apps is empty, product is universal — passes filter
-        if (apps.length > 0 && !apps.includes(inputs.application)) {
-          return false;
-        }
       }
 
       return true;

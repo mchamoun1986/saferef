@@ -22,7 +22,6 @@ export function toProductEntry(p: ProductRecord): ProductEntry {
     productGroup: p.productGroup || 'G',
     gas: parseJsonArray(p.gas),
     refs: parseJsonArray(p.refs),
-    apps: parseJsonArray(p.apps),
     range: p.range,
     sensorTech: p.sensorTech,
     sensorLife: p.sensorLife ?? null,

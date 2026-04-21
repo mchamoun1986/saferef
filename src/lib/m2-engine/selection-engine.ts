@@ -204,7 +204,7 @@ function f0_application(products: ProductEntry[], zoneType: string, appProductFa
       return allowed.includes(family) || allowed.includes(subFamily);
     });
   }
-  return products.filter(p => p.apps.includes(zoneType));
+  return products.filter(p => p.apps?.includes(zoneType));
 }
 
 function f1_country(products: ProductEntry[], _country: string): ProductEntry[] {

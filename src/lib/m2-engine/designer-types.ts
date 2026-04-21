@@ -9,7 +9,8 @@ export interface DesignerInputs {
   outputs: string[];        // ["4-20mA", "Modbus RTU", "Relay", "0-10V"]
   measType: string;         // "ppm" | "lel" | "vol" | ""
   points: number;           // 1-20 detection points
-  application?: string;     // Application ID for family filtering
+  application?: string;     // Application ID (legacy — unused by engine)
+  applicationFamilies?: string[];  // Allowed product family names from Application.productFamilies
 }
 
 export interface BomComponent {
@@ -61,7 +62,6 @@ export interface ProductV2 {
   productGroup: string;
   gas: string;
   refs: string;
-  apps: string;
   range: string | null;
   sensorTech: string | null;
   sensorLife: string | null;

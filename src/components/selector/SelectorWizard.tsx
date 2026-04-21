@@ -62,6 +62,7 @@ interface AppOption {
   labelEn: string;
   icon: string;
   suggestedGases?: string;
+  productFamilies?: string;
 }
 
 /* ── Inline Client Step (mirrors Calculator StepClient styling) ── */
@@ -157,7 +158,6 @@ function toProductV2(p: ProductRecord): ProductV2 {
     productGroup: p.productGroup || 'G',
     gas: p.gas,
     refs: p.refs,
-    apps: p.apps,
     range: p.range,
     sensorTech: p.sensorTech,
     sensorLife: p.sensorLife ?? null,
@@ -247,6 +247,15 @@ export default function SelectorWizard() {
       '230V': '230V AC',
     };
 
+    // Look up application families for the selected application
+    let applicationFamilies: string[] | undefined;
+    if (application) {
+      const selectedApp = applications.find(a => a.id === application);
+      if (selectedApp?.productFamilies) {
+        try { applicationFamilies = JSON.parse(selectedApp.productFamilies); } catch { /* ignore */ }
+      }
+    }
+
     const sols = designer.generate({
       gas: refrigerant,
       atex: atexRequired,
@@ -256,6 +265,7 @@ export default function SelectorWizard() {
       measType: '',
       points: totalDetectors,
       application: application || undefined,
+      applicationFamilies,
     });
 
     setSolutions(sols);

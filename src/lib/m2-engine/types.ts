@@ -74,7 +74,6 @@ export interface ProductRecord {
   specs?: string;
   gas: string;
   refs: string;
-  apps: string;
   range: string | null;
   sensorTech: string | null;
   sensorLife: string | null;
