@@ -195,3 +195,30 @@ model LoginLog {
   createdAt DateTime @default(now())
 }
 
+model Lead {
+  id              String   @id @default(cuid())
+  source          String   @default("calculator")
+  currentStep     Int      @default(1)
+  status          String   @default("in_progress")
+  firstName       String   @default("")
+  lastName        String   @default("")
+  company         String   @default("")
+  email           String   @default("")
+  phone           String   @default("")
+  country         String   @default("")
+  clientType      String   @default("")
+  application     String   @default("")
+  refrigerant     String   @default("")
+  preferredFamily String   @default("")
+  voltage         String   @default("")
+  atex            Boolean  @default(false)
+  mountingType    String   @default("")
+  zonesJson       String   @default("[]")
+  totalDetectors  Int      @default(0)
+  resultJson      String   @default("{}")
+  quoteId         String?
+  quoteRef        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
