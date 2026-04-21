@@ -381,23 +381,26 @@ return prodType === measType;`}
             <FormulaCard
               number="F7"
               title="Application Filter"
-              description="Filter by application type using the product's apps[] JSON array. If the product's apps array is empty, the product is considered universal and passes all application filters. If non-empty, the application must be in the array."
-              inputs={['products[]', 'application (optional)']}
+              description="Filter by application type using Application.productFamilies. Each Application defines which product families are compatible (e.g. supermarket → ['MIDI','MP']). Products whose family matches the allowed list pass. If no application is selected or no families are defined, all products pass."
+              inputs={['products[]', 'application (optional)', 'Application.productFamilies[]']}
               output="filtered detectors[]"
-              code={`// F7: Application filter
-function f7_application(products, app) {
+              code={`// F7: Application filter (family-based)
+function f7_application(products, app, appFamilies) {
   if (!app) return products; // no filter
+  if (!appFamilies || appFamilies.length === 0)
+    return products; // no restriction
+  const allowed = appFamilies
+    .map(f => f.toUpperCase());
   return products.filter(p => {
-    const apps = JSON.parse(p.apps || '[]');
-    // Empty = universal product (passes all)
-    if (apps.length === 0) return true;
-    return apps.includes(app);
+    const family = p.family.toUpperCase();
+    return allowed.some(a =>
+      family.includes(a));
   });
 }
 
-// Example applications:
-// supermarket, cold_room, machinery_room,
-// hotel, parking, ice_rink, heat_pump`}
+// Application.productFamilies examples:
+// supermarket → ["MIDI","MP"]
+// machinery_room → ["X5","GXR","GEX"]`}
             />
 
             {/* Constants reference */}
@@ -411,7 +414,7 @@ F3: atex = true  (only if inputs.atex = true)
 F4: voltage compatible  (X5 sensors always pass)
 F5: location compatible  (duct/pipe → remote variants only)
 F6: measType matches range  (ppm / lel / vol)
-F7: apps includes application  (empty apps = universal)
+F7: Application.productFamilies filter  (family-based)
 
 Result: ProductV2[] — compatible detectors/sensors`}</pre>
               </div>
@@ -786,7 +789,7 @@ solutions.sort((a, b) => a.total - b.total);
               <div className="grid md:grid-cols-2 gap-3">
                 {[
                   { field: 'gas: string (JSON)', desc: 'JSON array of individual refrigerant codes: ["R744"] or ["R32","R410A"]' },
-                  { field: 'apps: string (JSON)', desc: 'JSON array of application IDs. Empty = universal product.' },
+                  { field: 'Application.productFamilies', desc: 'JSON array of product family names per application. Replaces the legacy per-product apps field.' },
                   { field: 'compatibleWith: string (JSON)', desc: 'JSON array of compatible product family names (detectors list controllers; alerts list detectors)' },
                   { field: 'connectionRules: string (JSON)', desc: 'JSON object: maxDetectors, maxSensorModules, beaconsNeeded, powersDetectors, configurations, etc.' },
                   { field: 'status: string', desc: 'active | planned | discontinued. Engine only uses active products.' },

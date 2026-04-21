@@ -21,7 +21,6 @@ interface Product {
   image: string | null;
   gas: string;
   refs: string;
-  apps: string;
   range: string | null;
   sensorTech: string | null;
   sensorLife: string | null;

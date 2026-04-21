@@ -15,7 +15,6 @@ export interface SeedProductV2 {
   productGroup: string;
   gas: string;
   refs: string;
-  apps: string;
   range: string | null;
   sensorTech: string | null;
   sensorLife: string | null;
@@ -87,7 +86,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI", "GLACIAR Controller 10", "X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor", "GLACIAR RM"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -135,7 +133,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI", "GLACIAR Controller 10", "X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor", "GLACIAR RM"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -183,7 +180,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI", "GLACIAR Controller 10", "X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor", "GLACIAR RM"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -231,7 +227,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI", "GLACIAR Controller 10", "X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor", "GLACIAR RM"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -279,7 +274,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR RM"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -327,7 +321,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI", "GLACIAR Controller 10", "X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor", "GLACIAR RM"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -375,7 +368,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI", "GLACIAR Controller 10", "X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor", "GLACIAR RM"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -423,7 +415,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI", "GLACIAR Controller 10", "X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor", "GLACIAR RM"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -471,7 +462,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -519,7 +509,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -567,7 +556,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI", "X5 Transmitter", "X5 Remote Sensor", "GLACIAR RM"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -615,7 +603,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '[]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -663,7 +650,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '[]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -711,7 +697,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -759,7 +744,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -807,7 +791,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -855,7 +838,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -903,7 +885,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -951,7 +932,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -999,7 +979,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1047,7 +1026,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1095,7 +1073,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1143,7 +1120,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1191,7 +1167,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1239,7 +1214,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1287,7 +1261,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1335,7 +1308,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1383,7 +1355,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1431,7 +1402,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1479,7 +1449,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1527,7 +1496,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1575,7 +1543,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1623,7 +1590,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1671,7 +1637,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1719,7 +1684,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1767,7 +1731,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1815,7 +1778,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1863,7 +1825,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1911,7 +1872,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -1959,7 +1919,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2007,7 +1966,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2055,7 +2013,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2103,7 +2060,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2151,7 +2107,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2199,7 +2154,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2247,7 +2201,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2295,7 +2248,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2343,7 +2295,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2391,7 +2342,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2439,7 +2389,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR RM"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2487,7 +2436,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR RM"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2535,7 +2483,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI", "GLACIAR Controller 10", "X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor", "GLACIAR RM"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2583,7 +2530,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI", "GLACIAR Controller 10", "X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor", "GLACIAR RM"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2631,7 +2577,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2679,7 +2624,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["GLACIAR MIDI", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2727,7 +2671,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2775,7 +2718,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2823,7 +2765,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2871,7 +2812,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2919,7 +2859,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -2967,7 +2906,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3015,7 +2953,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3063,7 +3000,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3111,7 +3047,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3159,7 +3094,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3207,7 +3141,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3255,7 +3188,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3303,7 +3235,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3351,7 +3282,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3399,7 +3329,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3447,7 +3376,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3495,7 +3423,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3543,7 +3470,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3591,7 +3517,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3639,7 +3564,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3687,7 +3611,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3735,7 +3658,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3783,7 +3705,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3831,7 +3752,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3879,7 +3799,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3927,7 +3846,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -3975,7 +3893,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4023,7 +3940,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4071,7 +3987,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4119,7 +4034,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4167,7 +4081,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4215,7 +4128,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4263,7 +4175,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4311,7 +4222,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4359,7 +4269,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4407,7 +4316,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4455,7 +4363,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4503,7 +4410,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4551,7 +4457,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4599,7 +4504,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4647,7 +4551,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4695,7 +4598,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4743,7 +4645,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4791,7 +4692,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4839,7 +4739,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4887,7 +4786,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4935,7 +4833,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -4983,7 +4880,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5031,7 +4927,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5079,7 +4974,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5127,7 +5021,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5175,7 +5068,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5223,7 +5115,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5271,7 +5162,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5319,7 +5209,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5367,7 +5256,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5415,7 +5303,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5463,7 +5350,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5511,7 +5397,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5559,7 +5444,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5607,7 +5491,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5655,7 +5538,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5703,7 +5585,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5751,7 +5632,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5799,7 +5679,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5847,7 +5726,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5895,7 +5773,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5943,7 +5820,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -5991,7 +5867,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -6039,7 +5914,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -6087,7 +5961,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -6135,7 +6008,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -6183,7 +6055,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -6231,7 +6102,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -6279,7 +6149,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -6327,7 +6196,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -6375,7 +6243,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -6423,7 +6290,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -6471,7 +6337,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Transmitter", "GLACIAR Controller 10"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,
@@ -6519,7 +6384,6 @@ export const PRODUCTS_V2: SeedProductV2[] = [
     compatibleFamilies: '["X5 Direct Sensor Module", "X5 Remote Sensor"]',
     // Fixed fields
     specs: '{}',
-    apps: '[]',
     mount: '[]',
     power: null,
     tempMin: null,

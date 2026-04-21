@@ -17,7 +17,6 @@ interface Product {
   productGroup: string;
   gas: string;
   refs: string;
-  apps: string;
   range: string | null;
   sensorTech: string | null;
   sensorLife: string | null;
@@ -71,7 +70,7 @@ const MOUNT_OPTIONS = ['wall', 'ceiling', 'floor', 'duct'] as const;
 const EMPTY_PRODUCT: Omit<Product, 'createdAt' | 'updatedAt'> = {
   id: '', type: 'sensor', family: 'GLACIAR MIDI', name: '', code: '', price: 0,
   image: null, specs: '{}', tier: 'standard', productGroup: 'A',
-  gas: '[]', refs: '[]', apps: '[]', range: null, sensorTech: null, sensorLife: null,
+  gas: '[]', refs: '[]', range: null, sensorTech: null, sensorLife: null,
   power: null, voltage: null, ip: null, tempMin: null, tempMax: null,
   relay: 0, analog: null, modbus: false, standalone: true, atex: false,
   mount: '[]', remote: false, features: null, connectTo: null, discontinued: false,
@@ -559,7 +558,6 @@ export default function ProductsPage() {
                 </div>
                 <TA label="Gas Groups (JSON)" value={form.gas} onChange={v => setForm({ ...form, gas: v })} rows={1} mono />
                 <TA label="Compatible Refrigerants (JSON)" value={form.refs} onChange={v => setForm({ ...form, refs: v })} rows={1} mono />
-                <TA label="Compatible Applications (JSON)" value={form.apps} onChange={v => setForm({ ...form, apps: v })} rows={2} mono />
               </Section>
 
               {/* ═══ DETECTION ═══ (detectors + sensors) */}

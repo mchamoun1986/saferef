@@ -42,7 +42,6 @@ export interface SeedProduct {
   productGroup: string;
   gas: string;
   refs: string;
-  apps: string;
   range: string | null;
   sensorTech: string | null;
   sensorLife: string | null;
@@ -79,7 +78,6 @@ function det(
   voltage: string, relay: number, analog: string | null, modbus: boolean,
   standalone: boolean, atex: boolean, mount: string[], remote: boolean,
   price: number | null, sensorLife: string, tier: string, productGroup: string,
-  apps: string[],
   extra: Partial<{powerDesc:string; relaySpec:string; analogType:string; modbusType:string; connectTo:string; features:string; image:string}> = {}
 ): SeedProduct {
   return {
@@ -87,7 +85,7 @@ function det(
     image: extra.image ?? null,
     specs: JSON.stringify({ tech, ip, tempMin, tempMax, power, voltage, relay, analog, modbus, standalone, atex, mount, remote, sensorLife, ...extra }),
     tier, productGroup,
-    gas: JSON.stringify(gas), refs: JSON.stringify(refs), apps: JSON.stringify(apps),
+    gas: JSON.stringify(gas), refs: JSON.stringify(refs),
     range, sensorTech: tech, sensorLife, power, voltage, ip,
     tempMin, tempMax, relay, analog, modbus, standalone, atex,
     mount: JSON.stringify(mount), remote,
@@ -111,7 +109,7 @@ function ctrl(
     image: extra.image ?? null,
     specs: JSON.stringify({ channels, maxPower, voltage, ip, ...extra }),
     tier, productGroup,
-    gas: '[]', refs: '[]', apps: '[]',
+    gas: '[]', refs: '[]',
     range: null, sensorTech: null, sensorLife: null,
     power: null, voltage, ip,
     tempMin: extra.tempMin ?? null, tempMax: extra.tempMax ?? null,
@@ -141,7 +139,7 @@ function acc(
     image: extra.image ?? null,
     specs: JSON.stringify(extra),
     tier: 'standard', productGroup,
-    gas: '[]', refs: '[]', apps: '[]',
+    gas: '[]', refs: '[]',
     range: null, sensorTech: null, sensorLife: null,
     power: null, voltage: extra.voltage ?? null, ip: extra.ip ?? null,
     tempMin: null, tempMax: null, relay: 0,
@@ -159,69 +157,53 @@ export const PRODUCTS: SeedProduct[] = [
 
   // ── MIDI (GLACIAR MIDI) ──
   det('MIDI_CO2_10k','MIDI IR CO2 10000ppm','31-210-32','MIDI',['CO2'],['R744'],'IR','0-10000ppm','IP67',-40,50,0.8,'15-24V',2,'selectable',true,true,false,['wall','pipe'],false,673,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','heat_pump'],
     {powerDesc:'4W max, 170mA @24VDC',relaySpec:'1A @ 24VAC/VDC',analogType:'4-20mA / 0-5V / 1-5V / 0-10V / 2-10V',modbusType:'RTU RS485 (isolated)',connectTo:'Direct (standalone) or Modbus to any RTU master',features:'Service wheel, magnetic switch, pre-cal sensor modules, LED status, Bluetooth app',image:'glaciar-midi.png'}),
 
   det('MIDI_CO2_10k_R','MIDI Remote IR CO2','31-510-32','MIDI',['CO2'],['R744'],'IR','0-10000ppm','IP67',-40,50,0.8,'15-24V',2,'selectable',true,true,false,['wall'],true,739,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','duct'],
     {powerDesc:'4W max',relaySpec:'1A @ 24VAC/VDC',analogType:'Selectable',modbusType:'RTU RS485',connectTo:'Direct or Modbus',features:'Remote sensor ideal for cold rooms, ducts, Bluetooth app',image:'midi-remote.jpg'}),
 
   det('MIDI_HFC1','MIDI SC HFC/HFO Grp1','31-220-12','MIDI',['HFC1'],_HFC1,'SC','0-1000ppm','IP67',-40,50,0.8,'15-24V',2,'selectable',true,true,false,['wall'],false,403,'~5y','standard','G',
-    ['supermarket','cold_room','cold_storage','heat_pump'],
     {powerDesc:'4W max',relaySpec:'1A @ 24VAC/VDC',analogType:'Selectable',modbusType:'RTU RS485',connectTo:'Direct or Modbus',features:'Group 1 calibration, Bluetooth app, NOT interchangeable with Group 2',image:'glaciar-midi.png'}),
 
   det('MIDI_HFC1_R','MIDI Remote SC Grp1','31-520-12','MIDI',['HFC1'],_HFC1,'SC','0-1000ppm','IP67',-40,50,0.8,'15-24V',2,'selectable',true,true,false,['wall'],true,469,'~5y','standard','G',
-    ['supermarket','cold_room','cold_storage','duct'],
     {powerDesc:'4W max',relaySpec:'1A @ 24VAC/VDC',analogType:'Selectable',modbusType:'RTU RS485',connectTo:'Direct or Modbus',features:'Group 1 remote, Bluetooth app',image:'midi-remote.jpg'}),
 
   det('MIDI_HFC2','MIDI SC HFC/HFO Grp2','31-220-17','MIDI',['HFC2'],_HFC2,'SC','0-1000ppm','IP67',-40,50,0.8,'15-24V',2,'selectable',true,true,false,['wall'],false,403,'~5y','standard','G',
-    ['supermarket','cold_room','cold_storage','heat_pump'],
     {powerDesc:'4W max',relaySpec:'1A @ 24VAC/VDC',analogType:'Selectable',modbusType:'RTU RS485',connectTo:'Direct or Modbus',features:'Group 2 calibration, Bluetooth app, DIFFERENT from Group 1',image:'glaciar-midi.png'}),
 
   det('MIDI_HFC2_R','MIDI Remote SC Grp2','31-520-17','MIDI',['HFC2'],_HFC2,'SC','0-1000ppm','IP67',-40,50,0.8,'15-24V',2,'selectable',true,true,false,['wall'],true,469,'~5y','standard','G',
-    ['supermarket','cold_room','cold_storage','duct'],
     {powerDesc:'4W max',relaySpec:'1A @ 24VAC/VDC',analogType:'Selectable',modbusType:'RTU RS485',connectTo:'Direct or Modbus',features:'Group 2 remote, Bluetooth app',image:'midi-remote.jpg'}),
 
   det('MIDI_NH3_100','MIDI EC NH3 100ppm','31-250-22','MIDI',['NH3'],['R717'],'EC','0-100ppm','IP67',-40,50,0.8,'15-24V',2,'selectable',true,true,false,['wall'],false,916,'2-3y','premium','G',
-    ['machinery_room','cold_storage','ice_rink'],
     {powerDesc:'4W max',relaySpec:'1A @ 24VAC/VDC',analogType:'Selectable',modbusType:'RTU RS485',connectTo:'Direct or Modbus',features:'EC sensor replace every 2-3 years, NOT ATEX, Bluetooth app',image:'glaciar-midi.png'}),
 
   det('MIDI_NH3_1000','MIDI EC NH3 1000ppm','31-250-23','MIDI',['NH3'],['R717'],'EC','0-1000ppm','IP67',-40,50,0.8,'15-24V',2,'selectable',true,true,false,['wall'],false,916,'2-3y','premium','G',
-    ['machinery_room','cold_storage','ice_rink'],
     {powerDesc:'4W max',relaySpec:'1A @ 24VAC/VDC',analogType:'Selectable',modbusType:'RTU RS485',connectTo:'Direct or Modbus',features:'Standard range for industrial NH3, Bluetooth app',image:'glaciar-midi.png'}),
 
   det('MIDI_NH3_5000','MIDI EC NH3 5000ppm','31-250-24','MIDI',['NH3'],['R717'],'EC','0-5000ppm','IP67',-40,50,0.8,'15-24V',2,'selectable',true,true,false,['wall'],false,916,'2-3y','premium','G',
-    ['machinery_room','cold_storage','ice_rink'],
     {powerDesc:'4W max',relaySpec:'1A @ 24VAC/VDC',analogType:'Selectable',modbusType:'RTU RS485',connectTo:'Direct or Modbus',features:'High range NH3, Bluetooth app',image:'glaciar-midi.png'}),
 
   det('MIDI_NH3_R','MIDI Remote EC NH3','31-550-23','MIDI',['NH3'],['R717'],'EC','0-1000ppm','IP67',-40,50,0.8,'15-24V',2,'selectable',true,true,false,['wall'],true,981,'2-3y','premium','G',
-    ['machinery_room','cold_storage','ice_rink','duct'],
     {powerDesc:'4W max',relaySpec:'1A @ 24VAC/VDC',analogType:'Selectable',modbusType:'RTU RS485',connectTo:'Direct or Modbus',features:'Remote ideal for high-mount NH3, Bluetooth app',image:'midi-remote.jpg'}),
 
   det('MIDI_R290','MIDI SC R290/HC 4000ppm','31-290-13','MIDI',['R290'],_HC,'SC','0-4000ppm','IP67',-40,50,0.8,'15-24V',2,'selectable',true,true,false,['wall'],false,403,'~5y','standard','G',
-    ['heat_pump','supermarket','cold_room'],
     {powerDesc:'4W max',relaySpec:'1A @ 24VAC/VDC',analogType:'Selectable',modbusType:'RTU RS485',connectTo:'Direct or Modbus',features:'Measures PPM not %LEL, NOT ATEX certified, Bluetooth app',image:'glaciar-midi.png'}),
 
   det('MIDI_R290_R','MIDI Remote SC R290/HC','31-590-13','MIDI',['R290'],_HC,'SC','0-4000ppm','IP67',-40,50,0.8,'15-24V',2,'selectable',true,true,false,['wall'],true,469,'~5y','standard','G',
-    ['heat_pump','supermarket','cold_room','duct'],
     {powerDesc:'4W max',relaySpec:'1A @ 24VAC/VDC',analogType:'Selectable',modbusType:'RTU RS485',connectTo:'Direct or Modbus',features:'R290 remote, PPM not %LEL, Bluetooth app',image:'midi-remote.jpg'}),
 
   // ── NEW MIDI variants (31-series) ──
   det('MIDI_NH3_100_R','MIDI Remote EC NH3 100ppm','31-550-22','MIDI',['NH3'],['R717'],'EC','0-100ppm','IP67',-40,50,0.8,'15-24V',2,'selectable',true,true,false,['wall'],true,981,'2-3y','premium','G',
-    ['machinery_room','cold_storage','ice_rink','duct'],
     {powerDesc:'4W max',relaySpec:'1A @ 24VAC/VDC',analogType:'Selectable',modbusType:'RTU RS485',connectTo:'Direct or Modbus',features:'Remote NH3 100ppm, Bluetooth app',image:'midi-remote.jpg'}),
 
   det('MIDI_NH3_5000_R','MIDI Remote EC NH3 5000ppm','31-550-24','MIDI',['NH3'],['R717'],'EC','0-5000ppm','IP67',-40,50,0.8,'15-24V',2,'selectable',true,true,false,['wall'],true,981,'2-3y','premium','G',
-    ['machinery_room','cold_storage','ice_rink','duct'],
     {powerDesc:'4W max',relaySpec:'1A @ 24VAC/VDC',analogType:'Selectable',modbusType:'RTU RS485',connectTo:'Direct or Modbus',features:'Remote NH3 5000ppm, Bluetooth app',image:'midi-remote.jpg'}),
 
   // ── RM (Room Detectors) ──
   det('RM_HFC','RM-HFC','32-220','RM',['HFC1','HFC2'],['R32','R410A'],'SC','0-5000ppm','IP21',0,40,0.5,'12-24V',1,null,false,true,false,['wall'],false,382,'~5y','economic','A',
-    ['hotel','office'],
     {powerDesc:'2W max',relaySpec:'1 alarm relay',features:'Built-in 85dB buzzer + tri-colour LED, alarm delay, IP21 only',image:'rm.png'}),
 
   det('RMV_HFC','RMV-HFC','32-320','RM',['HFC1','HFC2'],['R32','R410A'],'SC','0-5000ppm','IP21',0,40,0.5,'12-24V',1,null,false,true,false,['flush','surface'],false,382,'~5y','economic','A',
-    ['hotel','office'],
     {powerDesc:'2W max',relaySpec:'1 alarm relay',features:'Flush-mount aesthetic for hotels, requires KAP045/KAP046 backbox',image:'rm-v.png'}),
 
   // ── X5 ──
@@ -229,7 +211,6 @@ export const PRODUCTS: SeedProduct[] = [
 
   // ── Aquis ──
   det('AQUIS500','Aquis 500 NH3 in water','35-210','AQUIS',['NH3W'],['NH3W'],'pH','0.01-9999ppm','IP65',0,50,5,'230V',0,'4-20mA',false,true,false,['pipe'],false,0,'~2y','standard','A',
-    ['water_brine'],
     {powerDesc:'230V AC',analogType:'4-20mA output',connectTo:'4-20mA to PLC/BMS',features:'NH3 in water/brine monitoring, pH electrode, specify brine type',image:'aquis500-water.png'}),
 
   // ── X5 individual products (3500-series) ──
@@ -239,250 +220,189 @@ export const PRODUCTS: SeedProduct[] = [
 
   // ── X5 Sensor Modules (direct-mount, remote=false) ──
   det('X5_SEN_NH3_100','GLACIAR X5 NH3 0-100 ppm sensor module','3500-0002','X5',['NH3'],['R717'],'IONIC','0-100ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,1008,'5y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_NH3_500','GLACIAR X5 NH3 0-500 ppm sensor module','3500-0003','X5',['NH3'],['R717'],'IONIC','0-500ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,1008,'5y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_NH3_1000','GLACIAR X5 NH3 0-1000 ppm sensor module','3500-0095','X5',['NH3'],['R717'],'IONIC','0-1000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,1008,'5y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_NH3_5000','GLACIAR X5 NH3 0-5000 ppm sensor module','3500-0004','X5',['NH3'],['R717'],'IONIC','0-5000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,1008,'5y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_CO2_5000','GLACIAR X5 CO2 0-5000 ppm sensor module','3500-0005','X5',['CO2'],['R744'],'IR','0-5000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,1019,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_CO2_5pct','GLACIAR X5 CO2 0-5% vol sensor module','3500-0006','X5',['CO2'],['R744'],'IR','0-5%vol','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,1019,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_CO','GLACIAR X5 CO 0-100ppm sensor module','3500-0096','X5',['CO'],['CO'],'EC','0-100ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,602,'2-3y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_O2','GLACIAR X5 O2 0-25% vol sensor module','3500-0097','X5',['O2'],['O2'],'EC','0-25%vol','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,876,'2-3y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_NO2','GLACIAR X5 NO2 0-5ppm sensor module','3500-0098','X5',['NO2'],['NO2'],'EC','0-5ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,987,'2-3y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_ETHANOL','GLACIAR X5 Ethanol 0-100%LEL sensor module IR','3500-0103','X5',['Ethanol'],['Ethanol'],'IR','0-100%LEL','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,1338,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   // ── X5 Sensor Modules — gas-specific IR (direct-mount, remote=false) ──
   det('X5_SEN_R22','GLACIAR X5 R22 0-2000 ppm sensor module','3500-0065','X5',['HFC1'],['R22'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R32','GLACIAR X5 R32 0-2000 ppm sensor module','3500-0066','X5',['HFC1'],['R32'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R123','GLACIAR X5 R123 0-2000 ppm sensor module','3500-0067','X5',['HFC2'],['R123'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R125','GLACIAR X5 R125 0-2000 ppm sensor module','3500-0068','X5',['HFC1'],['R125'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R134A','GLACIAR X5 R134A 0-2000 ppm sensor module','3500-0069','X5',['HFC2'],['R134a'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R227','GLACIAR X5 R227 0-2000 ppm sensor module','3500-0070','X5',['HFC1'],['R227'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R404A','GLACIAR X5 R404A 0-2000 ppm sensor module','3500-0071','X5',['HFC2'],['R404A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R407A','GLACIAR X5 R407A 0-2000 ppm sensor module','3500-0072','X5',['HFC1'],['R407A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R407F','GLACIAR X5 R407F 0-2000 ppm sensor module','3500-0073','X5',['HFC1'],['R407F'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R410A','GLACIAR X5 R410A 0-2000 ppm sensor module','3500-0074','X5',['HFC1'],['R410A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R417A','GLACIAR X5 R417A 0-2000 ppm sensor module','3500-0075','X5',['HFC1'],['R417A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R442D','GLACIAR X5 R442D 0-2000 ppm sensor module','3500-0076','X5',['HFC1'],['R442D'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R448A','GLACIAR X5 R448A 0-2000 ppm sensor module','3500-0077','X5',['HFC1'],['R448A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R449A','GLACIAR X5 R449A 0-2000 ppm sensor module','3500-0078','X5',['HFC1'],['R449A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R452B','GLACIAR X5 R452B 0-2000 ppm sensor module','3500-0079','X5',['HFC1'],['R452B'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R507','GLACIAR X5 R507 0-2000 ppm sensor module','3500-0080','X5',['HFC1'],['R507A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R513A','GLACIAR X5 R513A 0-2000 ppm sensor module','3500-0081','X5',['HFC2'],['R513A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R1233zd','GLACIAR X5 R1233zd 0-2000 ppm sensor module','3500-0082','X5',['HFC2'],['R1233zd'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R1234yf','GLACIAR X5 R1234yf 0-2000 ppm sensor module','3500-0083','X5',['HFC2'],['R1234yf'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_SEN_R1234ze','GLACIAR X5 R1234ze 0-2000 ppm sensor module','3500-0084','X5',['HFC2'],['R1234ze'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],false,2500,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   // ── X5 Remote Sensor Modules (remote=true) ──
   det('X5_REM_NH3_1000','GLACIAR X5 NH3 0-1000 ppm Remote sensor module','3500-0022','X5',['NH3'],['R717'],'IONIC','0-1000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1205,'5y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_NH3_100','GLACIAR X5 NH3 0-100 ppm Remote sensor module','3500-0023','X5',['NH3'],['R717'],'IONIC','0-100ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1424,'5y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_NH3_500','GLACIAR X5 NH3 0-500 ppm Remote sensor module','3500-0024','X5',['NH3'],['R717'],'IONIC','0-500ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1205,'5y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_NH3_5000','GLACIAR X5 NH3 0-5000 ppm Remote sensor module','3500-0025','X5',['NH3'],['R717'],'IONIC','0-5000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1096,'5y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_CO2_5pct','GLACIAR X5 CO2 0-5% vol Remote sensor module','3500-0026','X5',['CO2'],['R744'],'IR','0-5%vol','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1287,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_CO','GLACIAR X5 CO 0-100ppm Remote sensor module','3500-0099','X5',['CO'],['CO'],'EC','0-100ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,876,'2-3y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_O2','GLACIAR X5 O2 0-25% vol Remote sensor module','3500-0100','X5',['O2'],['O2'],'EC','0-25%vol','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,931,'2-3y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_NO2','GLACIAR X5 NO2 0-5ppm Remote sensor module','3500-0101','X5',['NO2'],['NO2'],'EC','0-5ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1041,'2-3y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_CO2_5000','GLACIAR X5 CO2 0-5000ppm Remote sensor module IR','3500-0109','X5',['CO2'],['R744'],'IR','0-5000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1287,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R290','GLACIAR X5 R290 0-100%LEL Remote sensor module IR','3500-0117','X5',['R290'],['R290','R50','R600a','R1150','R1270'],'IR','0-100%LEL','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1277,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   // ── X5 Remote Sensor Modules — gas-specific IR (remote=true) ──
   det('X5_REM_R22','GLACIAR X5 R22 0-2000 ppm Remote sensor module','3500-0032','X5',['HFC1'],['R22'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R32','GLACIAR X5 R32 0-2000 ppm Remote sensor module','3500-0033','X5',['HFC1'],['R32'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R123','GLACIAR X5 R123 0-2000 ppm Remote sensor module','3500-0034','X5',['HFC2'],['R123'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R125','GLACIAR X5 R125 0-2000 ppm Remote sensor module','3500-0035','X5',['HFC1'],['R125'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R134A','GLACIAR X5 R134A 0-2000 ppm Remote sensor module','3500-0036','X5',['HFC2'],['R134a'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R227','GLACIAR X5 R227 0-2000 ppm Remote sensor module','3500-0037','X5',['HFC1'],['R227'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R404A','GLACIAR X5 R404A 0-2000 ppm Remote sensor module','3500-0038','X5',['HFC2'],['R404A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R407A','GLACIAR X5 R407A 0-2000 ppm Remote sensor module','3500-0039','X5',['HFC1'],['R407A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R407F','GLACIAR X5 R407F 0-2000 ppm Remote sensor module','3500-0040','X5',['HFC1'],['R407F'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R410A','GLACIAR X5 R410A 0-2000 ppm Remote sensor module','3500-0041','X5',['HFC1'],['R410A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R417A','GLACIAR X5 R417A 0-2000 ppm Remote sensor module','3500-0042','X5',['HFC1'],['R417A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R422D','GLACIAR X5 R422D 0-2000 ppm Remote sensor module','3500-0043','X5',['HFC1'],['R422D'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R448A','GLACIAR X5 R448A 0-2000 ppm Remote sensor module','3500-0044','X5',['HFC1'],['R448A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R449A','GLACIAR X5 R449A 0-2000 ppm Remote sensor module','3500-0045','X5',['HFC1'],['R449A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R452B','GLACIAR X5 R452B 0-2000 ppm Remote sensor module','3500-0046','X5',['HFC1'],['R452B'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R507','GLACIAR X5 R507 0-2000 ppm Remote sensor module','3500-0047','X5',['HFC1'],['R507A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R513A','GLACIAR X5 R513A 0-2000 ppm Remote sensor module','3500-0048','X5',['HFC2'],['R513A'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R1233zd','GLACIAR X5 R1233zd 0-2000 ppm Remote sensor module','3500-0049','X5',['HFC2'],['R1233zd'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R1234yf','GLACIAR X5 R1234yf 0-2000 ppm Remote sensor module','3500-0050','X5',['HFC2'],['R1234yf'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_R1234ze','GLACIAR X5 R1234ze 0-2000 ppm Remote sensor module','3500-0051','X5',['HFC2'],['R1234ze'],'IR','0-2000ppm','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,2339,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   det('X5_REM_ETHANOL','GLACIAR X5 Ethanol 0-100%LEL Remote sensor module','3500-0115','X5',['Ethanol'],['Ethanol'],'IR','0-100%LEL','IP66',-20,55,2,'18-32V',0,null,false,false,true,['wall','pole'],true,1701,'7-10y','premium','G',
-    ['supermarket','cold_room','cold_storage','machinery_room','heat_pump','ice_rink','atex_zone'],
     {features:'ATEX, remote sensor module, requires X5 transmitter (3500-0001)',connectTo:'Plugs into X5 transmitter (3500-0001)',image:'glaciar-x5.png'}),
 
   // ── X5 Components (accessories) ──
