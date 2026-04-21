@@ -100,7 +100,7 @@ export default function ConfiguratorPage() {
       fetch('/api/space-types').then((r) => r.json()),
     ])
       .then(([refs, apps, sts]) => {
-        setRefrigerants(refs);
+        setRefrigerants(Array.isArray(refs) ? refs : []);
         setApplications(Array.isArray(apps) ? apps : []);
         setSpaceTypes(Array.isArray(sts) ? sts : []);
         setLoading(false);
