@@ -142,9 +142,9 @@ export async function POST(request: Request) {
 
     const product = await prisma.product.create({ data: data as Parameters<typeof prisma.product.create>[0]['data'] });
     return NextResponse.json(product, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] POST /products error:', error);
-    if (error instanceof Error && error.message?.includes('Unique constraint')) {
+    if (error?.code === 'P2002' || error?.message?.includes('UNIQUE') || error?.message?.includes('Unique')) {
       return NextResponse.json({ error: 'Product code already exists' }, { status: 409 });
     }
     return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
