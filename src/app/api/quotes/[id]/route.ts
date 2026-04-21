@@ -44,6 +44,10 @@ export async function PUT(
 
   const body = await request.json();
 
+  if (body.id && body.id !== id) {
+    return NextResponse.json({ error: 'Body id does not match URL id' }, { status: 400 });
+  }
+
   const stringFields = [
     "status",
     "clientName",

@@ -53,7 +53,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8]">
+    <div className="min-h-screen flex items-center justify-center bg-[#f0f4f8] px-4 sm:px-6">
       <div className="w-full max-w-sm">
         {/* Brand header */}
         <div className="text-center mb-8">
@@ -64,7 +64,7 @@ function LoginForm() {
           <p className="text-gray-500 text-sm mt-2">Restricted access</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-md border border-gray-200 p-8 space-y-5">
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-md border border-gray-200 p-5 sm:p-8 space-y-5">
           <div>
             <h2 className="text-lg font-bold text-[#16354B]">Sign in</h2>
             <p className="text-xs text-gray-400 mt-0.5">Select your role and enter password</p>

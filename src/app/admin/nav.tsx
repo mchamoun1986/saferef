@@ -44,10 +44,16 @@ export default function AdminNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [role, setRole] = useState<Role | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     fetch('/api/session').then(r => r.json()).then(d => setRole(d.role ?? null)).catch(() => setRole(null));
   }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   async function handleLogout() {
     await fetch('/api/logout', { method: 'POST' });
@@ -99,71 +105,138 @@ export default function AdminNav() {
   const isLabSimActive = labSimPaths.includes(pathname);
 
   return (
-    <nav className="bg-[#1a2332] text-white px-6 py-3 flex items-center gap-6">
-      <Link href="/admin" className="flex items-center gap-2 shrink-0">
-        <span className="text-red-500 font-bold text-lg tracking-wide">SafeRef</span>
-        <span className="text-gray-400 font-normal text-sm">Admin</span>
-      </Link>
-
-      {badge && (
-        <span className={`${badge.color} text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-wider`}>
-          {badge.label}
-        </span>
-      )}
-
-      <div className="flex gap-1 items-center flex-wrap">
-        {navItems.map((item) => {
-          if (item.type === 'link') {
-            return (
-              <Link key={item.link.href} href={item.link.href}
-                className={`px-3 py-1.5 rounded text-xs transition-colors whitespace-nowrap ${
-                  pathname === item.link.href ? 'bg-red-600 text-white' : 'text-gray-300 hover:bg-gray-700'
-                }`}>
-                {item.link.label}
-              </Link>
-            );
-          }
-          // Group dropdown
-          const isActive = item.links.some(l => pathname === l.href);
-          return (
-            <div key={item.name} className="relative" ref={groupRef}>
-              <button onClick={() => setOpenGroup(openGroup === item.name ? null : item.name)}
-                className={`px-3 py-1.5 rounded text-xs transition-colors whitespace-nowrap flex items-center gap-1 ${
-                  isActive ? 'bg-red-600 text-white' : 'text-gray-300 hover:bg-gray-700'
-                }`}>
-                {item.name}
-                <svg className={`w-3 h-3 transition-transform ${openGroup === item.name ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {openGroup === item.name && (
-                <div className="absolute top-full left-0 mt-1 bg-[#1a2332] border border-gray-700 rounded-lg shadow-xl z-50 min-w-[160px] overflow-hidden">
-                  {item.links.map(l => (
-                    <Link key={l.href} href={l.href} onClick={() => setOpenGroup(null)}
-                      className={`block px-4 py-2.5 text-xs transition-colors ${
-                        pathname === l.href ? 'bg-red-600 text-white' : 'text-gray-300 hover:bg-gray-700'
-                      }`}>
-                      {l.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="ml-auto flex items-center gap-3">
-        <Link href="/calculator" className="text-gray-400 text-sm hover:text-white transition-colors">
-          Calculator &rarr;
+    <nav className="bg-[#1a2332] text-white">
+      {/* Top bar — always visible */}
+      <div className="px-4 sm:px-6 py-3 flex items-center gap-4 md:gap-6">
+        <Link href="/admin" className="flex items-center gap-2 shrink-0">
+          <span className="text-red-500 font-bold text-lg tracking-wide">SafeRef</span>
+          <span className="text-gray-400 font-normal text-sm">Admin</span>
         </Link>
-        {role && (
-          <button onClick={handleLogout}
-            className="text-gray-400 text-xs hover:text-white border border-gray-600 hover:border-gray-400 rounded px-3 py-1 transition-colors">
-            Logout
-          </button>
+
+        {badge && (
+          <span className={`${badge.color} text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-wider`}>
+            {badge.label}
+          </span>
         )}
+
+        {/* Desktop nav links */}
+        <div className="hidden md:flex gap-1 items-center flex-wrap">
+          {navItems.map((item) => {
+            if (item.type === 'link') {
+              return (
+                <Link key={item.link.href} href={item.link.href}
+                  className={`px-3 py-1.5 rounded text-xs transition-colors whitespace-nowrap ${
+                    pathname === item.link.href ? 'bg-red-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+                  }`}>
+                  {item.link.label}
+                </Link>
+              );
+            }
+            // Group dropdown
+            const isActive = item.links.some(l => pathname === l.href);
+            return (
+              <div key={item.name} className="relative" ref={groupRef}>
+                <button onClick={() => setOpenGroup(openGroup === item.name ? null : item.name)}
+                  className={`px-3 py-1.5 rounded text-xs transition-colors whitespace-nowrap flex items-center gap-1 ${
+                    isActive ? 'bg-red-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+                  }`}>
+                  {item.name}
+                  <svg className={`w-3 h-3 transition-transform ${openGroup === item.name ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {openGroup === item.name && (
+                  <div className="absolute top-full left-0 mt-1 bg-[#1a2332] border border-gray-700 rounded-lg shadow-xl z-50 min-w-[160px] overflow-hidden">
+                    {item.links.map(l => (
+                      <Link key={l.href} href={l.href} onClick={() => setOpenGroup(null)}
+                        className={`block px-4 py-2.5 text-xs transition-colors ${
+                          pathname === l.href ? 'bg-red-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+                        }`}>
+                        {l.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Right side — desktop */}
+        <div className="ml-auto hidden md:flex items-center gap-3">
+          <Link href="/calculator" className="text-gray-400 text-sm hover:text-white transition-colors">
+            Calculator &rarr;
+          </Link>
+          {role && (
+            <button onClick={handleLogout}
+              className="text-gray-400 text-xs hover:text-white border border-gray-600 hover:border-gray-400 rounded px-3 py-1 transition-colors">
+              Logout
+            </button>
+          )}
+        </div>
+
+        {/* Hamburger — mobile only */}
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="ml-auto md:hidden p-1.5 rounded hover:bg-gray-700 transition-colors"
+          aria-label="Toggle navigation"
+        >
+          {mobileOpen ? (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          )}
+        </button>
       </div>
+
+      {/* Mobile dropdown menu */}
+      {mobileOpen && (
+        <div className="md:hidden border-t border-gray-700 px-4 py-3 space-y-1 max-h-[70vh] overflow-y-auto">
+          {navItems.map((item) => {
+            if (item.type === 'link') {
+              return (
+                <Link key={item.link.href} href={item.link.href}
+                  className={`block px-3 py-2.5 rounded text-sm transition-colors ${
+                    pathname === item.link.href ? 'bg-red-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+                  }`}>
+                  {item.link.label}
+                </Link>
+              );
+            }
+            // Group — show all links inline on mobile
+            return (
+              <div key={item.name}>
+                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 mt-2">
+                  {item.name}
+                </div>
+                {item.links.map(l => (
+                  <Link key={l.href} href={l.href}
+                    className={`block px-3 py-2.5 rounded text-sm transition-colors pl-6 ${
+                      pathname === l.href ? 'bg-red-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+                    }`}>
+                    {l.label}
+                  </Link>
+                ))}
+              </div>
+            );
+          })}
+          <div className="border-t border-gray-700 pt-3 mt-3 flex items-center justify-between">
+            <Link href="/calculator" className="text-gray-400 text-sm hover:text-white transition-colors">
+              Calculator &rarr;
+            </Link>
+            {role && (
+              <button onClick={handleLogout}
+                className="text-gray-400 text-xs hover:text-white border border-gray-600 hover:border-gray-400 rounded px-3 py-1 transition-colors">
+                Logout
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

@@ -18,6 +18,11 @@ export const metadata: Metadata = {
   description: "Calculate refrigerant gas detection requirements per EN 378, ASHRAE 15, and ISO 5149. Powered by SafeRef.",
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{

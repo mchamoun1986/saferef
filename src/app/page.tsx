@@ -12,7 +12,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* Navbar */}
-      <nav className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] text-white px-6 py-4 flex items-center justify-between border-b-2 border-[#E63946]">
+      <nav className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] text-white px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between border-b-2 border-[#E63946]">
         <div className="flex items-center gap-1">
           <span className="text-[#E63946] font-extrabold text-xl tracking-wide">Safe</span>
           <span className="text-white font-extrabold text-xl">Ref</span>
@@ -28,7 +28,7 @@ export default function Home() {
       </nav>
 
       {/* Hero */}
-      <section className="flex-1 flex flex-col items-center justify-center px-6 py-20 text-center bg-gradient-to-b from-[#16354B] to-[#1e4a6a]">
+      <section className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-12 sm:py-20 text-center bg-gradient-to-b from-[#16354B] to-[#1e4a6a]">
         <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4 tracking-tight">
           <span className="text-[#E63946]">Safe</span>Ref
         </h1>
@@ -41,7 +41,7 @@ export default function Home() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl w-full">
           <Link href="/calculator"
-            className="group bg-white/5 backdrop-blur border-2 border-white/10 hover:border-[#E63946] rounded-2xl p-8 text-left transition-all hover:bg-white/10">
+            className="group bg-white/5 backdrop-blur border-2 border-white/10 hover:border-[#E63946] rounded-2xl p-5 sm:p-8 text-left transition-all hover:bg-white/10">
             <div className="w-14 h-14 rounded-xl bg-[#E63946] flex items-center justify-center mb-5">
               <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -58,7 +58,7 @@ export default function Home() {
           </Link>
 
           <Link href="/selector"
-            className="group bg-white/5 backdrop-blur border-2 border-white/10 hover:border-[#A7C031] rounded-2xl p-8 text-left transition-all hover:bg-white/10">
+            className="group bg-white/5 backdrop-blur border-2 border-white/10 hover:border-[#A7C031] rounded-2xl p-5 sm:p-8 text-left transition-all hover:bg-white/10">
             <div className="w-14 h-14 rounded-xl bg-[#A7C031] flex items-center justify-center mb-5">
               <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
@@ -77,10 +77,10 @@ export default function Home() {
       </section>
 
       {/* Features */}
-      <section className="py-16 px-6 bg-gray-50">
+      <section className="py-10 sm:py-16 px-4 sm:px-6 bg-gray-50">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-[#16354B] text-center mb-12">{h.featuresTitle}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               { title: h.multiReg, desc: h.multiRegDesc, color: '#16354B', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
               { title: h.refrigerants, desc: h.refrigerantsDesc, color: '#E63946', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },

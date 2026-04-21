@@ -5,6 +5,9 @@ import { prisma } from '@/lib/db';
 import { requireRole } from '@/lib/auth';
 
 export async function GET() {
+  const authError = await requireRole(['admin', 'sales', 'management']);
+  if (authError) return authError;
+
   try {
     const rows = await prisma.discountMatrix.findMany({
       orderBy: [{ customerGroup: 'asc' }, { productGroup: 'asc' }],

@@ -349,7 +349,7 @@ export default function ConfiguratorPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navbar */}
-      <nav className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] text-white px-6 py-4 flex items-center justify-between print:hidden border-b-2 border-[#E63946]">
+      <nav className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] text-white px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between print:hidden border-b-2 border-[#E63946]">
         <Link href="/" className="flex items-center gap-1 hover:opacity-80 transition-opacity">
           <span className="text-[#E63946] font-extrabold text-xl tracking-wide">Safe</span>
           <span className="text-white font-extrabold text-xl">Ref</span>
@@ -364,7 +364,7 @@ export default function ConfiguratorPage() {
       {/* Draft restoration banner */}
       {hasDraft && step === 1 && (
         <div className="max-w-4xl mx-auto w-full px-4 mt-4">
-          <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 flex items-center justify-between">
+          <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <span className="font-semibold text-amber-800">
                 {NAV[lang].draftResume}
@@ -485,11 +485,11 @@ export default function ConfiguratorPage() {
 
         {/* Navigation buttons */}
         {step < 4 && (
-          <div className="flex justify-between mt-8 print:hidden">
+          <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 mt-8 print:hidden">
             {step > 1 ? (
               <button
                 onClick={prevStep}
-                className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold px-8 py-3 rounded-lg transition-colors"
+                className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold w-full sm:w-auto px-8 py-3 rounded-lg transition-colors"
               >
                 {NAV[lang].back}
               </button>
@@ -498,7 +498,7 @@ export default function ConfiguratorPage() {
             )}
             <button
               onClick={nextStep}
-              className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold px-8 py-3 rounded-lg transition-all shadow-lg shadow-[#A7C031]/30"
+              className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold w-full sm:w-auto px-8 py-3 rounded-lg transition-all shadow-lg shadow-[#A7C031]/30"
             >
               {step === 3 ? NAV[lang].calculate : NAV[lang].next}
             </button>
@@ -507,16 +507,16 @@ export default function ConfiguratorPage() {
 
         {/* Back + Continue on Step 4 (CalcSheet → Technical) */}
         {step === 4 && (
-          <div className="mt-6 print:hidden flex gap-3">
+          <div className="mt-6 print:hidden flex flex-col sm:flex-row gap-3">
             <button
               onClick={prevStep}
-              className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold px-8 py-3 rounded-lg transition-colors"
+              className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold w-full sm:w-auto px-8 py-3 rounded-lg transition-colors"
             >
               {NAV[lang].back}
             </button>
             <button
               onClick={() => setStep(5)}
-              className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold px-8 py-3 rounded-lg transition-all shadow-lg shadow-[#A7C031]/30"
+              className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold w-full sm:w-auto px-8 py-3 rounded-lg transition-all shadow-lg shadow-[#A7C031]/30"
             >
               Continue to Technical &rarr;
             </button>
@@ -525,16 +525,16 @@ export default function ConfiguratorPage() {
 
         {/* Back + Continue on Step 5 (Technical → Products) */}
         {step === 5 && (
-          <div className="flex justify-between mt-8 print:hidden">
+          <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 mt-8 print:hidden">
             <button
               onClick={() => setStep(4)}
-              className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold px-8 py-3 rounded-lg transition-colors"
+              className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold w-full sm:w-auto px-8 py-3 rounded-lg transition-colors"
             >
               {NAV[lang].back}
             </button>
             <button
               onClick={() => setStep(6)}
-              className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold px-8 py-3 rounded-lg transition-all shadow-lg shadow-[#A7C031]/30"
+              className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold w-full sm:w-auto px-8 py-3 rounded-lg transition-all shadow-lg shadow-[#A7C031]/30"
             >
               View Product Recommendations &rarr;
             </button>

@@ -313,7 +313,7 @@ export default function StepGasApp({
         <div className="text-sm font-semibold text-[#16354B] mb-2">
           {lang === 'fr' ? 'Norme réglementaire' : 'Regulation Standard'}
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {AVAILABLE_REGULATIONS.map(reg => (
             <button
               key={reg.id}

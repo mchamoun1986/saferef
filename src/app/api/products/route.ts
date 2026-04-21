@@ -67,10 +67,11 @@ export async function GET(request: Request) {
     }
 
     if (compatibleFamily) {
+      const q = compatibleFamily.toLowerCase();
       products = products.filter((p) => {
         try {
           const families: string[] = JSON.parse(p.compatibleFamilies);
-          return families.includes('ALL') || families.includes(compatibleFamily);
+          return families.includes('ALL') || families.some(f => f.toLowerCase().includes(q));
         } catch {
           return false;
         }
@@ -143,6 +144,9 @@ export async function POST(request: Request) {
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
     console.error('[API] POST /products error:', error);
+    if (error instanceof Error && error.message?.includes('Unique constraint')) {
+      return NextResponse.json({ error: 'Product code already exists' }, { status: 409 });
+    }
     return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
   }
 }

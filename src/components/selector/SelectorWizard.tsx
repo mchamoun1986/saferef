@@ -280,7 +280,7 @@ export default function SelectorWizard() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <nav className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] text-white px-6 py-4 flex items-center justify-between border-b-2 border-[#E63946]">
+      <nav className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] text-white px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between border-b-2 border-[#E63946]">
         <Link href="/" className="flex items-center gap-1 hover:opacity-80 transition-opacity">
           <span className="text-[#E63946] font-extrabold text-xl">Safe</span>
           <span className="text-white font-extrabold text-xl">Ref</span>
@@ -289,8 +289,8 @@ export default function SelectorWizard() {
         <LanguageSwitcher compact />
       </nav>
 
-      <div className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] py-5">
-        <div className="flex items-center justify-between max-w-2xl mx-auto px-4">
+      <div className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] py-3 sm:py-5">
+        <div className="flex items-center justify-between max-w-2xl mx-auto px-2 sm:px-4">
           {STEP_LABELS.map((label, i) => {
             const num = i + 1;
             const isDone = step > num;
@@ -298,17 +298,17 @@ export default function SelectorWizard() {
             return (
               <div key={label} className="flex items-center flex-1 last:flex-none">
                 <div className="flex flex-col items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                  <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ${
                     isDone ? 'bg-[#A7C031] text-white' : isActive ? 'bg-[#E63946] text-white' : 'border-2 border-[#2a4a60] text-[#4a7a95]'
                   }`}>
                     {isDone ? '\u2713' : num}
                   </div>
-                  <span className={`mt-2 text-[11px] font-semibold ${isDone ? 'text-[#A7C031]' : isActive ? 'text-white' : 'text-[#4a7a95]'}`}>
+                  <span className={`mt-1 sm:mt-2 text-[9px] sm:text-[11px] font-semibold hidden sm:block ${isDone ? 'text-[#A7C031]' : isActive ? 'text-white' : 'text-[#4a7a95]'}`}>
                     {label}
                   </span>
                 </div>
                 {i < STEP_LABELS.length - 1 && (
-                  <div className={`flex-1 h-[3px] mx-4 mt-[-1rem] rounded-full ${step > num ? 'bg-[#A7C031]' : 'bg-[#2a4a60]'}`} />
+                  <div className={`flex-1 h-[2px] sm:h-[3px] mx-1.5 sm:mx-4 mt-0 sm:mt-[-1rem] rounded-full ${step > num ? 'bg-[#A7C031]' : 'bg-[#2a4a60]'}`} />
                 )}
               </div>
             );
@@ -362,17 +362,17 @@ export default function SelectorWizard() {
         )}
 
         {step < 5 ? (
-          <div className="flex justify-between mt-8">
+          <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 mt-8">
             {step > 1 ? (
-              <button onClick={prevStep} className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold px-8 py-3 rounded-lg">Back</button>
+              <button onClick={prevStep} className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold w-full sm:w-auto px-8 py-3 rounded-lg">Back</button>
             ) : <div />}
-            <button onClick={nextStep} className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold px-8 py-3 rounded-lg shadow-lg">
+            <button onClick={nextStep} className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold w-full sm:w-auto px-8 py-3 rounded-lg shadow-lg">
               {step === 4 ? 'Continue to Products' : 'Next'}
             </button>
           </div>
         ) : (
           <div className="mt-6">
-            <button onClick={prevStep} className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold px-8 py-3 rounded-lg">Back</button>
+            <button onClick={prevStep} className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold w-full sm:w-auto px-8 py-3 rounded-lg">Back</button>
           </div>
         )}
       </main>
