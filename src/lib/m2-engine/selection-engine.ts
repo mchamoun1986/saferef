@@ -836,7 +836,9 @@ function buildTierBom(
   const spareSensors: BomLine[] = [];
   {
     const spareAccs = allAccessories.filter(a => a.subCategory === 'spare' && isCompatible(a));
-    const gasGroup = detector.gas?.[0] ?? '';
+    const firstRef = detector.refs?.[0] ?? '';
+    const gasGroups = firstRef ? (REF_TO_GAS[firstRef] ?? []) : [];
+    const gasGroup = gasGroups[0] ?? '';
     for (const sp of spareAccs) {
       const spName = sp.name.toUpperCase();
       const isGasMatch = (spName.includes('HFC') && (gasGroup === 'HFC1' || gasGroup === 'HFC2'))
@@ -895,7 +897,7 @@ function buildTierBom(
       reason: serviceTools.length > 0 ? `${family} - DT300 + calibration adapter recommended` : 'No service tools for this family',
       items: serviceTools.map(a => ({ code: a.code, name: a.name, qty: a.qty, subtotal: a.subtotal })) },
     { name: 'F15_spares', tier: tierLabel, applied: spareSensors.length > 0,
-      reason: spareSensors.length > 0 ? `Calibration gas for ${detector.gas?.[0] ?? 'unknown'}` : 'No spare sensors for this family/gas',
+      reason: spareSensors.length > 0 ? `Calibration gas for ${detector.refs?.[0] ?? 'unknown'}` : 'No spare sensors for this family/gas',
       items: spareSensors.map(a => ({ code: a.code, name: a.name, qty: a.qty, subtotal: a.subtotal })) },
     ...(suggestedAccessories.length > 0 ? [{
       name: 'F16_suggested', tier: tierLabel, applied: true,
@@ -941,7 +943,7 @@ function buildSolution(
     solutionScore: scoring.total,
     detector: {
       code: detector.code, name: detector.name, qty: totalDets,
-      price: detector.price, gas: (detector.gas ?? []).join(', '),
+      price: detector.price, gas: (detector.refs ?? []).join(', '),
       range: detector.range, sensorTech: detector.sensorTech,
       sensorLife: detector.sensorLife, ip: detector.ip,
       tempMin: detector.tempMin, tempMax: detector.tempMax,

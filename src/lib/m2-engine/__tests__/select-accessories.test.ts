@@ -4,7 +4,7 @@ import type { ProductRecord } from '../types';
 
 const bracket: ProductRecord = {
   id: 'a1', type: 'accessory', family: 'Accessory', name: 'Wall Bracket MIDI',
-  code: '40-901', price: 25, gas: '[]', refs: '[]',
+  code: '40-901', price: 25, refs: '[]',
   range: null, sensorTech: null, voltage: null, atex: false,
   mount: '[]', standalone: false, discontinued: false,
   channels: null, relay: 0, analog: null, modbus: false,
@@ -16,7 +16,7 @@ const bracket: ProductRecord = {
 
 const calGasCO2: ProductRecord = {
   id: 'a2', type: 'accessory', family: 'Accessory', name: 'Cal Gas CO2 Module',
-  code: '62-010', price: 150, gas: '["CO2"]', refs: '[]',
+  code: '62-010', price: 150, refs: '["CO2"]',
   range: null, sensorTech: null, voltage: null, atex: false,
   mount: '[]', standalone: false, discontinued: false,
   channels: null, relay: 0, analog: null, modbus: false,
@@ -28,7 +28,7 @@ const calGasCO2: ProductRecord = {
 
 const siren: ProductRecord = {
   id: 'a3', type: 'accessory', family: 'Accessory', name: 'Siren Red 24V',
-  code: '40-401', price: 85, gas: '[]', refs: '[]',
+  code: '40-401', price: 85, refs: '[]',
   range: null, sensorTech: null, voltage: '24V', atex: false,
   mount: '[]', standalone: false, discontinued: false,
   channels: null, relay: 0, analog: null, modbus: false,
@@ -40,7 +40,7 @@ const siren: ProductRecord = {
 
 const bracketX5: ProductRecord = {
   id: 'a4', type: 'accessory', family: 'Accessory', name: 'Pipe Bracket X5',
-  code: '40-905', price: 45, gas: '[]', refs: '[]',
+  code: '40-905', price: 45, refs: '[]',
   range: null, sensorTech: null, voltage: null, atex: false,
   mount: '[]', standalone: false, discontinued: false,
   channels: null, relay: 0, analog: null, modbus: false,
@@ -52,7 +52,7 @@ const bracketX5: ProductRecord = {
 
 const psu: ProductRecord = {
   id: 'a5', type: 'accessory', family: 'Accessory', name: 'PSU 480W 24V',
-  code: '4000-0001', price: 200, gas: '[]', refs: '[]',
+  code: '4000-0001', price: 200, refs: '[]',
   range: null, sensorTech: null, voltage: '24V', atex: false,
   mount: '[]', standalone: false, discontinued: false,
   channels: null, relay: 0, analog: null, modbus: false,

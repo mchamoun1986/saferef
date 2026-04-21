@@ -21,7 +21,6 @@ function makeProduct(overrides: Partial<ProductV2>): ProductV2 {
     specs: '{}',
     tier: 'standard',
     productGroup: 'A',
-    gas: '[]',
     refs: '[]',
     range: null,
     sensorTech: null,
@@ -82,7 +81,7 @@ const MIDI_CO2_INTEGRATED = makeProduct({
   subType: 'gas_detector',
   price: 673,
   tier: 'premium',
-  gas: '["R744"]',
+  refs: '["R744"]',
   voltage: '15..24 VDC; 24 VAC/DC V',
   range: '0-10000 ppm',
   relay: 2,
@@ -104,7 +103,7 @@ const MIDI_CO2_REMOTE = makeProduct({
   subType: 'gas_detector',
   price: 739,
   tier: 'premium',
-  gas: '["R744"]',
+  refs: '["R744"]',
   voltage: '15..24 VDC; 24 VAC/DC V',
   range: '0-10000 ppm',
   relay: 2,
@@ -126,7 +125,7 @@ const MIDI_R717 = makeProduct({
   subType: 'gas_detector',
   price: 673,
   tier: 'premium',
-  gas: '["R717"]',
+  refs: '["R717"]',
   voltage: '15..24 VDC; 24 VAC/DC V',
   range: '0-1000 ppm',
   relay: 2,
@@ -147,7 +146,7 @@ const MICRO_R290 = makeProduct({
   subType: 'gas_detector',
   price: 160,
   tier: 'economic',
-  gas: '["R290"]',
+  refs: '["R290"]',
   voltage: '12 VDC +/-20% V',
   range: '0-50 %LFL',
   relay: 0,
@@ -167,7 +166,7 @@ const RM_R32 = makeProduct({
   subType: 'gas_detector',
   price: 382,
   tier: 'economic',
-  gas: '["R32", "R410A"]',
+  refs: '["R32", "R410A"]',
   voltage: '12-24 VDC/VAC V',
   range: '0-50% LFL',
   relay: 2,
@@ -187,7 +186,7 @@ const X5_DIRECT_CO2 = makeProduct({
   subType: 'direct_mount_sensor',
   price: 1019,
   tier: 'premium',
-  gas: '["R744"]',
+  refs: '["R744"]',
   voltage: null,
   range: '0-5 % vol',
   relay: 0,
@@ -206,7 +205,7 @@ const X5_REMOTE_CO2 = makeProduct({
   subType: 'remote_sensor',
   price: 1287,
   tier: 'premium',
-  gas: '["R744"]',
+  refs: '["R744"]',
   voltage: null,
   range: '0-5 % vol',
   relay: 0,
@@ -225,7 +224,7 @@ const X5_DIRECT_R717_ATEX = makeProduct({
   subType: 'direct_mount_sensor',
   price: 602,
   tier: 'standard',
-  gas: '["R717"]',
+  refs: '["R717"]',
   voltage: null,
   range: '0-1000 ppm',
   relay: 0,
@@ -397,7 +396,7 @@ const PLANNED_DETECTOR = makeProduct({
   type: 'detector',
   status: 'planned',
   price: 0,
-  gas: '["R1234yf"]',
+  refs: '["R1234yf"]',
   voltage: '24 VDC',
   relay: 2,
   standalone: true,
@@ -449,8 +448,8 @@ describe('SystemDesigner V2', () => {
       const detectors = designer.filterDetectors({ gas: 'R744' });
       expect(detectors.length).toBeGreaterThan(0);
       for (const d of detectors) {
-        const gases = JSON.parse(d.gas);
-        expect(gases).toContain('R744');
+        const refs = JSON.parse(d.refs);
+        expect(refs).toContain('R744');
       }
     });
 
@@ -1039,7 +1038,7 @@ describe('SystemDesigner V2', () => {
         code: 'ZERO-PRICE',
         type: 'detector',
         family: 'GLACIAR MIDI',
-        gas: '["R999"]',
+        refs: '["R999"]',
         status: 'active',
         price: 0,
         relay: 2,

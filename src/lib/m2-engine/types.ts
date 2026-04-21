@@ -72,7 +72,6 @@ export interface ProductRecord {
   price: number;
   image?: string | null;
   specs?: string;
-  gas: string;
   refs: string;
   range: string | null;
   sensorTech: string | null;

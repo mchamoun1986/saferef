@@ -11,9 +11,9 @@ function familyCompatible(accessory: ProductRecord, detectorFamily: string): boo
 }
 
 function gasMatch(accessory: ProductRecord, gasGroup: string): boolean {
-  const gases = parseJson<string>(accessory.gas);
-  if (gases.length === 0) return false;
-  return gases.includes(gasGroup);
+  const refs = parseJson<string>(accessory.refs);
+  if (refs.length === 0) return false;
+  return refs.includes(gasGroup);
 }
 
 export function selectAccessories(

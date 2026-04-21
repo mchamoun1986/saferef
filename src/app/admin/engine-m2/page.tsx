@@ -283,8 +283,8 @@ pool = products.filter(p =>
 function f2_gas(products, gas) {
   if (!gas) return products;
   return products.filter(p => {
-    const gases = JSON.parse(p.gas || '[]');
-    return gases.includes(gas);
+    const refs = JSON.parse(p.refs || '[]');
+    return refs.includes(gas);
   });
 }
 

@@ -20,7 +20,6 @@ export function toProductEntry(p: ProductRecord): ProductEntry {
     price: p.price,
     tier: p.tier || 'standard',
     productGroup: p.productGroup || 'G',
-    gas: parseJsonArray(p.gas),
     refs: parseJsonArray(p.refs),
     range: p.range,
     sensorTech: p.sensorTech,

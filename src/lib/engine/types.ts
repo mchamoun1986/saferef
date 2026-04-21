@@ -235,7 +235,6 @@ export interface ProductEntry {
   price: number;
   tier: string;
   productGroup: string;
-  gas: string[];
   refs: string[];
   range: string | null;
   sensorTech: string | null;

@@ -76,29 +76,9 @@ function getAppDefaultRanges(app: AppItem | null | undefined): Record<string, st
   try { return JSON.parse(app.defaultRanges); } catch { return {}; }
 }
 
-/** Parse suggestedGases from DB app */
-function getAppSuggestedGases(app: AppItem | null | undefined): string[] {
-  if (!app?.suggestedGases) return [];
-  try { return JSON.parse(app.suggestedGases); } catch { return []; }
-}
+// getAppSuggestedGases removed — suggestedGases now stores R-codes directly, parsed inline
 
-/** Map gas group codes to refrigerant IDs. Keys are stored lowercase; look-up
- *  normalizes the incoming code so either case works (DB historically stores
- *  applications.suggestedGases as lowercase but refrigerant.gasGroup as UPPERCASE). */
-const GAS_GROUP_TO_REFS: Record<string, string[]> = {
-  co2: ['R744'],
-  nh3: ['R717'],
-  r290: ['R290'],
-  hfc1: ['R-404A', 'R-407C', 'R-410A', 'R-134a', 'R32'],
-  hfc2: ['R-448A', 'R-449A', 'R-452A', 'R-513A', 'R1234yf', 'R1234ze(E)'],
-  co: ['CO'],
-  no2: ['NO2'],
-  o2: ['O2'],
-};
-
-function refsForGasGroup(code: string): string[] {
-  return GAS_GROUP_TO_REFS[code.toLowerCase()] ?? [];
-}
+// GAS_GROUP_TO_REFS removed — suggestedGases now stores R-codes directly
 
 /** Common refrigerants shown first */
 const COMMON_REFS = new Set(["R-404A", "R-407C", "R-410A", "R-134a", "R744", "R32", "R290", "R717"]);
@@ -175,15 +155,15 @@ export default function StepGasApp({
   // DB-driven default ranges for the selected app
   const appDefaultRanges = useMemo(() => getAppDefaultRanges(selectedApp), [selectedApp]);
 
-  // Suggested refrigerant IDs from the selected app's suggestedGases
+  // Suggested refrigerant IDs from the selected app's suggestedGases (now stores R-codes directly)
   const suggestedRefIds = useMemo(() => {
-    const gases = getAppSuggestedGases(selectedApp);
-    const ids = new Set<string>();
-    for (const g of gases) {
-      refsForGasGroup(g).forEach(r => ids.add(r));
-    }
-    return ids;
-  }, [selectedApp]);
+    if (!applications) return new Set<string>();
+    const app = applications.find(a => a.id === data.zoneType);
+    if (!app?.suggestedGases) return new Set<string>();
+    try {
+      return new Set<string>(JSON.parse(app.suggestedGases));
+    } catch { return new Set<string>(); }
+  }, [applications, data.zoneType]);
 
   const update = <K extends keyof GasAppData>(field: K, value: GasAppData[K]) => {
     onChange({ ...data, [field]: value });

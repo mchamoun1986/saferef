@@ -5,7 +5,7 @@ import type { ProductRecord } from '../types';
 function makeRecord(overrides: Partial<ProductRecord> = {}): ProductRecord {
   return {
     id: 'p1', type: 'detector', family: 'MIDI', name: 'MIDI-IR-R744',
-    code: '10-100', price: 500, gas: '["CO2"]', refs: '["R744"]',
+    code: '10-100', price: 500, refs: '["R744"]',
     range: '0-10000ppm', sensorTech: 'IR',
     sensorLife: '15 years', power: 2, voltage: '24V AC/DC', ip: 'IP54',
     tempMin: -40, tempMax: 50, atex: false, mount: '["wall","ceiling"]',
@@ -20,15 +20,13 @@ function makeRecord(overrides: Partial<ProductRecord> = {}): ProductRecord {
 describe('toProductEntry', () => {
   it('parses JSON array fields correctly', () => {
     const entry = toProductEntry(makeRecord());
-    expect(entry.gas).toEqual(['CO2']);
     expect(entry.refs).toEqual(['R744']);
     expect(entry.mount).toEqual(['wall', 'ceiling']);
     expect(entry.compatibleFamilies).toEqual(['ALL']);
   });
 
   it('handles malformed JSON gracefully', () => {
-    const entry = toProductEntry(makeRecord({ gas: 'not-json', refs: '', mount: '{bad}' }));
-    expect(entry.gas).toEqual([]);
+    const entry = toProductEntry(makeRecord({ refs: '', mount: '{bad}' }));
     expect(entry.refs).toEqual([]);
     expect(entry.mount).toEqual([]);
   });

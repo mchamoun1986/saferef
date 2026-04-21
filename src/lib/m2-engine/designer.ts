@@ -199,13 +199,13 @@ export class SystemDesigner {
     return solutions;
   }
 
-  /** Get all unique gases in the product database */
+  /** Get all unique gases (R-codes) in the product database */
   getAvailableGases(): string[] {
     const gases = new Set<string>();
     for (const p of this.products) {
       if (p.type === 'detector' || p.type === 'sensor') {
-        const gasArr = parseJson<string[]>(p.gas, []);
-        for (const g of gasArr) gases.add(g);
+        const refsArr = parseJson<string[]>(p.refs, []);
+        for (const g of refsArr) gases.add(g);
       }
     }
     return [...gases].sort();
@@ -244,10 +244,10 @@ export class SystemDesigner {
         if (!inputs.applicationFamilies.includes(p.family)) return false;
       }
 
-      // Gas filter
+      // Gas filter (reads refs field — single source of truth for R-codes)
       if (inputs.gas) {
-        const gases = parseJson<string[]>(p.gas, []);
-        if (!gases.includes(inputs.gas)) return false;
+        const refs = parseJson<string[]>(p.refs, []);
+        if (!refs.includes(inputs.gas)) return false;
       }
 
       // Measurement type filter

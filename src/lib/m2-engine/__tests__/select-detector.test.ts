@@ -4,7 +4,7 @@ import type { ProductRecord, SelectorInput } from '../types';
 
 const midiCO2: ProductRecord = {
   id: '1', type: 'detector', family: 'MIDI', name: 'MIDI IR CO2 0-10000ppm',
-  code: '31-210-32', price: 450, gas: '["CO2"]', refs: '["R744"]',
+  code: '31-210-32', price: 450, refs: '["R744"]',
   range: '0-10000ppm', sensorTech: 'IR',
   voltage: '15-24V', atex: false, mount: '["wall","ceiling"]', standalone: true,
   discontinued: false, channels: null, relay: 2, analog: 'selectable',
@@ -16,7 +16,7 @@ const midiCO2: ProductRecord = {
 
 const x5NH3: ProductRecord = {
   id: '2', type: 'detector', family: 'X5', name: 'X5 IONIC NH3 0-1000ppm',
-  code: '3500-0001', price: 1200, gas: '["NH3"]', refs: '["R717"]',
+  code: '3500-0001', price: 1200, refs: '["R717"]',
   range: '0-1000ppm', sensorTech: 'IONIC',
   voltage: '18-32V', atex: true, mount: '["wall","pipe","pole"]', standalone: false,
   discontinued: false, channels: null, relay: 3, analog: '4-20mA x2',
@@ -28,7 +28,7 @@ const x5NH3: ProductRecord = {
 
 const midiHFC: ProductRecord = {
   id: '3', type: 'detector', family: 'MIDI', name: 'MIDI SC HFC 0-1000ppm',
-  code: '31-110-11', price: 400, gas: '["HFC1","HFC2"]', refs: '["R32","R410A","R134a","R404A"]',
+  code: '31-110-11', price: 400, refs: '["R32","R410A","R134a","R404A"]',
   range: '0-1000ppm', sensorTech: 'SC',
   voltage: '15-24V', atex: false, mount: '["wall","ceiling"]', standalone: true,
   discontinued: false, channels: null, relay: 2, analog: 'selectable',
@@ -40,7 +40,7 @@ const midiHFC: ProductRecord = {
 
 const rmHFC: ProductRecord = {
   id: '4', type: 'detector', family: 'RM', name: 'RM HFC Compact',
-  code: '32-100-01', price: 180, gas: '["HFC1","HFC2"]', refs: '["R32","R410A","R134a"]',
+  code: '32-100-01', price: 180, refs: '["R32","R410A","R134a"]',
   range: '0-5000ppm', sensorTech: 'SC',
   voltage: '12-24V', atex: false, mount: '["wall","ceiling"]', standalone: true,
   discontinued: false, channels: null, relay: 1, analog: null,

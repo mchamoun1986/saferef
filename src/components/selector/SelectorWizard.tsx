@@ -156,7 +156,6 @@ function toProductV2(p: ProductRecord): ProductV2 {
     specs: p.specs ?? '',
     tier: p.tier || 'standard',
     productGroup: p.productGroup || 'G',
-    gas: p.gas,
     refs: p.refs,
     range: p.range,
     sensorTech: p.sensorTech,

@@ -19,7 +19,6 @@ interface Product {
   code: string;
   price: number;
   image: string | null;
-  gas: string;
   refs: string;
   range: string | null;
   sensorTech: string | null;
@@ -191,7 +190,6 @@ function Chip({
 // ── Detail Modal ──────────────────────────────────────────────────────────────
 
 function ProductDetailModal({ product: p, onClose }: { product: Product; onClose: () => void }) {
-  const gases = parseJson<string[]>(p.gas, []);
   const refs = parseJson<string[]>(p.refs, []);
   const mountTypes = parseJson<string[]>(p.mount, []);
   const compatFamilies = parseJson<string[]>(p.compatibleFamilies, []);
@@ -271,11 +269,11 @@ function ProductDetailModal({ product: p, onClose }: { product: Product; onClose
                 {p.sensorLife && <DetailRow label="Sensor Life" value={p.sensorLife} />}
                 <DetailRow label="ATEX Certified" value={p.atex ? 'Yes' : 'No'} />
               </div>
-              {(gases.length > 0 || refs.length > 0) && (
+              {refs.length > 0 && (
                 <div className="mt-3">
-                  <span className="text-xs text-gray-500 mr-2">Gases:</span>
+                  <span className="text-xs text-gray-500 mr-2">Refrigerants:</span>
                   <div className="flex flex-wrap gap-1.5 mt-1">
-                    {(refs.length > 0 ? refs : gases).map(g => (
+                    {refs.map(g => (
                       <span key={g} className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
                         style={{ color: gasColor(g), borderColor: gasColor(g) + '40', background: gasColor(g) + '15' }}>
                         {g}
@@ -401,9 +399,8 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 // ── Product Card ──────────────────────────────────────────────────────────────
 
 function ProductCard({ product: p, onClick }: { product: Product; onClick: () => void }) {
-  const gases = parseJson<string[]>(p.gas, []);
   const refs = parseJson<string[]>(p.refs, []);
-  const displayGases = refs.length > 0 ? refs : gases;
+  const displayGases = refs;
   const isDetection = p.type === 'detector' || p.type === 'sensor';
 
   return (
@@ -557,9 +554,8 @@ export default function ProductCatalogPage() {
     for (const group of GAS_GROUPS) {
       for (const item of group.items) {
         counts[item.id] = products.filter(p => {
-          const gases = parseJson<string[]>(p.gas, []);
           const refs = parseJson<string[]>(p.refs, []);
-          return gases.includes(item.id) || refs.includes(item.id);
+          return refs.includes(item.id);
         }).length;
       }
     }
@@ -600,9 +596,8 @@ export default function ProductCatalogPage() {
   const availableGasIds = useMemo(() => {
     const seen = new Set<string>();
     for (const p of baseFiltered) {
-      const gases = parseJson<string[]>(p.gas, []);
       const refs = parseJson<string[]>(p.refs, []);
-      for (const g of [...gases, ...refs]) seen.add(g);
+      for (const g of refs) seen.add(g);
     }
     return seen;
   }, [baseFiltered]);
@@ -614,10 +609,8 @@ export default function ProductCatalogPage() {
     // Gas filter (OR)
     if (filterGas.length > 0) {
       list = list.filter(p => {
-        const gases = parseJson<string[]>(p.gas, []);
         const refs = parseJson<string[]>(p.refs, []);
-        const allGases = [...gases, ...refs];
-        return filterGas.some(fg => allGases.includes(fg));
+        return filterGas.some(fg => refs.includes(fg));
       });
     }
 
@@ -650,7 +643,6 @@ export default function ProductCatalogPage() {
         p.code.toLowerCase().includes(q) ||
         p.family.toLowerCase().includes(q) ||
         (p.variant ?? '').toLowerCase().includes(q) ||
-        parseJson<string[]>(p.gas, []).some(g => g.toLowerCase().includes(q)) ||
         parseJson<string[]>(p.refs, []).some(r => r.toLowerCase().includes(q))
       );
     }

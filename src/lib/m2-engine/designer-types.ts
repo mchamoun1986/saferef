@@ -60,7 +60,6 @@ export interface ProductV2 {
   specs: string;
   tier: string;
   productGroup: string;
-  gas: string;
   refs: string;
   range: string | null;
   sensorTech: string | null;

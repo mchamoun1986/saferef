@@ -34,8 +34,8 @@ export async function GET(request: Request) {
     if (gas) {
       products = products.filter((p) => {
         try {
-          const gases: string[] = JSON.parse(p.gas);
-          return gases.includes(gas);
+          const refs: string[] = JSON.parse(p.refs);
+          return refs.includes(gas);
         } catch {
           return false;
         }

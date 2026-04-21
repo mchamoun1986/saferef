@@ -18,12 +18,8 @@ export function selectDetector(input: SelectorInput, products: ProductRecord[]):
   const matches = products.filter((p) => {
     if (p.type !== 'detector') return false;
     if (p.discontinued) return false;
-    const gases = parseJson<string>(p.gas);
-    if (!gases.includes(input.gasGroup)) return false;
-    if (input.refrigerantRefs.length > 0) {
-      const refs = parseJson<string>(p.refs);
-      if (!input.refrigerantRefs.some(r => refs.includes(r))) return false;
-    }
+    const refs = parseJson<string>(p.refs);
+    if (!input.refrigerantRefs.some(r => refs.includes(r))) return false;
     if (input.atexRequired && !p.atex) return false;
     if (!voltageCompatible(p.voltage, input.voltage)) return false;
     const mounts = parseJson<string>(p.mount).map(m => m.toLowerCase());

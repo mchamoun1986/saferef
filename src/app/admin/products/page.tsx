@@ -15,7 +15,6 @@ interface Product {
   specs: string;
   tier: string;
   productGroup: string;
-  gas: string;
   refs: string;
   range: string | null;
   sensorTech: string | null;
@@ -64,13 +63,12 @@ const FAMILIES = [
   'Flow Regulator', 'Calibration Kit', 'MIDI Accessories', 'X5 Accessories',
 ] as const;
 const TIERS = ['standard', 'premium', 'economic'] as const;
-const GAS_OPTIONS = ['CO2', 'HFC1', 'HFC2', 'NH3', 'R290', 'CO', 'NO2', 'O2'] as const;
 const MOUNT_OPTIONS = ['wall', 'ceiling', 'floor', 'duct'] as const;
 
 const EMPTY_PRODUCT: Omit<Product, 'createdAt' | 'updatedAt'> = {
   id: '', type: 'sensor', family: 'GLACIAR MIDI', name: '', code: '', price: 0,
   image: null, specs: '{}', tier: 'standard', productGroup: 'A',
-  gas: '[]', refs: '[]', range: null, sensorTech: null, sensorLife: null,
+  refs: '[]', range: null, sensorTech: null, sensorLife: null,
   power: null, voltage: null, ip: null, tempMin: null, tempMax: null,
   relay: 0, analog: null, modbus: false, standalone: true, atex: false,
   mount: '[]', remote: false, features: null, connectTo: null, discontinued: false,
@@ -214,7 +212,7 @@ export default function ProductsPage() {
   }, [products, filterType]);
   const gasTypes = useMemo(() => {
     const set = new Set<string>();
-    products.filter(p => p.type === filterType).forEach(p => parseJson<string[]>(p.gas, []).forEach(g => set.add(g)));
+    products.filter(p => p.type === filterType).forEach(p => parseJson<string[]>(p.refs, []).forEach(g => set.add(g)));
     return Array.from(set).sort();
   }, [products, filterType]);
   const subCategories = useMemo(() => {
@@ -233,7 +231,7 @@ export default function ProductsPage() {
     let list = products;
     if (filterType) list = list.filter(p => p.type === filterType);
     if (filterFamily) list = list.filter(p => p.family === filterFamily);
-    if (filterGas) list = list.filter(p => parseJson<string[]>(p.gas, []).includes(filterGas));
+    if (filterGas) list = list.filter(p => parseJson<string[]>(p.refs, []).includes(filterGas));
     if (filterSubCat) list = list.filter(p => p.subCategory === filterSubCat);
     if (filterTier) list = list.filter(p => p.tier === filterTier);
     if (filterVoltage) list = list.filter(p => (p.voltage || '').includes(filterVoltage));
@@ -274,9 +272,7 @@ export default function ProductsPage() {
     await fetchProducts();
   }
 
-  function formGas(): string[] { return parseJson(form.gas, []); }
   function formMount(): string[] { return parseJson(form.mount, []); }
-  function toggleGas(g: string) { const cur = formGas(); setForm({ ...form, gas: JSON.stringify(cur.includes(g) ? cur.filter(x => x !== g) : [...cur, g]) }); }
   function toggleMount(m: string) { const cur = formMount(); setForm({ ...form, mount: JSON.stringify(cur.includes(m) ? cur.filter(x => x !== m) : [...cur, m]) }); }
 
   return (
@@ -416,7 +412,7 @@ export default function ProductsPage() {
               </thead>
               <tbody>
                 {filtered.map((p, idx) => {
-                  const gases: string[] = parseJson(p.gas, []);
+                  const gases: string[] = parseJson(p.refs, []);
                   const mounts: string[] = parseJson(p.mount, []);
                   return (
                     <tr key={p.id} className={`border-b border-gray-100 hover:bg-blue-50/40 transition-colors ${p.status === 'discontinued' ? 'opacity-40' : p.status === 'planned' ? 'opacity-30 italic' : p.discontinued ? 'opacity-40' : ''} ${idx % 2 === 1 ? 'bg-gray-50/50' : ''} ${selected.has(p.id) ? 'bg-red-50' : ''}`}>
@@ -544,19 +540,6 @@ export default function ProductsPage() {
                   <Sel label="Tier" value={form.tier} options={[...TIERS]} onChange={v => setForm({ ...form, tier: v })} />
                   <F label="Product Group" value={form.productGroup} onChange={v => setForm({ ...form, productGroup: v })} mono />
                 </div>
-                {/* Gas Types checkboxes */}
-                <div className="mt-3">
-                  <label className="block text-xs font-semibold text-gray-600 mb-2">Gas Types</label>
-                  <div className="flex flex-wrap gap-2">
-                    {GAS_OPTIONS.map(g => (
-                      <label key={g} className="flex items-center gap-1.5 text-xs cursor-pointer">
-                        <input type="checkbox" checked={formGas().includes(g)} onChange={() => toggleGas(g)} className="rounded" />
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${gasColor(g)}`}>{g}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <TA label="Gas Groups (JSON)" value={form.gas} onChange={v => setForm({ ...form, gas: v })} rows={1} mono />
                 <TA label="Compatible Refrigerants (JSON)" value={form.refs} onChange={v => setForm({ ...form, refs: v })} rows={1} mono />
               </Section>
 

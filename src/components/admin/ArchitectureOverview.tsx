@@ -294,7 +294,7 @@ function VariablesTab() {
         <VarTable rows={[
           { name: "Type", type: "filter", note: "detector or sensor only" },
           { name: "Status", type: "filter", note: "active only (exclude planned/discontinued)" },
-          { name: "Gas", type: "filter", note: "product.gas includes selected refrigerant (R744, R717...)" },
+          { name: "Gas", type: "filter", note: "product.refs includes selected refrigerant (R744, R717...)" },
           { name: "MeasType", type: "filter", note: "product.measType vs IR/SC/EC/PID" },
           { name: "ATEX", type: "filter", note: "product.atex vs zoneAtex requirement" },
           { name: "Voltage", type: "filter", note: "product.voltage vs sitePowerVoltage" },
