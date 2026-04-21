@@ -5,6 +5,7 @@ import type { Solution, BomComponent } from '@/lib/m2-engine/designer-types';
 import { useLang } from '@/lib/i18n-context';
 import { TIERED_BOM, t } from '@/lib/i18n-common';
 import { Download, Printer, ChevronDown, ChevronRight } from 'lucide-react';
+import { updateLead } from '@/lib/lead-tracker';
 
 interface ZoneCalcData {
   zoneName: string;
@@ -199,6 +200,8 @@ export default function StepTieredBOM({
       });
       setShowQuoteForm(false);
       setQuoteSubmitted(true);
+      // Update lead with quote info
+      updateLead({ status: 'quoted', customerGroup: clientData.customerGroup || '' });
     } finally {
       setSaving(false);
     }

@@ -213,6 +213,8 @@ model Lead {
   voltage         String   @default("")
   atex            Boolean  @default(false)
   mountingType    String   @default("")
+  regulation      String   @default("")
+  customerGroup   String   @default("")
   zonesJson       String   @default("[]")
   totalDetectors  Int      @default(0)
   resultJson      String   @default("{}")

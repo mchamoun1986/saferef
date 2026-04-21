@@ -330,7 +330,7 @@ export default function ConfiguratorPage() {
 
     if (step === 2) {
       // Fire-and-forget: update lead on step 2 → 3
-      updateLead({ currentStep: 3, application: gasAppData.zoneType, refrigerant: gasAppData.selectedRefrigerant });
+      updateLead({ currentStep: 3, application: gasAppData.zoneType, refrigerant: gasAppData.selectedRefrigerant, regulation: gasAppData.regulation });
     }
 
     if (step === 3) {

@@ -15,6 +15,8 @@ const UPDATABLE_FIELDS = [
   'voltage',
   'atex',
   'mountingType',
+  'regulation',
+  'customerGroup',
   'zonesJson',
   'totalDetectors',
   'resultJson',
