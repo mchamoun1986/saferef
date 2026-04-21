@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from 'react';
 import type { Solution, BomComponent } from '@/lib/m2-engine/designer-types';
 import { useLang } from '@/lib/i18n-context';
 import { TIERED_BOM, t } from '@/lib/i18n-common';
-import { Download, Printer, ChevronDown, ChevronRight } from 'lucide-react';
+import { Download, Printer, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import { updateLead } from '@/lib/lead-tracker';
 
 interface ZoneCalcData {
@@ -73,6 +73,7 @@ export default function StepTieredBOM({
   });
   const [saving, setSaving] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+  const [selectedSolutions, setSelectedSolutions] = useState<Set<number>>(new Set());
   const [filterMeas, setFilterMeas] = useState('');
   const [filterRange, setFilterRange] = useState('');
   const [filterMode, setFilterMode] = useState('');
@@ -180,9 +181,13 @@ export default function StepTieredBOM({
   const handleSaveQuote = useCallback(async () => {
     setSaving(true);
     try {
-      const firstSol = solutions[0];
-      const bomJson = JSON.stringify(firstSol?.components ?? []);
-      const configJson = JSON.stringify({ gasAppData, solutions: solutions.map(s => ({ name: s.name, tier: s.tier, mode: s.mode, total: s.total })) });
+      // Use selected solutions, or fall back to first solution
+      const selectedSols = selectedSolutions.size > 0
+        ? filteredSolutions.filter((_, i) => selectedSolutions.has(i))
+        : [filteredSolutions[0]].filter(Boolean);
+      const firstSol = selectedSols[0];
+      const bomJson = JSON.stringify(selectedSols.flatMap(s => s.components));
+      const configJson = JSON.stringify({ gasAppData, solutions: selectedSols.map(s => ({ name: s.name, tier: s.tier, mode: s.mode, total: s.total })) });
 
       await fetch('/api/quotes', {
         method: 'POST',
@@ -205,7 +210,7 @@ export default function StepTieredBOM({
     } finally {
       setSaving(false);
     }
-  }, [quoteForm, solutions, gasAppData, clientData.customerGroup]);
+  }, [quoteForm, solutions, filteredSolutions, selectedSolutions, gasAppData, clientData.customerGroup]);
 
   const handleDownloadReport = useCallback(async () => {
     const { jsPDF } = await import('jspdf');
@@ -464,16 +469,31 @@ export default function StepTieredBOM({
           return (
             <div key={idx} className="bg-white rounded-xl shadow-[0_2px_12px_rgba(22,53,75,0.08)] overflow-hidden border border-gray-200">
               {/* Solution Header — clickable */}
+              <div className="flex items-stretch">
+                {/* Left accent bar */}
+                <div className="w-1.5 flex-shrink-0 rounded-l-xl" style={{ background: selectedSolutions.has(idx) ? '#A7C031' : color }} />
+                {/* Select/Deselect button */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSelectedSolutions(prev => {
+                    const next = new Set(prev);
+                    if (next.has(idx)) next.delete(idx); else next.add(idx);
+                    return next;
+                  }); }}
+                  className={`flex-shrink-0 w-10 flex items-center justify-center transition-colors ${selectedSolutions.has(idx) ? 'bg-[#A7C031]/10' : 'bg-gray-50 hover:bg-gray-100'}`}
+                  title={selectedSolutions.has(idx) ? 'Deselect' : 'Select this solution'}
+                >
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${selectedSolutions.has(idx) ? 'bg-[#A7C031] border-[#A7C031]' : 'border-gray-300'}`}>
+                    {selectedSolutions.has(idx) && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                </button>
               <button
                 onClick={() => setExpandedCards(prev => {
                   const next = new Set(prev);
                   if (next.has(idx)) next.delete(idx); else next.add(idx);
                   return next;
                 })}
-                className="w-full flex items-stretch cursor-pointer hover:bg-gray-50/50 transition-colors"
+                className="flex-1 flex items-center cursor-pointer hover:bg-gray-50/50 transition-colors"
               >
-                {/* Left accent bar */}
-                <div className="w-1.5 flex-shrink-0 rounded-l-xl" style={{ background: color }} />
                 <div className="flex-1 px-5 py-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {isExpanded
@@ -508,6 +528,7 @@ export default function StepTieredBOM({
                   </div>
                 </div>
               </button>
+              </div>
 
               {/* Expanded content */}
               {isExpanded && (
@@ -605,7 +626,13 @@ export default function StepTieredBOM({
       {/* Request a Quote */}
       <div className="bg-[#A7C031]/10 border-2 border-[#A7C031] rounded-xl p-6 text-center">
         <h3 className="text-lg font-bold text-[#16354B] mb-2">Interested in this configuration?</h3>
-        <p className="text-sm text-gray-600 mb-4">Contact your local distributor or sales representative for a detailed quote with final pricing and availability.</p>
+        {selectedSolutions.size > 0 ? (
+          <p className="text-sm text-gray-600 mb-4">
+            <span className="font-semibold text-[#A7C031]">{selectedSolutions.size} solution{selectedSolutions.size > 1 ? 's' : ''} selected</span> — Request a quote for your selection.
+          </p>
+        ) : (
+          <p className="text-sm text-gray-600 mb-4">Select the solutions you are interested in, or request a quote for the recommended option.</p>
+        )}
         <button onClick={() => setShowQuoteForm(true)}
           className="bg-[#A7C031] text-white text-sm font-bold px-8 py-3 rounded-lg hover:bg-[#8fa827] transition-colors shadow-lg shadow-[#A7C031]/30">
           Request a Quote &rarr;
