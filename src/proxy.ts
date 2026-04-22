@@ -18,7 +18,8 @@ const ROUTE_ROLES: Record<string, Role[]> = {
   '/admin/products': ['admin', 'management'],
   '/admin/discount-matrix': ['admin', 'management'],
   '/admin/calc-sheets': ['admin', 'management'],
-  // Quotes — accessible to all internal roles
+  // Leads, Quotes, Catalogue — accessible to all internal roles
+  '/admin/leads': ['admin', 'sales', 'management'],
   '/admin/catalogue': ['admin', 'sales', 'management'],
   '/admin/quotes': ['admin', 'sales', 'management'],
   // Architecture — admin only
