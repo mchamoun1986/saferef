@@ -9,6 +9,19 @@ export default function Home() {
   const { lang } = useLang();
   const h = t(HOME, lang);
 
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      { '@type': 'Question', name: 'Is refrigerant gas detection mandatory?', acceptedAnswer: { '@type': 'Answer', text: 'Yes, in most cases. EN 378-3 requires fixed gas detection in machinery rooms and may require it in occupied spaces depending on the refrigerant charge and concentration limits.' } },
+      { '@type': 'Question', name: 'What is EN 378 and why does it matter?', acceptedAnswer: { '@type': 'Answer', text: 'EN 378 is the European standard for refrigerating systems safety. Part 3 covers gas detection, alarm thresholds, and safety response systems.' } },
+      { '@type': 'Question', name: 'How many gas detectors do I need?', acceptedAnswer: { '@type': 'Answer', text: 'It depends on room size, refrigerant type, charge amount, and leak source locations. EN 378-3 specifies 1 detector per 50 m\u00B2 as baseline.' } },
+      { '@type': 'Question', name: 'What are the F-Gas leak check requirements?', acceptedAnswer: { '@type': 'Answer', text: 'EU Regulation 2024/573 requires periodic leak checks based on CO2 equivalent: 12 months (5-50t), 6 months (50-500t), or 3 months (500t+). Fixed detection halves frequency.' } },
+      { '@type': 'Question', name: 'Do natural refrigerants need gas detection?', acceptedAnswer: { '@type': 'Answer', text: 'Natural refrigerants are exempt from F-Gas but still need EN 378 detection for safety. CO2 is asphyxiant, ammonia is toxic, propane is flammable.' } },
+      { '@type': 'Question', name: 'What is an A2L refrigerant?', acceptedAnswer: { '@type': 'Answer', text: 'A2L means lower flammability. R-32, R-454B, R-1234yf are A2L. They require detection at LFL/4 per EN 378-3 and are replacing high-GWP R-410A.' } },
+    ],
+  };
+
   const RISK_COLORS = {
     fire: { border: 'border-t-[#E63946]', tag: 'bg-red-50 text-[#E63946]' },
     suff: { border: 'border-t-[#E63946]', tag: 'bg-red-50 text-[#E63946]' },
@@ -19,6 +32,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <style>{`@keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }`}</style>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       {/* Navbar */}
       <nav className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] text-white px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between border-b-2 border-[#E63946]">
@@ -38,7 +52,7 @@ export default function Home() {
 
       {/* ═══ HERO ═══ */}
       <section className="relative overflow-hidden bg-gradient-to-b from-[#0f2535] via-[#16354B] to-[#1e4a6a] px-4 sm:px-6 py-16 sm:py-24 text-center">
-        <div className="absolute inset-0 pointer-events-none select-none overflow-hidden" aria-hidden="true">
+        <div className="absolute inset-0 pointer-events-none select-none overflow-hidden hidden sm:block" aria-hidden="true">
           {/* Left side */}
           <span className="absolute top-[6%] left-[3%] text-xs font-mono bg-white/5 text-white/20 px-2 py-1 rounded-md border border-white/5 animate-[float_8s_ease-in-out_infinite]">R-1234ze</span>
           <span className="absolute top-[22%] left-[6%] text-xs font-mono bg-white/5 text-white/15 px-2 py-1 rounded-md border border-white/5 animate-[float_11s_ease-in-out_infinite_1.5s]">CO2</span>
@@ -96,7 +110,7 @@ export default function Home() {
               <div className="w-14 h-14 rounded-xl bg-[#E63946] flex items-center justify-center mb-5">
                 <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">{h.designerTitle}</h2>
+              <h3 className="text-xl font-bold text-white mb-2">{h.designerTitle}</h3>
               <p className="text-gray-400 text-sm leading-relaxed mb-4">{h.designerDesc}</p>
               <span className="inline-flex items-center gap-1 text-[#E63946] font-semibold text-sm group-hover:gap-2 transition-all">{h.startDesigner} <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg></span>
             </Link>
@@ -104,7 +118,7 @@ export default function Home() {
               <div className="w-14 h-14 rounded-xl bg-[#A7C031] flex items-center justify-center mb-5">
                 <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">{h.selectorTitle}</h2>
+              <h3 className="text-xl font-bold text-white mb-2">{h.selectorTitle}</h3>
               <p className="text-gray-400 text-sm leading-relaxed mb-4">{h.selectorDesc}</p>
               <span className="inline-flex items-center gap-1 text-[#A7C031] font-semibold text-sm group-hover:gap-2 transition-all">{h.startSelector} <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg></span>
             </Link>
@@ -112,7 +126,7 @@ export default function Home() {
               <div className="w-14 h-14 rounded-xl bg-[#2196F3] flex items-center justify-center mb-5">
                 <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">{h.fgasTitle}</h2>
+              <h3 className="text-xl font-bold text-white mb-2">{h.fgasTitle}</h3>
               <p className="text-gray-400 text-sm leading-relaxed mb-4">{h.fgasDesc}</p>
               <span className="inline-flex items-center gap-1 text-[#2196F3] font-semibold text-sm group-hover:gap-2 transition-all">{h.startFgas} <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg></span>
             </Link>
@@ -180,21 +194,7 @@ export default function Home() {
       {/* ═══ COMPLIANCE BRIDGE ═══ */}
       <section className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] px-4 sm:px-6 py-14 sm:py-20 text-center">
         <p className="text-xl sm:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-          {h.complianceLine
-            .replace(/<en378>(.*?)<\/en378>/g, '')
-            .replace(/<fgas>(.*?)<\/fgas>/g, '')
-            .replace(/<safe>(.*?)<\/safe>/g, '')
-            .split(/(<en378>|<\/en378>|<fgas>|<\/fgas>|<safe>|<\/safe>)/)
-            .length > 0 && (
-            <>
-              {h.complianceLine.split(/<\/?(?:en378|fgas|safe)>/g).map((part: string, i: number) => {
-                if (i === 1) return <span key={i} className="font-extrabold text-white">{part}</span>;
-                if (i === 2) return <span key={i} className="font-extrabold text-white">{part}</span>;
-                if (i === 3) return <span key={i} className="text-[#3DE8B0] font-bold">{part}</span>;
-                return <span key={i}>{part}</span>;
-              })}
-            </>
-          )}
+          Being compliant with <span className="font-extrabold text-white">EN 378</span> and <span className="font-extrabold text-white">F-Gas</span> isn&rsquo;t paperwork &mdash; it&rsquo;s what keeps your refrigerants <span className="text-[#3DE8B0] font-bold">safe.</span>
         </p>
       </section>
 
@@ -279,6 +279,45 @@ export default function Home() {
               <p className="mt-4 text-[10px] text-gray-400">{h.ref717Footer}</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ═══ FAQ ═══ */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 bg-gray-50 scroll-mt-16">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#16354B] mb-4">Frequently Asked Questions</h2>
+          </div>
+          <div className="space-y-4">
+            {[
+              { q: 'Is refrigerant gas detection mandatory?', a: 'Yes, in most cases. EN 378-3 requires fixed gas detection in machinery rooms and may require it in occupied spaces depending on the refrigerant charge and concentration limits (ATEL/ODL, LFL). For flammable refrigerants (A2L, A3), detection is almost always mandatory.' },
+              { q: 'What is EN 378 and why does it matter?', a: 'EN 378 is the European standard for refrigerating systems safety. Part 3 (EN 378-3) specifically covers the requirements for gas detection, alarm thresholds, and safety response systems. Compliance is legally required in most European countries.' },
+              { q: 'How many gas detectors do I need?', a: 'It depends on the room size, refrigerant type, charge amount, and leak source locations. EN 378-3 specifies 1 detector per 50 m\u00B2 as a baseline, but cluster-based calculation around leak sources can be more accurate. Use the SafeRef Calculator for a precise zone-by-zone analysis.' },
+              { q: 'What are the F-Gas leak check requirements?', a: 'EU Regulation 2024/573 requires periodic leak checks based on CO\u2082 equivalent charge: every 12 months (5-50t CO\u2082eq), 6 months (50-500t), or 3 months (\u2265500t). Installing a fixed detection system halves the frequency. Above 500t CO\u2082eq, fixed detection is mandatory.' },
+              { q: 'Do natural refrigerants need gas detection?', a: 'Natural refrigerants (R-744 CO\u2082, R-717 ammonia, R-290 propane) are exempt from F-Gas leak checks but still require detection under EN 378 for safety. CO\u2082 is an asphyxiant, ammonia is toxic, and propane is flammable \u2014 each needs appropriate detection.' },
+              { q: 'What is an A2L refrigerant and why does it matter?', a: 'A2L is a safety classification meaning "lower flammability." Refrigerants like R-32, R-454B, and R-1234yf are A2L. They require gas detection with alarm at LFL/4 (25% of lower flammability limit) per EN 378-3. They are replacing high-GWP refrigerants like R-410A under F-Gas phase-down.' },
+            ].map(({ q, a }) => (
+              <details key={q} className="group bg-white rounded-2xl border border-gray-200 hover:shadow-md transition-shadow">
+                <summary className="flex items-center justify-between cursor-pointer px-6 py-5 text-[#16354B] font-semibold text-sm sm:text-base">
+                  {q}
+                  <svg className="w-5 h-5 text-gray-400 shrink-0 ml-4 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </summary>
+                <div className="px-6 pb-5 text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-4">{a}</div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ BOTTOM CTA ═══ */}
+      <section className="bg-gradient-to-r from-[#0f2535] to-[#16354B] px-4 sm:px-6 py-14 sm:py-20 text-center">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-4">Ready to size your detection system?</h2>
+          <p className="text-gray-400 mb-8">Free, instant, no signup. Pick your tool and get started.</p>
+          <a href="#tools" className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-[#3DE8B0] text-[#0f2535] font-bold text-base hover:bg-[#2fd9a0] transition-colors shadow-lg shadow-[#3DE8B0]/25">
+            Be Safe — Start Free
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+          </a>
         </div>
       </section>
 
