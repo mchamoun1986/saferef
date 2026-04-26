@@ -110,30 +110,56 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══ FOUR RISKS ═══ */}
-      <section id="safety" className="py-14 sm:py-20 px-4 sm:px-6 bg-white scroll-mt-16">
+      {/* ═══ FEATURES (sizing tool stats) ═══ */}
+      <section id="features" className="py-12 sm:py-16 px-4 sm:px-6 bg-gray-50 scroll-mt-16">
         <div className="max-w-5xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#E63946] mb-2">{h.risksLabel}</p>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-[#16354B] mb-3">{h.risksHeading}</h2>
-          <p className="text-gray-500 max-w-xl mb-10">{h.risksSubtitle}</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <h2 className="text-2xl font-bold text-[#16354B] text-center mb-10">{h.featuresTitle}</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
+            {[
+              { title: h.multiReg, desc: h.multiRegDesc, color: '#16354B', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
+              { title: h.refrigerants, desc: h.refrigerantsDesc, color: '#E63946', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
+              { title: h.products, desc: h.productsDesc, color: '#A7C031', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
+              { title: h.pdfQuotes, desc: h.pdfQuotesDesc, color: '#16354B', icon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+              { title: h.fgasFeature, desc: h.fgasFeatureDesc, color: '#2196F3', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+            ].map(({ title, desc, color, icon }) => (
+              <div key={title} className="bg-white rounded-xl shadow-md p-5 border border-gray-100 hover:shadow-lg transition-shadow">
+                <div className="w-11 h-11 rounded-lg flex items-center justify-center mb-3" style={{ background: color }}>
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} /></svg>
+                </div>
+                <h3 className="text-sm font-bold text-[#16354B] mb-1">{title}</h3>
+                <p className="text-gray-500 text-xs leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ FOUR RISKS ═══ */}
+      <section id="safety" className="py-16 sm:py-24 px-4 sm:px-6 bg-white scroll-mt-16">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-xs font-bold uppercase tracking-widest text-[#E63946] mb-3">{h.risksLabel}</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#16354B] mb-4">{h.risksHeading}</h2>
+            <p className="text-gray-500 max-w-2xl mx-auto">{h.risksSubtitle}</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {[
               { k: 'fire' as const, emoji: '\uD83D\uDD25', tagLabel: h.riskFlammable, title: h.riskFireTitle, desc: h.riskFireDesc, tag1: h.riskFireTag1, tag2: h.riskFireTag2, refs: h.riskFireRefs },
               { k: 'suff' as const, emoji: '\uD83E\uDEC1', tagLabel: h.riskAsphyxiating, title: h.riskSuffTitle, desc: h.riskSuffDesc, tag1: h.riskSuffTag1, tag2: h.riskSuffTag2, refs: h.riskSuffRefs },
               { k: 'poison' as const, emoji: '\u2620\uFE0F', tagLabel: h.riskToxic, title: h.riskPoisonTitle, desc: h.riskPoisonDesc, tag1: h.riskPoisonTag1, tag2: h.riskPoisonTag2, refs: h.riskPoisonRefs },
               { k: 'climate' as const, emoji: '\uD83C\uDF0D', tagLabel: h.riskClimate, title: h.riskClimateTitle, desc: h.riskClimateDesc, tag1: h.riskClimateTag1, tag2: h.riskClimateTag2, refs: h.riskClimateRefs },
             ].map(({ k, emoji, tagLabel, title, desc, tag1, tag2, refs }) => (
-              <div key={k} className={`bg-white rounded-xl border border-gray-200 ${RISK_COLORS[k].border} border-t-4 p-6 hover:shadow-lg transition-shadow`}>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-2xl">{emoji}</div>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${RISK_COLORS[k].tag}`}>{tagLabel}</span>
+              <div key={k} className={`bg-white rounded-2xl border border-gray-200 ${RISK_COLORS[k].border} border-t-4 p-7 sm:p-8 hover:shadow-xl transition-shadow`}>
+                <div className="flex items-start justify-between mb-5">
+                  <div className="w-14 h-14 rounded-xl bg-gray-50 flex items-center justify-center text-3xl">{emoji}</div>
+                  <span className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full ${RISK_COLORS[k].tag}`}>{tagLabel}</span>
                 </div>
-                <h3 className="text-lg font-extrabold text-[#16354B] mb-2">{title}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed mb-4">{desc}</p>
+                <h3 className="text-xl font-extrabold text-[#16354B] mb-3">{title}</h3>
+                <p className="text-sm text-gray-600 leading-relaxed mb-5">{desc}</p>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-medium text-[#16354B] bg-gray-100 px-2 py-1 rounded border border-gray-200">{tag1}</span>
-                  <span className="text-[10px] font-medium text-[#16354B] bg-gray-100 px-2 py-1 rounded border border-gray-200">{tag2}</span>
-                  <span className="text-[10px] text-gray-400 ml-auto">{refs}</span>
+                  <span className="text-[11px] font-medium text-[#16354B] bg-gray-100 px-2.5 py-1 rounded-md border border-gray-200">{tag1}</span>
+                  <span className="text-[11px] font-medium text-[#16354B] bg-gray-100 px-2.5 py-1 rounded-md border border-gray-200">{tag2}</span>
+                  <span className="text-[11px] text-gray-400 ml-auto">{refs}</span>
                 </div>
               </div>
             ))}
@@ -142,7 +168,7 @@ export default function Home() {
       </section>
 
       {/* ═══ COMPLIANCE BRIDGE ═══ */}
-      <section className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] px-4 sm:px-6 py-12 sm:py-16 text-center">
+      <section className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] px-4 sm:px-6 py-14 sm:py-20 text-center">
         <p className="text-xl sm:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
           {h.complianceLine
             .replace(/<en378>(.*?)<\/en378>/g, '')
@@ -163,21 +189,23 @@ export default function Home() {
       </section>
 
       {/* ═══ HOW DETECTION WORKS ═══ */}
-      <section id="detection" className="py-14 sm:py-20 px-4 sm:px-6 bg-gray-50 scroll-mt-16">
+      <section id="detection" className="py-16 sm:py-24 px-4 sm:px-6 bg-gray-50 scroll-mt-16">
         <div className="max-w-5xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#A7C031] mb-2">{h.detectionLabel}</p>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-[#16354B] mb-3">{h.detectionHeading}</h2>
-          <p className="text-gray-500 max-w-xl mb-10">{h.detectionSubtitle}</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="text-center mb-12">
+            <p className="text-xs font-bold uppercase tracking-widest text-[#A7C031] mb-3">{h.detectionLabel}</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#16354B] mb-4">{h.detectionHeading}</h2>
+            <p className="text-gray-500 max-w-2xl mx-auto">{h.detectionSubtitle}</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               { title: h.detectMonitorTitle, desc: h.detectMonitorDesc, note: h.detectMonitorNote, emoji: '\uD83D\uDC41\uFE0F', bg: 'bg-blue-50' },
               { title: h.detectAlarmTitle, desc: h.detectAlarmDesc, note: h.detectAlarmNote, emoji: '\uD83D\uDEA8', bg: 'bg-red-50' },
               { title: h.detectResponseTitle, desc: h.detectResponseDesc, note: h.detectResponseNote, emoji: '\uD83D\uDC9A', bg: 'bg-green-50' },
             ].map(({ title, desc, note, emoji, bg }) => (
-              <div key={title} className="bg-white rounded-xl border border-gray-200 p-6 text-center hover:shadow-lg transition-shadow">
-                <div className={`w-14 h-14 rounded-2xl ${bg} flex items-center justify-center text-2xl mx-auto mb-4`}>{emoji}</div>
-                <h3 className="text-lg font-bold text-[#16354B] mb-2">{title}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed mb-3">{desc}</p>
+              <div key={title} className="bg-white rounded-2xl border border-gray-200 p-8 text-center hover:shadow-xl transition-shadow">
+                <div className={`w-16 h-16 rounded-2xl ${bg} flex items-center justify-center text-3xl mx-auto mb-5`}>{emoji}</div>
+                <h3 className="text-lg font-bold text-[#16354B] mb-3">{title}</h3>
+                <p className="text-sm text-gray-600 leading-relaxed mb-4">{desc}</p>
                 <p className="text-xs text-[#A7C031] italic">{note}</p>
               </div>
             ))}
@@ -186,14 +214,16 @@ export default function Home() {
       </section>
 
       {/* ═══ REFRIGERANT SPOTLIGHT ═══ */}
-      <section id="refrigerants" className="py-14 sm:py-20 px-4 sm:px-6 bg-white scroll-mt-16">
+      <section id="refrigerants" className="py-16 sm:py-24 px-4 sm:px-6 bg-white scroll-mt-16">
         <div className="max-w-5xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#2196F3] mb-2">{h.refLabel}</p>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-[#16354B] mb-3">{h.refHeading}</h2>
-          <p className="text-gray-500 max-w-xl mb-10">{h.refSubtitle}</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="text-center mb-12">
+            <p className="text-xs font-bold uppercase tracking-widest text-[#2196F3] mb-3">{h.refLabel}</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#16354B] mb-4">{h.refHeading}</h2>
+            <p className="text-gray-500 max-w-2xl mx-auto">{h.refSubtitle}</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* R-744 */}
-            <div className="rounded-xl border border-gray-200 border-t-4 border-t-[#E63946] p-6 hover:shadow-lg transition-shadow">
+            <div className="rounded-2xl border border-gray-200 border-t-4 border-t-[#E63946] p-7 sm:p-8 hover:shadow-xl transition-shadow">
               <h3 className="text-2xl font-extrabold text-[#E63946] mb-1">R-744</h3>
               <p className="text-sm text-gray-500 mb-3">{h.ref744Name}</p>
               <span className="text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-red-50 text-[#E63946]">{h.ref744Tag}</span>
@@ -206,7 +236,7 @@ export default function Home() {
               <p className="mt-4 text-[10px] text-gray-400">{h.ref744Footer}</p>
             </div>
             {/* R-410A */}
-            <div className="rounded-xl border border-gray-200 border-t-4 border-t-[#2196F3] p-6 hover:shadow-lg transition-shadow">
+            <div className="rounded-2xl border border-gray-200 border-t-4 border-t-[#2196F3] p-7 sm:p-8 hover:shadow-xl transition-shadow">
               <h3 className="text-2xl font-extrabold text-[#2196F3] mb-1">R-410A</h3>
               <p className="text-sm text-gray-500 mb-3">{h.ref410Name}</p>
               <div className="flex gap-2">
@@ -222,7 +252,7 @@ export default function Home() {
               <p className="mt-4 text-[10px] text-gray-400">{h.ref410Footer}</p>
             </div>
             {/* R-717 */}
-            <div className="rounded-xl border border-gray-200 border-t-4 border-t-[#7C3AED] p-6 hover:shadow-lg transition-shadow">
+            <div className="rounded-2xl border border-gray-200 border-t-4 border-t-[#7C3AED] p-7 sm:p-8 hover:shadow-xl transition-shadow">
               <h3 className="text-2xl font-extrabold text-[#7C3AED] mb-1">R-717</h3>
               <p className="text-sm text-gray-500 mb-3">{h.ref717Name}</p>
               <div className="flex gap-2 flex-wrap">
