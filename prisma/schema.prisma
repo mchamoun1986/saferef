@@ -222,3 +222,15 @@ model Lead {
   updatedAt       DateTime @updatedAt
 }
 
+model FGasLog {
+  id            String   @id @default(cuid())
+  refrigerantId String
+  chargeKg      Float
+  co2eq         Float
+  band          String
+  mandatory     Boolean
+  isHfo         Boolean  @default(false)
+  isHermetic    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
+
