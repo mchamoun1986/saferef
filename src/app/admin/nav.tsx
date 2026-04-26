@@ -16,6 +16,7 @@ interface NavLink {
 const ALL_LINKS: NavLink[] = [
   { href: '/admin', label: 'Dashboard', roles: ['admin'] },
   { href: '/admin/leads', label: 'Leads', roles: ['admin', 'sales', 'management'] },
+  { href: '/admin/fgas', label: 'F-Gas', roles: ['admin', 'management'] },
   { href: '/admin/gas', label: 'Refrigerants', roles: ['admin', 'management'] },
   { href: '/admin/applications', label: 'Applications', roles: ['admin', 'management'] },
   { href: '/admin/space-types', label: 'Space Types', roles: ['admin', 'management'] },

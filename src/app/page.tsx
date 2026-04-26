@@ -39,7 +39,7 @@ export default function Home() {
           {h.description}
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl w-full">
           <Link href="/calculator"
             className="group bg-white/5 backdrop-blur border-2 border-white/10 hover:border-[#E63946] rounded-2xl p-5 sm:p-8 text-left transition-all hover:bg-white/10">
             <div className="w-14 h-14 rounded-xl bg-[#E63946] flex items-center justify-center mb-5">
@@ -68,6 +68,23 @@ export default function Home() {
             <p className="text-gray-400 text-sm leading-relaxed mb-4">{h.selectorDesc}</p>
             <span className="inline-flex items-center gap-1 text-[#A7C031] font-semibold text-sm group-hover:gap-2 transition-all">
               {h.startSelector}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </span>
+          </Link>
+
+          <Link href="/fgas-checker"
+            className="group bg-white/5 backdrop-blur border-2 border-white/10 hover:border-[#2196F3] rounded-2xl p-5 sm:p-8 text-left transition-all hover:bg-white/10">
+            <div className="w-14 h-14 rounded-xl bg-[#2196F3] flex items-center justify-center mb-5">
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">{h.fgasTitle}</h2>
+            <p className="text-gray-400 text-sm leading-relaxed mb-4">{h.fgasDesc}</p>
+            <span className="inline-flex items-center gap-1 text-[#2196F3] font-semibold text-sm group-hover:gap-2 transition-all">
+              {h.startFgas}
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
