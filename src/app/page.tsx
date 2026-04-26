@@ -39,12 +39,22 @@ export default function Home() {
       {/* ═══ HERO ═══ */}
       <section className="relative overflow-hidden bg-gradient-to-b from-[#0f2535] via-[#16354B] to-[#1e4a6a] px-4 sm:px-6 py-16 sm:py-24 text-center">
         <div className="absolute inset-0 pointer-events-none select-none overflow-hidden" aria-hidden="true">
-          <span className="absolute top-[8%] left-[5%] text-xs font-mono bg-white/5 text-white/20 px-2 py-1 rounded-md border border-white/5 animate-[float_8s_ease-in-out_infinite]">R-1234ze</span>
-          <span className="absolute top-[12%] right-[8%] text-xs font-mono bg-[#E63946]/15 text-[#E63946]/40 px-2 py-1 rounded-md border border-[#E63946]/10 animate-[float_6s_ease-in-out_infinite_1s]">R-32</span>
-          <span className="absolute top-[45%] left-[3%] text-xs font-mono bg-[#A7C031]/10 text-[#A7C031]/30 px-2 py-1 rounded-md border border-[#A7C031]/10 animate-[float_7s_ease-in-out_infinite_2s]">R-454B</span>
-          <span className="absolute bottom-[30%] right-[4%] text-xs font-mono bg-[#E63946]/10 text-[#E63946]/30 px-2 py-1 rounded-md border border-[#E63946]/10 animate-[float_9s_ease-in-out_infinite_0.5s]">R-290</span>
-          <span className="absolute bottom-[15%] left-[12%] text-xs font-mono bg-white/5 text-white/15 px-2 py-1 rounded-md border border-white/5 animate-[float_10s_ease-in-out_infinite_3s]">R-744</span>
-          <span className="absolute top-[30%] right-[15%] text-xs font-mono bg-white/5 text-white/15 px-2 py-1 rounded-md border border-white/5 animate-[float_8s_ease-in-out_infinite_4s]">R-410A</span>
+          {/* Left side */}
+          <span className="absolute top-[6%] left-[3%] text-xs font-mono bg-white/5 text-white/20 px-2 py-1 rounded-md border border-white/5 animate-[float_8s_ease-in-out_infinite]">R-1234ze</span>
+          <span className="absolute top-[22%] left-[6%] text-xs font-mono bg-white/5 text-white/15 px-2 py-1 rounded-md border border-white/5 animate-[float_11s_ease-in-out_infinite_1.5s]">CO2</span>
+          <span className="absolute top-[40%] left-[2%] text-xs font-mono bg-[#A7C031]/10 text-[#A7C031]/25 px-2 py-1 rounded-md border border-[#A7C031]/10 animate-[float_7s_ease-in-out_infinite_2s]">R-454C</span>
+          <span className="absolute top-[55%] left-[5%] text-xs font-mono bg-[#E63946]/10 text-[#E63946]/25 px-2 py-1 rounded-md border border-[#E63946]/10 animate-[float_9s_ease-in-out_infinite_0.5s]">A3</span>
+          <span className="absolute top-[70%] left-[3%] text-xs font-mono bg-white/5 text-white/15 px-2 py-1 rounded-md border border-white/5 animate-[float_10s_ease-in-out_infinite_3s]">R-744</span>
+          <span className="absolute top-[85%] left-[7%] text-xs font-mono bg-[#A7C031]/10 text-[#A7C031]/20 px-2 py-1 rounded-md border border-[#A7C031]/8 animate-[float_8s_ease-in-out_infinite_4.5s]">propane</span>
+          {/* Right side */}
+          <span className="absolute top-[8%] right-[4%] text-xs font-mono bg-[#E63946]/15 text-[#E63946]/35 px-2 py-1 rounded-md border border-[#E63946]/10 animate-[float_6s_ease-in-out_infinite_1s]">R-32</span>
+          <span className="absolute top-[24%] right-[6%] text-xs font-mono bg-white/5 text-white/15 px-2 py-1 rounded-md border border-white/5 animate-[float_8s_ease-in-out_infinite_2.5s]">R-410A</span>
+          <span className="absolute top-[38%] right-[3%] text-xs font-mono bg-[#2196F3]/10 text-[#2196F3]/25 px-2 py-1 rounded-md border border-[#2196F3]/10 animate-[float_9s_ease-in-out_infinite_3.5s]">A2L</span>
+          <span className="absolute top-[52%] right-[7%] text-xs font-mono bg-white/5 text-white/15 px-2 py-1 rounded-md border border-white/5 animate-[float_7s_ease-in-out_infinite_0.8s]">R-134a</span>
+          <span className="absolute top-[66%] right-[2%] text-xs font-mono bg-[#7C3AED]/10 text-[#7C3AED]/25 px-2 py-1 rounded-md border border-[#7C3AED]/10 animate-[float_10s_ease-in-out_infinite_4s]">ammonia</span>
+          <span className="absolute top-[80%] right-[5%] text-xs font-mono bg-[#E63946]/10 text-[#E63946]/20 px-2 py-1 rounded-md border border-[#E63946]/8 animate-[float_8s_ease-in-out_infinite_1.8s]">B2L</span>
+          <span className="absolute top-[48%] left-[8%] text-xs font-mono bg-white/4 text-white/12 px-2 py-1 rounded-md border border-white/5 animate-[float_12s_ease-in-out_infinite_5s]">R-1234yf</span>
+          <span className="absolute top-[15%] right-[12%] text-xs font-mono bg-white/4 text-white/12 px-2 py-1 rounded-md border border-white/5 animate-[float_11s_ease-in-out_infinite_2s]">R-290</span>
         </div>
         <div className="relative z-10 max-w-3xl mx-auto">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-6 tracking-tight leading-tight">
