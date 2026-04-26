@@ -11,6 +11,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
+      {/* Float animation for R-code labels */}
+      <style>{`@keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }`}</style>
       {/* Navbar */}
       <nav className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] text-white px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between border-b-2 border-[#E63946]">
         <div className="flex items-center gap-1">
@@ -27,19 +29,65 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-12 sm:py-20 text-center bg-gradient-to-b from-[#16354B] to-[#1e4a6a]">
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4 tracking-tight">
-          <span className="text-[#E63946]">Safe</span>Ref
-        </h1>
-        <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mb-2">
-          {h.subtitle}
-        </p>
-        <p className="text-sm sm:text-base text-gray-400 max-w-xl mb-12">
-          {h.description}
-        </p>
+      {/* Hero — Marketing */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#0f2535] via-[#16354B] to-[#1e4a6a] px-4 sm:px-6 py-16 sm:py-24 text-center">
+        {/* Floating R-codes */}
+        <div className="absolute inset-0 pointer-events-none select-none overflow-hidden" aria-hidden="true">
+          <span className="absolute top-[8%] left-[5%] text-xs font-mono bg-white/5 text-white/20 px-2 py-1 rounded-md border border-white/5 animate-[float_8s_ease-in-out_infinite]">R-1234ze</span>
+          <span className="absolute top-[12%] right-[8%] text-xs font-mono bg-[#E63946]/15 text-[#E63946]/40 px-2 py-1 rounded-md border border-[#E63946]/10 animate-[float_6s_ease-in-out_infinite_1s]">R-32</span>
+          <span className="absolute top-[45%] left-[3%] text-xs font-mono bg-[#A7C031]/10 text-[#A7C031]/30 px-2 py-1 rounded-md border border-[#A7C031]/10 animate-[float_7s_ease-in-out_infinite_2s]">R-454B</span>
+          <span className="absolute bottom-[30%] right-[4%] text-xs font-mono bg-[#E63946]/10 text-[#E63946]/30 px-2 py-1 rounded-md border border-[#E63946]/10 animate-[float_9s_ease-in-out_infinite_0.5s]">R-290</span>
+          <span className="absolute bottom-[15%] left-[12%] text-xs font-mono bg-white/5 text-white/15 px-2 py-1 rounded-md border border-white/5 animate-[float_10s_ease-in-out_infinite_3s]">R-744</span>
+          <span className="absolute top-[30%] right-[15%] text-xs font-mono bg-white/5 text-white/15 px-2 py-1 rounded-md border border-white/5 animate-[float_8s_ease-in-out_infinite_4s]">R-410A</span>
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl w-full">
+        <div className="relative z-10 max-w-3xl mx-auto">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-6 tracking-tight leading-tight">
+            Stay safe with{' '}
+            <br className="hidden sm:block" />
+            every <span className="text-[#3DE8B0]">refrigerant.</span>
+          </h1>
+          <p className="text-base sm:text-lg text-gray-300/90 max-w-2xl mx-auto mb-8 leading-relaxed">
+            Refrigerants can be flammable, asphyxiating, toxic, and harmful to the climate.
+            SafeRef helps you understand the risks, meet the regulations, and protect what matters.
+          </p>
+
+          {/* 4 Risk Icons */}
+          <div className="flex items-center justify-center gap-6 sm:gap-10 mb-8">
+            {[
+              { emoji: '\uD83D\uDD25', label: 'FLAMMABLE' },
+              { emoji: '\uD83E\uDEC1', label: 'ASPHYXIATING' },
+              { emoji: '\u2620\uFE0F', label: 'TOXIC' },
+              { emoji: '\uD83C\uDF0D', label: 'CLIMATE' },
+            ].map(({ emoji, label }) => (
+              <div key={label} className="flex flex-col items-center gap-1.5">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center text-2xl sm:text-3xl">
+                  {emoji}
+                </div>
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+            <a href="#tools" className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#3DE8B0] text-[#0f2535] font-bold text-sm hover:bg-[#2fd9a0] transition-colors shadow-lg shadow-[#3DE8B0]/25">
+              Be Safe — Start Free
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+            </a>
+            <a href="#features" className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-white/20 text-white/80 font-semibold text-sm hover:bg-white/5 transition-colors">
+              Learn more <span className="text-xs">&#8595;</span>
+            </a>
+          </div>
+          <p className="text-xs text-gray-500">Free &middot; No signup &middot; EN 378 &amp; F-Gas compliant</p>
+        </div>
+      </section>
+
+      {/* Tools */}
+      <section id="tools" className="px-4 sm:px-6 py-12 sm:py-16 bg-gradient-to-b from-[#1e4a6a] to-[#16354B] scroll-mt-16">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-xl sm:text-2xl font-bold text-white text-center mb-8">What do you need?</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
           <Link href="/calculator"
             className="group bg-white/5 backdrop-blur border-2 border-white/10 hover:border-[#E63946] rounded-2xl p-5 sm:p-8 text-left transition-all hover:bg-white/10">
             <div className="w-14 h-14 rounded-xl bg-[#E63946] flex items-center justify-center mb-5">
@@ -91,10 +139,11 @@ export default function Home() {
             </span>
           </Link>
         </div>
+        </div>
       </section>
 
       {/* Features */}
-      <section className="py-10 sm:py-16 px-4 sm:px-6 bg-gray-50">
+      <section id="features" className="py-10 sm:py-16 px-4 sm:px-6 bg-gray-50 scroll-mt-16">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-[#16354B] text-center mb-12">{h.featuresTitle}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
