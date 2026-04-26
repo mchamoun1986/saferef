@@ -319,7 +319,7 @@ function StepResults({ result, selectedRef, refrigerants, selectedId }: {
   } else if (result.thresholdBand === 'medium') {
     bannerMessage = 'F-Gas leak checks required \u2014 increased frequency.';
   } else {
-    bannerMessage = 'Automatic leak detection system is MANDATORY (EU 2024/573 Article 6).';
+    bannerMessage = 'Fixed leak detection system is MANDATORY (EU 2024/573 Article 6).';
   }
 
   // Threshold table data
@@ -398,7 +398,7 @@ function StepResults({ result, selectedRef, refrigerants, selectedId }: {
           {result.autoDetectionMandatory && (
             <div className="mt-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />
-              <span className="text-sm text-red-700 font-semibold">Automatic leak detection is REQUIRED for this installation.</span>
+              <span className="text-sm text-red-700 font-semibold">Fixed leak detection is REQUIRED for this installation.</span>
             </div>
           )}
         </div>
@@ -498,9 +498,9 @@ function StepResults({ result, selectedRef, refrigerants, selectedId }: {
                 <tr className="bg-[#f8fafc]">
                   <th className="px-4 py-2 text-left font-semibold text-[#6b8da5]">Refrigerant</th>
                   <th className="px-4 py-2 text-center font-semibold text-[#6b8da5]">GWP</th>
-                  <th className="px-4 py-2 text-center font-semibold text-[#6b8da5]">5\u201349 t<br /><span className="text-[9px]">12m / 24m</span></th>
-                  <th className="px-4 py-2 text-center font-semibold text-[#6b8da5]">50\u2013499 t<br /><span className="text-[9px]">6m / 12m</span></th>
-                  <th className="px-4 py-2 text-center font-semibold text-[#6b8da5]">\u2265 500 t<br /><span className="text-[9px]">3m / 6m</span></th>
+                  <th className="px-4 py-2 text-center font-semibold text-[#6b8da5]">{"5\u201349 t CO\u2082eq"}<br /><span className="text-[9px]">12m / 24m</span></th>
+                  <th className="px-4 py-2 text-center font-semibold text-[#6b8da5]">{"50\u2013499 t CO\u2082eq"}<br /><span className="text-[9px]">6m / 12m</span></th>
+                  <th className="px-4 py-2 text-center font-semibold text-[#6b8da5]">{"\u2265 500 t CO\u2082eq"}<br /><span className="text-[9px]">3m / 6m</span></th>
                 </tr>
               </thead>
               <tbody>
