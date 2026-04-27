@@ -194,7 +194,7 @@ export default function Home() {
       {/* ═══ COMPLIANCE BRIDGE ═══ */}
       <section className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] px-4 sm:px-6 py-14 sm:py-20 text-center">
         <p className="text-xl sm:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-          Being compliant with <span className="font-extrabold text-white">EN 378</span> and <span className="font-extrabold text-white">F-Gas</span> isn&rsquo;t paperwork &mdash; it&rsquo;s what keeps your refrigerants <span className="text-[#3DE8B0] font-bold">safe.</span>
+          {h.compBridge1}<span className="font-extrabold text-white">{h.compBridgeEn378}</span>{h.compBridgeAnd}<span className="font-extrabold text-white">{h.compBridgeFgas}</span>{h.compBridgeMid}<span className="text-[#3DE8B0] font-bold">{h.compBridgeSafe}</span>
         </p>
       </section>
 
@@ -286,16 +286,16 @@ export default function Home() {
       <section className="py-16 sm:py-24 px-4 sm:px-6 bg-gray-50 scroll-mt-16">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#16354B] mb-4">Frequently Asked Questions</h2>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#16354B] mb-4">{h.faqTitle}</h2>
           </div>
           <div className="space-y-4">
             {[
-              { q: 'Is refrigerant gas detection mandatory?', a: 'It depends on the refrigerant type, charge amount, room volume, and the risk evaluation performed per EN 378. In machinery rooms, fixed gas detection is generally required. In occupied spaces, it depends on whether the concentration can exceed safety limits (ATEL/ODL, LFL). For flammable refrigerants (A2L, A3), detection is almost always recommended and most of the time mandatory, based on the risk evaluation and calculations.' },
-              { q: 'What is EN 378 and why does it matter?', a: 'EN 378 is the European standard for refrigerating systems safety. Part 3 (EN 378-3) specifically covers the requirements for gas detection, alarm thresholds, and safety response systems. Compliance is legally required in most European countries.' },
-              { q: 'How many gas detectors do I need?', a: 'It depends on the room size, refrigerant type, charge amount, and leak source locations. The detector manufacturer provides guidance \u2014 our baseline recommendation is 1 detector per 50 m\u00B2, but a cluster-based calculation around leak sources can be more accurate. Use the SafeRef Calculator for a precise zone-by-zone analysis and risk evaluation.' },
-              { q: 'What are the F-Gas leak check requirements?', a: 'EU Regulation 2024/573 requires periodic leak checks based on CO\u2082 equivalent charge: every 12 months (5-50t CO\u2082eq), 6 months (50-500t), or 3 months (\u2265500t). Installing a fixed detection system halves the frequency. Above 500t CO\u2082eq, fixed detection is mandatory.' },
-              { q: 'Do natural refrigerants need gas detection?', a: 'Natural refrigerants (R-744 CO\u2082, R-717 ammonia, R-290 propane) are exempt from F-Gas leak checks but still require detection under EN 378 for safety. CO\u2082 is an asphyxiant, ammonia is toxic, and propane is flammable \u2014 each needs appropriate detection.' },
-              { q: 'What is an A2L refrigerant and why does it matter?', a: 'A2L is a safety classification meaning "lower flammability." Refrigerants like R-32, R-454B, and R-1234yf are A2L. They require gas detection with alarm at LFL/4 (25% of lower flammability limit) per EN 378-3. They are replacing high-GWP refrigerants like R-410A under F-Gas phase-down.' },
+              { q: h.faq1q, a: h.faq1a },
+              { q: h.faq2q, a: h.faq2a },
+              { q: h.faq3q, a: h.faq3a },
+              { q: h.faq4q, a: h.faq4a },
+              { q: h.faq5q, a: h.faq5a },
+              { q: h.faq6q, a: h.faq6a },
             ].map(({ q, a }) => (
               <details key={q} className="group bg-white rounded-2xl border border-gray-200 hover:shadow-md transition-shadow">
                 <summary className="flex items-center justify-between cursor-pointer px-6 py-5 text-[#16354B] font-semibold text-sm sm:text-base">
@@ -312,10 +312,10 @@ export default function Home() {
       {/* ═══ BOTTOM CTA ═══ */}
       <section className="bg-gradient-to-r from-[#0f2535] to-[#16354B] px-4 sm:px-6 py-14 sm:py-20 text-center">
         <div className="max-w-2xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-4">Ready to size your detection system?</h2>
-          <p className="text-gray-400 mb-8">Free, instant, no signup. Pick your tool and get started.</p>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-4">{h.ctaTitle}</h2>
+          <p className="text-gray-400 mb-8">{h.ctaSubtitle}</p>
           <a href="#tools" className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-[#3DE8B0] text-[#0f2535] font-bold text-base hover:bg-[#2fd9a0] transition-colors shadow-lg shadow-[#3DE8B0]/25">
-            Be Safe — Start Free
+            {h.ctaButton}
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
           </a>
         </div>
