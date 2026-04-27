@@ -31,7 +31,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <style>{`@keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }`}</style>
+      <style>{`@keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } } @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }`}</style>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       {/* Navbar */}
@@ -75,7 +75,23 @@ export default function Home() {
             {h.heroHeadline1}{' '}<br className="hidden sm:block" />
             {h.heroHeadline2} <span className="text-[#3DE8B0]">{h.heroHeadlineAccent}</span>
           </h1>
-          <p className="text-base sm:text-lg text-gray-300/90 max-w-2xl mx-auto mb-8 leading-relaxed">{h.heroSubtitle}</p>
+          <p className="text-base sm:text-lg text-gray-300/90 max-w-2xl mx-auto mb-6 leading-relaxed">{h.heroSubtitle}</p>
+
+          {/* Refrigerant & regulation ticker */}
+          <div className="relative overflow-hidden mb-8 mx-auto max-w-2xl" aria-hidden="true">
+            <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[#16354B] to-transparent z-10" />
+            <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#16354B] to-transparent z-10" />
+            <div className="flex animate-[ticker_30s_linear_infinite] whitespace-nowrap">
+              {[1, 2].map(n => (
+                <div key={n} className="flex items-center gap-3 sm:gap-5 px-2">
+                  {['R-404A', 'R-32', 'CO\u2082', 'R-290', 'R-717', 'R-454B', 'R-1234yf', 'R-410A', 'R-134a', 'R-744', 'EN 378', 'ASHRAE 15', 'F-Gas', 'ISO 5149'].map(item => (
+                    <span key={`${n}-${item}`} className="text-[11px] font-mono font-medium text-white/25 px-2.5 py-1 rounded-full border border-white/8 bg-white/[0.03]">{item}</span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="flex items-center justify-center gap-6 sm:gap-10 mb-8">
             {[
               { emoji: '\uD83D\uDD25', label: h.riskFlammable },
