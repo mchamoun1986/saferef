@@ -6,6 +6,9 @@ import { Check, ChevronDown, Search, ArrowLeft, ArrowRight, Leaf, AlertTriangle,
 import { calculateLeakCheck } from '@/lib/fgas/leak-check';
 import { co2eqToEquivalents } from '@/lib/fgas/environmental';
 import type { LeakCheckResult } from '@/lib/fgas/types';
+import { useLang } from '@/lib/i18n-context';
+import { FGAS, t } from '@/lib/i18n-common';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 interface Refrigerant {
   id: string;
@@ -51,8 +54,8 @@ function safetyBadge(safety: string) {
 
 // ── Step Progress Bar ────────────────────────────────────────────────
 
-function FGasStepProgress({ current }: { current: number }) {
-  const steps = ['Refrigerant & Charge', 'Results'];
+function FGasStepProgress({ current, labels }: { current: number; labels: [string, string] }) {
+  const steps = labels;
   return (
     <div className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] py-3 sm:py-5">
       <div className="flex items-center justify-between max-w-md mx-auto px-4">
@@ -87,6 +90,7 @@ function FGasStepProgress({ current }: { current: number }) {
 
 // ── Step 1: Refrigerant & Charge ─────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function StepInput({
   refrigerants,
   selectedId,
@@ -95,6 +99,7 @@ function StepInput({
   onChargeChange,
   isHermetic,
   onHermeticChange,
+  f,
 }: {
   refrigerants: Refrigerant[];
   selectedId: string;
@@ -103,6 +108,7 @@ function StepInput({
   onChargeChange: (v: number | '') => void;
   isHermetic: boolean;
   onHermeticChange: (v: boolean) => void;
+  f: Record<string, string>;
 }) {
   const [refOpen, setRefOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -129,7 +135,7 @@ function StepInput({
           <div className="w-8 h-8 rounded-lg bg-[#2196F3] flex items-center justify-center">
             <Search className="w-4 h-4 text-white" />
           </div>
-          <h3 className="text-base font-bold text-[#16354B]">Select Refrigerant</h3>
+          <h3 className="text-base font-bold text-[#16354B]">{f.selectRefrigerant}</h3>
         </div>
 
         {/* Selected chip */}
@@ -137,7 +143,7 @@ function StepInput({
           <div className="flex items-center gap-2 mb-3">
             <div className="bg-[#16354B] text-white px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-medium">
               <span className="font-bold">{selectedRef.id}</span>
-              <span className="text-gray-300">—</span>
+              <span className="text-gray-300">&mdash;</span>
               <span>{selectedRef.name}</span>
               {safetyBadge(selectedRef.safetyClass)}
               <span className="text-gray-400 text-xs">GWP {selectedRef.gwp}</span>
@@ -165,12 +171,12 @@ function StepInput({
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   onClick={e => e.stopPropagation()}
-                  placeholder="Type to search..."
+                  placeholder={f.searchPlaceholder}
                   className="bg-transparent border-none outline-none text-sm font-medium text-[#16354B] placeholder:text-[#6b8da5] w-full"
                 />
               ) : (
                 <span className={selectedRef ? 'text-[#16354B]' : 'text-[#6b8da5]'}>
-                  {selectedRef ? `${selectedRef.id} — ${selectedRef.name}` : 'Select refrigerant...'}
+                  {selectedRef ? `${selectedRef.id} \u2014 ${selectedRef.name}` : f.selectPlaceholder}
                 </span>
               )}
             </div>
@@ -183,7 +189,7 @@ function StepInput({
               {recList.length > 0 && (
                 <>
                   <div className="px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 border-b border-amber-200 sticky top-0">
-                    Common Refrigerants
+                    {f.commonGroup}
                   </div>
                   {recList.map(r => {
                     const gwp = parseFloat(r.gwp ?? '0');
@@ -204,7 +210,7 @@ function StepInput({
               {otherList.length > 0 && (
                 <>
                   <div className="px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#6b8da5] bg-[#f1f5f9] border-b border-[#e2e8f0] sticky top-0">
-                    All Refrigerants
+                    {f.allGroup}
                   </div>
                   {otherList.map(r => {
                     const gwp = parseFloat(r.gwp ?? '0');
@@ -223,7 +229,7 @@ function StepInput({
                 </>
               )}
               {filtered.length === 0 && (
-                <div className="px-4 py-6 text-center text-sm text-[#6b8da5]">No refrigerants found.</div>
+                <div className="px-4 py-6 text-center text-sm text-[#6b8da5]">{f.noResults}</div>
               )}
             </div>
           )}
@@ -238,17 +244,17 @@ function StepInput({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
             </svg>
           </div>
-          <h3 className="text-base font-bold text-[#16354B]">System Details</h3>
+          <h3 className="text-base font-bold text-[#16354B]">{f.systemDetails}</h3>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>Refrigerant Charge (kg)</label>
+            <label className={labelClass}>{f.chargeLabel}</label>
             <input
               type="number"
               min={0.1}
               step={0.1}
-              placeholder="Enter total charge in kg"
+              placeholder={f.chargePlaceholder}
               value={chargeKg}
               onChange={e => onChargeChange(e.target.value ? parseFloat(e.target.value) : '')}
               className={inputClass}
@@ -263,8 +269,8 @@ function StepInput({
                 className="w-4 h-4 rounded border-[#e2e8f0] text-[#2196F3] focus:ring-[#2196F3]"
               />
               <div>
-                <span className="text-sm font-medium text-[#16354B]">Hermetically sealed</span>
-                <p className="text-[10px] text-[#6b8da5]">Factory-sealed, no service valves</p>
+                <span className="text-sm font-medium text-[#16354B]">{f.hermetic}</span>
+                <p className="text-[10px] text-[#6b8da5]">{f.hermeticDesc}</p>
               </div>
             </label>
           </div>
@@ -273,14 +279,14 @@ function StepInput({
         {/* Info summary */}
         {selectedRef && (
           <div className="mt-4 bg-[#f8fafc] rounded-lg border border-[#e2e8f0] p-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
-            <span><span className="text-[#6b8da5]">Refrigerant:</span> <span className="font-bold text-[#16354B]">{selectedRef.id}</span></span>
-            <span><span className="text-[#6b8da5]">GWP:</span> <span className="font-bold text-[#16354B]">{selectedRef.gwp}</span></span>
-            <span><span className="text-[#6b8da5]">Safety:</span> {safetyBadge(selectedRef.safetyClass)}</span>
+            <span><span className="text-[#6b8da5]">{f.infoRef}</span> <span className="font-bold text-[#16354B]">{selectedRef.id}</span></span>
+            <span><span className="text-[#6b8da5]">{f.infoGwp}</span> <span className="font-bold text-[#16354B]">{selectedRef.gwp}</span></span>
+            <span><span className="text-[#6b8da5]">{f.infoSafety}</span> {safetyBadge(selectedRef.safetyClass)}</span>
             {chargeKg && parseFloat(selectedRef.gwp ?? '0') > 0 && (
-              <span><span className="text-[#6b8da5]">CO2eq:</span> <span className="font-bold text-[#16354B]">{((chargeKg as number) * parseFloat(selectedRef.gwp ?? '0') / 1000).toFixed(2)} t</span></span>
+              <span><span className="text-[#6b8da5]">{f.infoCo2eq}</span> <span className="font-bold text-[#16354B]">{((chargeKg as number) * parseFloat(selectedRef.gwp ?? '0') / 1000).toFixed(2)} t</span></span>
             )}
             {isHfoRefrigerant(selectedRef) && (
-              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium">HFO — kg-based thresholds</span>
+              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium">{f.hfoNote}</span>
             )}
           </div>
         )}
@@ -291,11 +297,12 @@ function StepInput({
 
 // ── Step 2: Results ──────────────────────────────────────────────────
 
-function StepResults({ result, selectedRef, refrigerants, selectedId }: {
+function StepResults({ result, selectedRef, refrigerants, selectedId, f }: {
   result: LeakCheckResult;
   selectedRef: Refrigerant;
   refrigerants: Refrigerant[];
   selectedId: string;
+  f: Record<string, string>;
 }) {
   const [refTableOpen, setRefTableOpen] = useState(false);
   const styles = BAND_STYLES[result.thresholdBand];
@@ -308,33 +315,33 @@ function StepResults({ result, selectedRef, refrigerants, selectedId }: {
   const BannerIcon = result.thresholdBand === 'high' ? AlertTriangle : result.naturalExempt || result.hermeticExempt || result.thresholdBand === 'none' ? CheckCircle : Info;
 
   if (result.naturalExempt) {
-    bannerMessage = 'No F-Gas leak check obligation for natural refrigerants (GWP \u2264 3).';
-    bannerSub = 'Note: EN 378 may still require gas detection for safety reasons.';
+    bannerMessage = f.bannerNatural;
+    bannerSub = f.bannerNaturalSub;
   } else if (result.hermeticExempt) {
-    bannerMessage = 'Hermetically sealed system \u2014 exempt from F-Gas leak checks.';
+    bannerMessage = f.bannerHermetic;
   } else if (result.thresholdBand === 'none') {
-    bannerMessage = 'No F-Gas leak check obligation for this installation.';
+    bannerMessage = f.bannerNone;
   } else if (result.thresholdBand === 'standard') {
-    bannerMessage = 'F-Gas leak checks required \u2014 standard frequency.';
+    bannerMessage = f.bannerStandard;
   } else if (result.thresholdBand === 'medium') {
-    bannerMessage = 'F-Gas leak checks required \u2014 increased frequency.';
+    bannerMessage = f.bannerMedium;
   } else {
-    bannerMessage = 'Fixed leak detection system is MANDATORY (EU 2024/573 Article 6).';
+    bannerMessage = f.bannerHigh;
   }
 
   // Threshold table data
   const bands = result.isHfo
     ? [
-        { label: 'No obligation', range: '< 1 kg', without: '\u2014', withD: '\u2014', key: 'none' },
-        { label: 'Standard', range: '1 \u2013 10 kg', without: '12 months', withD: '24 months', key: 'standard' },
-        { label: 'Medium', range: '10 \u2013 100 kg', without: '6 months', withD: '12 months', key: 'medium' },
-        { label: 'High', range: '\u2265 100 kg', without: '3 months', withD: '6 months', key: 'high' },
+        { label: f.bandNone, range: '< 1 kg', without: '\u2014', withD: '\u2014', key: 'none' },
+        { label: f.bandStandard, range: '1 \u2013 10 kg', without: '12 months', withD: '24 months', key: 'standard' },
+        { label: f.bandMedium, range: '10 \u2013 100 kg', without: '6 months', withD: '12 months', key: 'medium' },
+        { label: f.bandHigh, range: '\u2265 100 kg', without: '3 months', withD: '6 months', key: 'high' },
       ]
     : [
-        { label: 'No obligation', range: `< ${(5000 / gwp).toFixed(1)} kg`, without: '\u2014', withD: '\u2014', key: 'none' },
-        { label: 'Standard', range: `${(5000 / gwp).toFixed(1)} \u2013 ${(50000 / gwp).toFixed(1)} kg`, without: '12 months', withD: '24 months', key: 'standard' },
-        { label: 'Medium', range: `${(50000 / gwp).toFixed(1)} \u2013 ${(500000 / gwp).toFixed(1)} kg`, without: '6 months', withD: '12 months', key: 'medium' },
-        { label: 'High', range: `\u2265 ${(500000 / gwp).toFixed(1)} kg`, without: '3 months', withD: '6 months', key: 'high' },
+        { label: f.bandNone, range: `< ${(5000 / gwp).toFixed(1)} kg`, without: '\u2014', withD: '\u2014', key: 'none' },
+        { label: f.bandStandard, range: `${(5000 / gwp).toFixed(1)} \u2013 ${(50000 / gwp).toFixed(1)} kg`, without: '12 months', withD: '24 months', key: 'standard' },
+        { label: f.bandMedium, range: `${(50000 / gwp).toFixed(1)} \u2013 ${(500000 / gwp).toFixed(1)} kg`, without: '6 months', withD: '12 months', key: 'medium' },
+        { label: f.bandHigh, range: `\u2265 ${(500000 / gwp).toFixed(1)} kg`, without: '3 months', withD: '6 months', key: 'high' },
       ];
 
   const fgasRefs = refrigerants.filter(r => parseFloat(r.gwp ?? '0') > 3);
@@ -351,7 +358,7 @@ function StepResults({ result, selectedRef, refrigerants, selectedId }: {
               <p className={`text-sm mt-1 ${styles.text} opacity-80`}>
                 {bannerSub}{' '}
                 {result.naturalExempt && (
-                  <Link href="/calculator" className="underline font-semibold hover:opacity-100">Use SafeRef Calculator &rarr;</Link>
+                  <Link href="/calculator" className="underline font-semibold hover:opacity-100">{f.useCalculator} &rarr;</Link>
                 )}
               </p>
             )}
@@ -368,7 +375,7 @@ function StepResults({ result, selectedRef, refrigerants, selectedId }: {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <h3 className="text-base font-bold text-[#16354B]">Leak Check Obligations</h3>
+            <h3 className="text-base font-bold text-[#16354B]">{f.obligations}</h3>
           </div>
 
           <div className="overflow-hidden rounded-lg border border-[#e2e8f0]">
@@ -376,18 +383,18 @@ function StepResults({ result, selectedRef, refrigerants, selectedId }: {
               <thead>
                 <tr className="bg-[#f8fafc]">
                   <th className="px-4 py-3 text-left text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider"></th>
-                  <th className="px-4 py-3 text-center text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider">Without detector</th>
-                  <th className="px-4 py-3 text-center text-[10px] font-semibold text-[#2196F3] uppercase tracking-wider">With detector</th>
+                  <th className="px-4 py-3 text-center text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider">{f.withoutDetector}</th>
+                  <th className="px-4 py-3 text-center text-[10px] font-semibold text-[#2196F3] uppercase tracking-wider">{f.withDetector}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr className="border-t border-[#e2e8f0]">
-                  <td className="px-4 py-3 font-medium text-[#16354B]">Leak check frequency</td>
-                  <td className="px-4 py-3 text-center">Every <span className="font-bold text-[#16354B]">{result.without.months}</span> months</td>
-                  <td className="px-4 py-3 text-center bg-blue-50/50">Every <span className="font-bold text-[#2196F3]">{result.with.months}</span> months</td>
+                  <td className="px-4 py-3 font-medium text-[#16354B]">{f.frequency}</td>
+                  <td className="px-4 py-3 text-center">{f.every} <span className="font-bold text-[#16354B]">{result.without.months}</span> {f.everyMonths}</td>
+                  <td className="px-4 py-3 text-center bg-blue-50/50">{f.every} <span className="font-bold text-[#2196F3]">{result.with.months}</span> {f.everyMonths}</td>
                 </tr>
                 <tr className="border-t border-[#e2e8f0]">
-                  <td className="px-4 py-3 font-medium text-[#16354B]">Checks per year</td>
+                  <td className="px-4 py-3 font-medium text-[#16354B]">{f.checksPerYear}</td>
                   <td className="px-4 py-3 text-center font-bold text-[#16354B]">{result.without.checksPerYear}</td>
                   <td className="px-4 py-3 text-center font-bold text-[#2196F3] bg-blue-50/50">{result.with.checksPerYear}</td>
                 </tr>
@@ -398,7 +405,7 @@ function StepResults({ result, selectedRef, refrigerants, selectedId }: {
           {result.autoDetectionMandatory && (
             <div className="mt-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />
-              <span className="text-sm text-red-700 font-semibold">Fixed leak detection is REQUIRED for this installation.</span>
+              <span className="text-sm text-red-700 font-semibold">{f.mandatoryWarning}</span>
             </div>
           )}
         </div>
@@ -411,28 +418,28 @@ function StepResults({ result, selectedRef, refrigerants, selectedId }: {
             <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
               <Leaf className="w-4 h-4 text-white" />
             </div>
-            <h3 className="text-base font-bold text-[#16354B]">Environmental Impact</h3>
+            <h3 className="text-base font-bold text-[#16354B]">{f.envTitle}</h3>
           </div>
 
           <p className="text-sm text-[#6b8da5] mb-4">
-            If this refrigerant charge leaks entirely, it represents <span className="font-bold text-[#16354B]">{result.co2eqTonnes.toFixed(1)} tonnes</span> of CO2 equivalent:
+            {f.envDesc} <span className="font-bold text-[#16354B]">{result.co2eqTonnes.toFixed(1)} {f.envTonnes}</span>
           </p>
 
           <div className="grid grid-cols-3 gap-3">
             <div className="text-center p-4 bg-[#f8fafc] rounded-xl border border-[#e2e8f0]">
               <div className="text-2xl mb-2">&#x1F697;</div>
               <div className="text-xl font-bold text-[#16354B]">{eq.carsPerYear}</div>
-              <div className="text-[10px] text-[#6b8da5] uppercase tracking-wider mt-1">cars / year</div>
+              <div className="text-[10px] text-[#6b8da5] uppercase tracking-wider mt-1">{f.envCars}</div>
             </div>
             <div className="text-center p-4 bg-[#f8fafc] rounded-xl border border-[#e2e8f0]">
               <div className="text-2xl mb-2">&#x2708;&#xFE0F;</div>
               <div className="text-xl font-bold text-[#16354B]">{eq.flightsParisNY}</div>
-              <div className="text-[10px] text-[#6b8da5] uppercase tracking-wider mt-1">Paris-NY flights</div>
+              <div className="text-[10px] text-[#6b8da5] uppercase tracking-wider mt-1">{f.envFlights}</div>
             </div>
             <div className="text-center p-4 bg-[#f8fafc] rounded-xl border border-[#e2e8f0]">
               <div className="text-2xl mb-2">&#x1F333;</div>
               <div className="text-xl font-bold text-[#16354B]">{eq.treesToOffset.toLocaleString()}</div>
-              <div className="text-[10px] text-[#6b8da5] uppercase tracking-wider mt-1">trees to offset</div>
+              <div className="text-[10px] text-[#6b8da5] uppercase tracking-wider mt-1">{f.envTrees}</div>
             </div>
           </div>
         </div>
@@ -446,17 +453,17 @@ function StepResults({ result, selectedRef, refrigerants, selectedId }: {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
             </svg>
           </div>
-          <h3 className="text-base font-bold text-[#16354B]">F-Gas Thresholds — {selectedRef.id} (GWP {gwp})</h3>
+          <h3 className="text-base font-bold text-[#16354B]">{f.thresholdTitle} &mdash; {selectedRef.id} (GWP {gwp})</h3>
         </div>
 
         <div className="overflow-hidden rounded-lg border border-[#e2e8f0]">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#f8fafc]">
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider">Band</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider">{result.isHfo ? 'Charge' : `Charge (${selectedRef.id})`}</th>
-                <th className="px-4 py-2.5 text-center text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider">Without</th>
-                <th className="px-4 py-2.5 text-center text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider">With</th>
+                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider">{f.thresholdBand}</th>
+                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider">{result.isHfo ? f.thresholdCharge : `${f.thresholdCharge} (${selectedRef.id})`}</th>
+                <th className="px-4 py-2.5 text-center text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider">{f.thresholdWithout}</th>
+                <th className="px-4 py-2.5 text-center text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider">{f.thresholdWith}</th>
               </tr>
             </thead>
             <tbody>
@@ -487,7 +494,7 @@ function StepResults({ result, selectedRef, refrigerants, selectedId }: {
             <svg className="w-5 h-5 text-[#6b8da5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
             </svg>
-            <span className="font-bold text-[#16354B]">Full Reference Table ({fgasRefs.length} refrigerants)</span>
+            <span className="font-bold text-[#16354B]">{f.refTableTitle} ({fgasRefs.length} {f.refTableRefrigerants})</span>
           </div>
           <ChevronDown className={`w-5 h-5 text-[#6b8da5] transition-transform ${refTableOpen ? 'rotate-180' : ''}`} />
         </button>
@@ -496,7 +503,7 @@ function StepResults({ result, selectedRef, refrigerants, selectedId }: {
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-[#f8fafc]">
-                  <th className="px-4 py-2 text-left font-semibold text-[#6b8da5]">Refrigerant</th>
+                  <th className="px-4 py-2 text-left font-semibold text-[#6b8da5]">{f.infoRef.replace(':', '')}</th>
                   <th className="px-4 py-2 text-center font-semibold text-[#6b8da5]">GWP</th>
                   <th className="px-4 py-2 text-center font-semibold text-[#6b8da5]">{"5\u201349 t CO\u2082eq"}<br /><span className="text-[9px]">12m / 24m</span></th>
                   <th className="px-4 py-2 text-center font-semibold text-[#6b8da5]">{"50\u2013499 t CO\u2082eq"}<br /><span className="text-[9px]">6m / 12m</span></th>
@@ -525,8 +532,8 @@ function StepResults({ result, selectedRef, refrigerants, selectedId }: {
 
       {/* Legal */}
       <div className="text-xs text-[#6b8da5] text-center space-y-1 pt-2">
-        <p>Based on EU Regulation 2024/573 (F-Gas), Articles 5 & 6.</p>
-        <p>This tool provides guidance only. Consult local regulations for binding requirements.</p>
+        <p>{f.legalRef}</p>
+        <p>{f.legalDisclaimer}</p>
       </div>
     </div>
   );
@@ -535,6 +542,9 @@ function StepResults({ result, selectedRef, refrigerants, selectedId }: {
 // ── Main Page ────────────────────────────────────────────────────────
 
 export default function FGasCheckerPage() {
+  const { lang } = useLang();
+  const f = t(FGAS, lang);
+
   const [refrigerants, setRefrigerants] = useState<Refrigerant[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [chargeKg, setChargeKg] = useState<number | ''>('');
@@ -600,11 +610,14 @@ export default function FGasCheckerPage() {
           <span className="text-[#E63946] font-extrabold text-xl tracking-wide">Safe</span>
           <span className="text-white font-extrabold text-xl">Ref</span>
         </Link>
-        <span className="text-sm text-gray-300 font-medium">F-Gas Checker</span>
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher compact />
+          <span className="text-sm text-gray-300 font-medium">{f.pageTitle}</span>
+        </div>
       </nav>
 
       {/* Step Progress */}
-      <FGasStepProgress current={step} />
+      <FGasStepProgress current={step} labels={[f.step1, f.step2]} />
 
       {/* Content */}
       <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 sm:py-8">
@@ -617,6 +630,7 @@ export default function FGasCheckerPage() {
             onChargeChange={setChargeKg}
             isHermetic={isHermetic}
             onHermeticChange={setIsHermetic}
+            f={f}
           />
         )}
 
@@ -626,6 +640,7 @@ export default function FGasCheckerPage() {
             selectedRef={selectedRef}
             refrigerants={refrigerants}
             selectedId={selectedId}
+            f={f}
           />
         )}
       </div>
@@ -635,11 +650,11 @@ export default function FGasCheckerPage() {
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           {step === 1 ? (
             <Link href="/" className="flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white hover:border-[#16354B]/30 transition-all text-sm font-semibold">
-              <ArrowLeft className="w-4 h-4" /> Back
+              <ArrowLeft className="w-4 h-4" /> {f.backBtn}
             </Link>
           ) : (
             <button onClick={() => setStep(1)} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white hover:border-[#16354B]/30 transition-all text-sm font-semibold">
-              <ArrowLeft className="w-4 h-4" /> Back
+              <ArrowLeft className="w-4 h-4" /> {f.backBtn}
             </button>
           )}
 
@@ -653,7 +668,7 @@ export default function FGasCheckerPage() {
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >
-              Check Obligations <ArrowRight className="w-4 h-4" />
+              {f.checkBtn} <ArrowRight className="w-4 h-4" />
             </button>
           )}
         </div>
