@@ -460,3 +460,48 @@ export const CALC_SHEET = {
     accessCat: 'Cat.', locClass: 'Clase',
   },
 } as const;
+
+// ─── Selector Wizard ──────────────────────────────────────────────────────────
+
+export const SELECTOR = {
+  en: {
+    steps: ['Client', 'Application & Gas', 'Technical', 'Zones', 'Products'],
+    rgpdText: 'I consent to my data being processed by SafeRef for this request (GDPR EU 2016/679).',
+    clientInfo: 'Client Information',
+    firstName: 'First Name', lastName: 'Last Name', company: 'Company', email: 'Email', phone: 'Phone',
+    projectInfo: 'Project Information', projectName: 'Project Name', country: 'Country', selectCountry: 'Select country...',
+    back: 'Back', next: 'Next', continueProducts: 'Continue to Products',
+  },
+  fr: {
+    steps: ['Client', 'Application & Gaz', 'Technique', 'Zones', 'Produits'],
+    rgpdText: 'Je consens au traitement de mes donn\u00e9es par SafeRef pour cette demande (RGPD UE 2016/679).',
+    clientInfo: 'Informations client',
+    firstName: 'Pr\u00e9nom', lastName: 'Nom', company: 'Soci\u00e9t\u00e9', email: 'Email', phone: 'T\u00e9l\u00e9phone',
+    projectInfo: 'Informations projet', projectName: 'Nom du projet', country: 'Pays', selectCountry: 'S\u00e9lectionner un pays...',
+    back: 'Retour', next: 'Suivant', continueProducts: 'Continuer vers les produits',
+  },
+  sv: {
+    steps: ['Kund', 'Applikation & Gas', 'Teknik', 'Zoner', 'Produkter'],
+    rgpdText: 'Jag samtycker till att SafeRef behandlar mina uppgifter f\u00f6r denna f\u00f6rfr\u00e5gan (GDPR EU 2016/679).',
+    clientInfo: 'Kundinformation',
+    firstName: 'F\u00f6rnamn', lastName: 'Efternamn', company: 'F\u00f6retag', email: 'E-post', phone: 'Telefon',
+    projectInfo: 'Projektinformation', projectName: 'Projektnamn', country: 'Land', selectCountry: 'V\u00e4lj land...',
+    back: 'Tillbaka', next: 'N\u00e4sta', continueProducts: 'Forts\u00e4tt till produkter',
+  },
+  de: {
+    steps: ['Kunde', 'Anwendung & Gas', 'Technik', 'Zonen', 'Produkte'],
+    rgpdText: 'Ich stimme der Verarbeitung meiner Daten durch SafeRef f\u00fcr diese Anfrage zu (DSGVO EU 2016/679).',
+    clientInfo: 'Kundeninformation',
+    firstName: 'Vorname', lastName: 'Nachname', company: 'Unternehmen', email: 'E-Mail', phone: 'Telefon',
+    projectInfo: 'Projektinformation', projectName: 'Projektname', country: 'Land', selectCountry: 'Land ausw\u00e4hlen...',
+    back: 'Zur\u00fcck', next: 'Weiter', continueProducts: 'Weiter zu Produkten',
+  },
+  es: {
+    steps: ['Cliente', 'Aplicaci\u00f3n & Gas', 'T\u00e9cnica', 'Zonas', 'Productos'],
+    rgpdText: 'Consiento el tratamiento de mis datos por SafeRef para esta solicitud (RGPD UE 2016/679).',
+    clientInfo: 'Informaci\u00f3n del cliente',
+    firstName: 'Nombre', lastName: 'Apellido', company: 'Empresa', email: 'Email', phone: 'Tel\u00e9fono',
+    projectInfo: 'Informaci\u00f3n del proyecto', projectName: 'Nombre del proyecto', country: 'Pa\u00eds', selectCountry: 'Seleccionar pa\u00eds...',
+    back: 'Volver', next: 'Siguiente', continueProducts: 'Continuar a productos',
+  },
+} as const;

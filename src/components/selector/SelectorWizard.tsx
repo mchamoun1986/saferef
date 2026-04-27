@@ -12,8 +12,9 @@ import StepZoneQty from './StepZoneQty';
 import StepTieredBOM from './StepTieredBOM';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { createLead, updateLead } from '@/lib/lead-tracker';
+import { useLang } from '@/lib/i18n-context';
+import { SELECTOR } from '../configurator/i18n';
 
-const STEP_LABELS = ['Client', 'Application & Gas', 'Technical', 'Zones', 'Products'];
 
 interface SelectorClientData {
   firstName: string;
@@ -66,7 +67,7 @@ interface AppOption {
 }
 
 /* ── Inline Client Step (mirrors Calculator StepClient styling) ── */
-function StepClientInline({ data, onChange }: { data: SelectorClientData; onChange: (d: SelectorClientData) => void }) {
+function StepClientInline({ data, onChange, sel }: { data: SelectorClientData; onChange: (d: SelectorClientData) => void; sel: (typeof SELECTOR)[keyof typeof SELECTOR] }) {
   const update = <K extends keyof SelectorClientData>(field: K, value: SelectorClientData[K]) => {
     onChange({ ...data, [field]: value });
   };
@@ -81,7 +82,7 @@ function StepClientInline({ data, onChange }: { data: SelectorClientData; onChan
       <div className="bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-xl px-5 py-3 flex items-start gap-3">
         <input type="checkbox" className="mt-1 w-4 h-4 accent-[#16354B] flex-shrink-0" checked={data.rgpdConsent} onChange={(e) => update('rgpdConsent', e.target.checked)} />
         <span className="text-xs text-[#6b8da5] leading-relaxed">
-          I consent to my data being processed by SafeRef for this request (GDPR EU 2016/679).
+          {sel.rgpdText}
         </span>
       </div>
 
@@ -90,27 +91,27 @@ function StepClientInline({ data, onChange }: { data: SelectorClientData; onChan
         <div className="flex items-center gap-3 mb-4">
           <div className="w-1 h-6 bg-[#E63946] rounded-full" />
           <User className="w-5 h-5 text-[#E63946]" />
-          <h3 className="text-sm font-bold text-[#16354B]">Client Information</h3>
+          <h3 className="text-sm font-bold text-[#16354B]">{sel.clientInfo}</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>First Name</label>
+            <label className={labelClass}>{sel.firstName}</label>
             <input type="text" className={inputClass} value={data.firstName} onChange={(e) => update('firstName', e.target.value)} />
           </div>
           <div>
-            <label className={labelClass}>Last Name</label>
+            <label className={labelClass}>{sel.lastName}</label>
             <input type="text" className={inputClass} value={data.lastName} onChange={(e) => update('lastName', e.target.value)} />
           </div>
           <div>
-            <label className={labelClass}>Company</label>
+            <label className={labelClass}>{sel.company}</label>
             <input type="text" className={inputClass} value={data.company} onChange={(e) => update('company', e.target.value)} />
           </div>
           <div>
-            <label className={labelClass}>Email</label>
+            <label className={labelClass}>{sel.email}</label>
             <input type="email" className={inputClass} value={data.email} onChange={(e) => update('email', e.target.value)} />
           </div>
           <div>
-            <label className={labelClass}>Phone</label>
+            <label className={labelClass}>{sel.phone}</label>
             <input type="tel" className={inputClass} value={data.phone} onChange={(e) => update('phone', e.target.value)} />
           </div>
         </div>
@@ -121,17 +122,17 @@ function StepClientInline({ data, onChange }: { data: SelectorClientData; onChan
         <div className="flex items-center gap-3 mb-4">
           <div className="w-1 h-6 bg-[#E63946] rounded-full" />
           <FolderOpen className="w-5 h-5 text-[#E63946]" />
-          <h3 className="text-sm font-bold text-[#16354B]">Project Information</h3>
+          <h3 className="text-sm font-bold text-[#16354B]">{sel.projectInfo}</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>Project Name</label>
+            <label className={labelClass}>{sel.projectName}</label>
             <input type="text" className={inputClass} value={data.projectName} onChange={(e) => update('projectName', e.target.value)} />
           </div>
           <div>
-            <label className={labelClass}>Country</label>
+            <label className={labelClass}>{sel.country}</label>
             <select className={inputClass} value={data.country} onChange={(e) => update('country', e.target.value)}>
-              <option value="">Select country...</option>
+              <option value="">{sel.selectCountry}</option>
               {COUNTRIES.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
@@ -196,6 +197,8 @@ export default function SelectorWizard() {
   const [refrigerants, setRefrigerants] = useState<RefOption[]>([]);
   const [applications, setApplications] = useState<AppOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const { lang } = useLang();
+  const sel: (typeof SELECTOR)[keyof typeof SELECTOR] = SELECTOR[lang] ?? SELECTOR.en;
 
   // Step 1 — Client state
   const [clientData, setClientData] = useState<SelectorClientData>({
@@ -326,7 +329,7 @@ export default function SelectorWizard() {
 
       <div className="bg-gradient-to-r from-[#16354B] to-[#1e4a6a] py-3 sm:py-5">
         <div className="flex items-center justify-between max-w-2xl mx-auto px-2 sm:px-4">
-          {STEP_LABELS.map((label, i) => {
+          {sel.steps.map((label, i) => {
             const num = i + 1;
             const isDone = step > num;
             const isActive = step === num;
@@ -342,7 +345,7 @@ export default function SelectorWizard() {
                     {label}
                   </span>
                 </div>
-                {i < STEP_LABELS.length - 1 && (
+                {i < sel.steps.length - 1 && (
                   <div className={`flex-1 h-[2px] sm:h-[3px] mx-1.5 sm:mx-4 mt-0 sm:mt-[-1rem] rounded-full ${step > num ? 'bg-[#A7C031]' : 'bg-[#2a4a60]'}`} />
                 )}
               </div>
@@ -353,7 +356,7 @@ export default function SelectorWizard() {
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
         {step === 1 && (
-          <StepClientInline data={clientData} onChange={setClientData} />
+          <StepClientInline data={clientData} onChange={setClientData} sel={sel} />
         )}
         {step === 2 && (
           <StepAppGas
@@ -399,15 +402,15 @@ export default function SelectorWizard() {
         {step < 5 ? (
           <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 mt-8">
             {step > 1 ? (
-              <button onClick={prevStep} className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold w-full sm:w-auto px-8 py-3 rounded-lg">Back</button>
+              <button onClick={prevStep} className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold w-full sm:w-auto px-8 py-3 rounded-lg">{sel.back}</button>
             ) : <div />}
             <button onClick={nextStep} className="bg-gradient-to-r from-[#A7C031] to-[#8fb028] hover:from-[#8fb028] hover:to-[#7da024] text-white font-bold w-full sm:w-auto px-8 py-3 rounded-lg shadow-lg">
-              {step === 4 ? 'Continue to Products' : 'Next'}
+              {step === 4 ? sel.continueProducts : sel.next}
             </button>
           </div>
         ) : (
           <div className="mt-6">
-            <button onClick={prevStep} className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold w-full sm:w-auto px-8 py-3 rounded-lg">Back</button>
+            <button onClick={prevStep} className="border-2 border-[#e2e8f0] text-[#6b8da5] hover:bg-white font-semibold w-full sm:w-auto px-8 py-3 rounded-lg">{sel.back}</button>
           </div>
         )}
       </main>
