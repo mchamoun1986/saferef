@@ -110,8 +110,8 @@ export async function POST(request: Request) {
 
     // Extract all known fields (V1 + V2) to avoid passing unknown keys to Prisma
     const {
-      code, name, type, family, subCategory, description, price, currency,
-      gas, atex, refs, compatibleFamilies, datasheet, image, discontinued,
+      code, name, type, family, subCategory, price,
+      atex, refs, compatibleFamilies, datasheet, image, discontinued,
       // V2 fields
       variant, subType, function: functionField, status,
       ports, connectionRules, compatibleWith,
@@ -120,10 +120,7 @@ export async function POST(request: Request) {
     const data: Record<string, unknown> = {
       code, name, type, family,
       ...(subCategory !== undefined && { subCategory }),
-      ...(description !== undefined && { description }),
       ...(price !== undefined && { price }),
-      ...(currency !== undefined && { currency }),
-      ...(gas !== undefined && { gas }),
       ...(atex !== undefined && { atex }),
       ...(refs !== undefined && { refs }),
       ...(compatibleFamilies !== undefined && { compatibleFamilies }),

@@ -1,7 +1,11 @@
 # Product Catalog Migration (Phase 1) — Design Spec
 
+> **⚠️ SUPERSEDED** — This spec was superseded by the V2 product model migration (`docs/superpowers/plans/2026-04-19-product-model-v2-migration.md`).
+> Key changes: `Product.gas` and `Product.apps` fields removed, 227→135 products, 5 product types (added sensor+alert), family names updated.
+> Kept for historical reference only.
+
 **Date**: 2026-04-15
-**Status**: Approved
+**Status**: Superseded
 **Source**: DetectBuilder (`01_SAMON/03_web/2- DetectBuilder`)
 **Target**: DetectCalc (`18- DetectCalc`)
 

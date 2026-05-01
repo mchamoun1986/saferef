@@ -1,8 +1,12 @@
 # Product Relations & M2 Engine Rewrite — Implementation Plan
 
+> **⚠️ SUPERSEDED** — This plan was entirely replaced by the V2 product model migration (`docs/superpowers/plans/2026-04-19-product-model-v2-migration.md`).
+> The `ProductRelation` model was deleted. Controller/accessory selection now uses `Product.compatibleWith` field and the SystemDesigner V2 (`src/lib/m2-engine/designer.ts`).
+> Kept for historical reference only.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace hardcoded M2 controller/accessory selection with a data-driven `ProductRelation` table, mark out-of-scope products as discontinued, and add an admin `/admin/compatibility` page to manage relations.
+**Goal (OBSOLETE):** Replace hardcoded M2 controller/accessory selection with a data-driven `ProductRelation` table, mark out-of-scope products as discontinued, and add an admin `/admin/compatibility` page to manage relations.
 
 **Architecture:** New `ProductRelation` Prisma model stores typed relationships between products (detector→controller, detector→accessory). The M2 selection engine reads relations at runtime instead of parsing free-text `connectTo` fields or using hardcoded MPU/SPU combos. The 3-tier output format (Premium/Standard/Centralized) is preserved. A new admin page provides CRUD for managing relations.
 

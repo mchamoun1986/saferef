@@ -4,7 +4,7 @@ import type { ProductRecord } from '../types';
 
 const mpu2: ProductRecord = {
   id: 'c1', type: 'controller', family: 'Controller', name: 'MPU-2',
-  code: '21-2001', price: 600, gas: '[]', refs: '[]',
+  code: '21-2001', price: 600, refs: '[]',
   range: null, sensorTech: null, voltage: '24V', atex: false,
   mount: '["wall"]', standalone: false, discontinued: false,
   channels: 2, relay: 4, analog: null, modbus: true,
@@ -16,7 +16,7 @@ const mpu2: ProductRecord = {
 
 const mpu4: ProductRecord = {
   id: 'c2', type: 'controller', family: 'Controller', name: 'MPU-4',
-  code: '21-2002', price: 800, gas: '[]', refs: '[]',
+  code: '21-2002', price: 800, refs: '[]',
   range: null, sensorTech: null, voltage: '24V', atex: false,
   mount: '["wall","DIN"]', standalone: false, discontinued: false,
   channels: 4, relay: 8, analog: null, modbus: true,
@@ -28,7 +28,7 @@ const mpu4: ProductRecord = {
 
 const mpu6: ProductRecord = {
   id: 'c3', type: 'controller', family: 'Controller', name: 'MPU-6',
-  code: '21-2003', price: 1000, gas: '[]', refs: '[]',
+  code: '21-2003', price: 1000, refs: '[]',
   range: null, sensorTech: null, voltage: '24V', atex: false,
   mount: '["wall","DIN"]', standalone: false, discontinued: false,
   channels: 6, relay: 12, analog: null, modbus: true,
@@ -40,7 +40,7 @@ const mpu6: ProductRecord = {
 
 const scu64: ProductRecord = {
   id: 'c4', type: 'controller', family: 'Controller', name: 'SCU3600',
-  code: '21-3600', price: 3000, gas: '[]', refs: '[]',
+  code: '21-3600', price: 3000, refs: '[]',
   range: null, sensorTech: null, voltage: '230V', atex: false,
   mount: '["wall"]', standalone: false, discontinued: false,
   channels: 64, relay: 16, analog: null, modbus: true,

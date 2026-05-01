@@ -9,7 +9,7 @@ function det(overrides: Partial<ProductEntry> = {}): ProductEntry {
     id: 'det-1', code: '10-100', name: 'MIDI-IR-R744',
     family: 'MIDI', type: 'detector', description: null,
     category: 'detector', price: 500, tier: 'standard',
-    productGroup: 'G', gas: ['CO2'], refs: ['R744'],
+    productGroup: 'G', refs: ['R744'],
     range: '0-10000ppm',
     sensorTech: 'IR', sensorLife: '15 years', power: 2,
     voltage: '24V AC/DC', ip: 'IP54', tempMin: -40, tempMax: 50,
@@ -27,7 +27,7 @@ function ctrl(overrides: Partial<ProductEntry> = {}): ProductEntry {
     id: 'ctrl-1', code: '20-300', name: 'MPU4C',
     family: 'Controller', type: 'controller', description: null,
     category: 'controller', price: 1598, tier: 'standard',
-    productGroup: 'D', gas: [], refs: [],
+    productGroup: 'D', refs: [],
     range: null, sensorTech: null, sensorLife: null,
     power: null, voltage: '24V AC/DC', ip: 'IP20',
     tempMin: -10, tempMax: 55, relay: 4, analog: null,
@@ -44,7 +44,7 @@ function acc(overrides: Partial<ProductEntry> = {}): ProductEntry {
     id: 'acc-1', code: '40-440', name: 'FL-RL-R Combined light+siren Red',
     family: 'Accessory', type: 'accessory', description: null,
     category: 'accessory', price: 150, tier: 'standard',
-    productGroup: 'A', gas: [], refs: [],
+    productGroup: 'A', refs: [],
     range: null, sensorTech: null, sensorLife: null,
     power: null, voltage: null, ip: null,
     tempMin: null, tempMax: null,
@@ -131,8 +131,8 @@ describe('Filter Pipeline', () => {
     });
 
     it('filters by range for R717', () => {
-      const p1 = det({ id: 'p1', refs: ['R717'], gas: ['NH3'], range: '0-1000ppm' });
-      const p2 = det({ id: 'p2', refs: ['R717'], gas: ['NH3'], range: '0-100ppm' });
+      const p1 = det({ id: 'p1', refs: ['R717'], range: '0-1000ppm' });
+      const p2 = det({ id: 'p2', refs: ['R717'], range: '0-100ppm' });
       const result = selectProducts(inp({
         products: [p1, p2], selectedRefrigerant: 'R717', selectedRange: '0-1000ppm',
         zoneType: 'machinery_room', appProductFamilies: ['MIDI'],
@@ -142,7 +142,7 @@ describe('Filter Pipeline', () => {
     });
 
     it('falls back when range filter returns 0 results', () => {
-      const p1 = det({ id: 'p1', refs: ['R717'], gas: ['NH3'], range: '0-1000ppm' });
+      const p1 = det({ id: 'p1', refs: ['R717'], range: '0-1000ppm' });
       const result = selectProducts(inp({
         products: [p1], selectedRefrigerant: 'R717', selectedRange: '0-99999ppm',
         zoneType: 'machinery_room', appProductFamilies: ['MIDI'],
@@ -304,7 +304,7 @@ describe('2x2 Matrix Selection', () => {
     const c = ctrl();
     const result = selectProducts(inp({
       products: [sa], controllers: [c], totalDetectors: 4,
-      relations: [{ id: 'r1', fromCode: '10-100', toCode: '20-300', type: 'compatible_controller', mandatory: false, qtyRule: 'per_detector', condition: null, reason: 'test', priority: 0 }],
+      relations: [{ fromCode: '10-100', toCode: '20-300', relationType: 'compatible_controller', qtyRule: 'per_detector', condition: null }],
     }));
     if (result.tiers.premiumStandalone && result.tiers.premiumCentralized) {
       // Centralized (standard) should cost MORE than standalone (premium) due to controller

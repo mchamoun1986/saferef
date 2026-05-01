@@ -1,7 +1,11 @@
 # F-Gas Leak Check Calculator — Design Spec
 
+> **⚠️ SUPERSEDED** — This v1 spec has been replaced by `docs/superpowers/specs/2026-04-26-fgas-checker-v2-design.md`.
+> Key differences: v2 removed cost/ROI calculation, added HFO handling, added environmental equivalents.
+> Kept for historical reference only.
+
 **Date**: 2026-04-15
-**Status**: Approved
+**Status**: Superseded
 
 ## Overview
 

@@ -9,7 +9,7 @@ function makeDetector(overrides: Partial<ProductEntry> = {}): ProductEntry {
     id: 'det-1', code: '10-100', name: 'MIDI-IR-R744',
     family: 'MIDI', type: 'detector', description: null,
     category: 'detector', price: 500, tier: 'standard',
-    productGroup: 'G', gas: ['CO2'], refs: ['R744'],
+    productGroup: 'G', refs: ['R744'],
     range: '0-10000ppm',
     sensorTech: 'IR', sensorLife: '15 years', power: 2,
     voltage: '24V AC/DC', ip: 'IP54', tempMin: -40, tempMax: 50,
@@ -27,7 +27,7 @@ function makeController(overrides: Partial<ProductEntry> = {}): ProductEntry {
     id: 'ctrl-1', code: '20-300', name: 'MPU4C',
     family: 'Controller', type: 'controller', description: null,
     category: 'controller', price: 1598, tier: 'standard',
-    productGroup: 'D', gas: [], refs: [],
+    productGroup: 'D', refs: [],
     range: null, sensorTech: null, sensorLife: null,
     power: null, voltage: '24V AC/DC', ip: 'IP20',
     tempMin: -10, tempMax: 55, relay: 4, analog: null,
@@ -105,10 +105,10 @@ describe('selectProducts', () => {
   });
 
   it('applies filter pipeline F0-F9', () => {
-    const match = makeDetector({ id: 'p1', refs: ['R744'], gas: ['CO2'] });
-    const noRef = makeDetector({ id: 'p2', refs: ['R32'], gas: ['HFC1'] });
-    const noApp = makeDetector({ id: 'p3', refs: ['R744'], gas: ['CO2'], family: 'RM' }); // RM not in APP_DEFAULTS for supermarket
-    const discontinued = makeDetector({ id: 'p4', refs: ['R744'], gas: ['CO2'], discontinued: true, price: 0 });
+    const match = makeDetector({ id: 'p1', refs: ['R744'] });
+    const noRef = makeDetector({ id: 'p2', refs: ['R32'] });
+    const noApp = makeDetector({ id: 'p3', refs: ['R744'], family: 'RM' }); // RM not in APP_DEFAULTS for supermarket
+    const discontinued = makeDetector({ id: 'p4', refs: ['R744'], discontinued: true, price: 0 });
 
     const input = makeInput({ products: [match, noRef, noApp, discontinued], controllers: [] });
     const result = selectProducts(input);

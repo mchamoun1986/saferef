@@ -228,7 +228,6 @@ export default function SelectorWizard() {
       fetch('/api/refrigerants-v5').then(r => r.json()),
       fetch('/api/applications').then(r => r.json()),
     ]).then(([prods, refs, apps]) => {
-      console.log('[Selector] Loaded:', { products: prods?.length, refs: refs?.length, apps: apps?.length });
       setRawProducts(Array.isArray(prods) ? prods : []);
       setRefrigerants(Array.isArray(refs) ? refs : []);
       setApplications(Array.isArray(apps) ? apps : []);
