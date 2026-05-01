@@ -16,10 +16,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'SafeRef — Refrigerant Gas Detection Calculator | EN 378 & F-Gas Compliance',
+    default: 'SafeRef — Refrigerant Gas Detection Calculator',
     template: '%s | SafeRef',
   },
-  description: 'Free online refrigerant gas detection sizing tool. EN 378, ASHRAE 15 & EU F-Gas 2024/573 compliance calculator. 47 refrigerants, 135 SAMON products. No signup required.',
+  description: 'Free refrigerant gas detection sizing tool. EN 378, ASHRAE 15 & F-Gas compliance. 47 refrigerants, 135 products. No signup.',
   keywords: [
     'refrigerant gas detection', 'EN 378', 'EN 378-3', 'ASHRAE 15', 'ISO 5149',
     'F-Gas regulation', 'EU 2024/573', 'leak detection', 'gas detector sizing',
@@ -57,9 +57,6 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: 'https://saferef.vercel.app',
-  },
-  other: {
-    'google-site-verification': '',
   },
 };
 

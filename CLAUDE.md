@@ -30,7 +30,7 @@ Objectif : devenir LA référence en ligne pour la conformité EN378 / EN14624 d
 | `src/app/fgas-checker/` | F-Gas Checker — EU 2024/573 leak check obligations, 2-step wizard |
 | `src/app/(auth)/login/` | Authentification admin |
 | `src/app/forbidden/` | Page 403 accès refusé |
-| `src/app/api/` | 18 routes API REST |
+| `src/app/api/` | 20 routes API REST |
 
 ## Structure app — admin (modules)
 
@@ -67,6 +67,7 @@ Objectif : devenir LA référence en ligne pour la conformité EN378 / EN14624 d
 
 ### Moteur M2 — Sélection de produits (`src/lib/m2-engine/`)
 - `selection-engine.ts` — sélection automatique de détecteurs (filter pipeline F0-F9 + scoring /21)
+- `select-detector.ts` — choix du détecteur selon gaz/application
 - `select-controller.ts` — choix du contrôleur compatible
 - `select-accessories.ts` — accessoires nécessaires
 - `designer.ts` — SystemDesigner V2 (filter pipeline, solution assembly, BOM)

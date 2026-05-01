@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+Disallow: /login
+Disallow: /forbidden
+
+Sitemap: https://saferef.vercel.app/sitemap.xml

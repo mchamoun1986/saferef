@@ -1,8 +1,12 @@
 # Product Catalog Migration (Phase 1) Implementation Plan
 
+> **⚠️ SUPERSEDED** — This plan was superseded by the V2 product model migration (`docs/superpowers/plans/2026-04-19-product-model-v2-migration.md`).
+> Key changes: `Product.gas` and `Product.apps` fields removed, 227→135 products, 5 types, family names updated.
+> Kept for historical reference only.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Migrate SAMON product catalog (MIDI, X5, RM, AQUIS, controllers, accessories) from DetectBuilder into DetectCalc with admin CRUD.
+**Goal (OBSOLETE):** Migrate SAMON product catalog (MIDI, X5, RM, AQUIS, controllers, accessories) from DetectBuilder into DetectCalc with admin CRUD.
 
 **Architecture:** Add Product + DiscountMatrix models to existing Prisma schema, copy seed data from DetectBuilder (filtered by family), create API route + admin page. Zero impact on M1 engine.
 

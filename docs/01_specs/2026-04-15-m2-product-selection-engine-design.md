@@ -1,7 +1,9 @@
 # M2 — Product Selection Engine & Selector
 
+> **⚠️ PARTIAL / SUPERSEDED** — The core M2 engine is implemented, but the V2 product model migration (`docs/superpowers/plans/2026-04-19-product-model-v2-migration.md`) replaced the 227-product catalog with 135 products (5 types). `Product.gas` and `Product.apps` fields were removed. SystemDesigner V2 (`src/lib/m2-engine/designer.ts`) extends the original selection engine.
+
 **Date:** 2026-04-15
-**Status:** Approved
+**Status:** Partial
 
 ## Overview
 
