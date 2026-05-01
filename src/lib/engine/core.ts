@@ -93,16 +93,11 @@ export function placementByDensity(
   }
 
   // PLC-HGT-003: lighter than air → ceiling (EN 378-3:2016 §6.3: <= 300 mm from ceiling)
-  if (vapourDensity < 1.0) {
-    const ceilingHeight = roomHeight >= 0.5 ? Math.max(roomHeight - 0.3, 0.5) : roomHeight;
-    return {
-      height: 'ceiling',
-      heightM: `${ceilingHeight.toFixed(1)} m (ceiling minus 0.3 m)`,
-    };
-  }
-
-  // PLC-HGT-004: near-neutral buoyancy
-  return { height: 'breathing_zone', heightM: '1.2-1.8 m' };
+  const ceilingHeight = roomHeight >= 0.5 ? Math.max(roomHeight - 0.3, 0.5) : roomHeight;
+  return {
+    height: 'ceiling',
+    heightM: `${ceilingHeight.toFixed(1)} m (ceiling minus 0.3 m)`,
+  };
 }
 
 // ── Quantity Calculations ──────────────────────────────────────────────
