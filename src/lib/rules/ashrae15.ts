@@ -324,8 +324,8 @@ export const ashrae15RuleSet: RuleSet = {
     const cutoffPpm = kgM3ToPpm(cutoffKgM3, ref.molecularMass);
 
     return {
-      alarm1: { ppm: alarm1Ppm, kgM3: alarm1KgM3, basis: '25%_RCL' },
-      alarm2: { ppm: alarm2Ppm, kgM3: alarm2KgM3, basis: '50%_RCL' },
+      alarm1: { ppm: alarm1Ppm, kgM3: alarm1KgM3, basis: '50%_ATEL' },
+      alarm2: { ppm: alarm2Ppm, kgM3: alarm2KgM3, basis: '100%_ATEL' },
       cutoff: { ppm: Math.floor(cutoffPpm), kgM3: cutoffKgM3, basis: '100%_RCL' },
       stage2Ppm: null,
     };
