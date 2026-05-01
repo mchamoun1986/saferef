@@ -1,5 +1,6 @@
 // POST /api/login — role-based authentication
 // Validates password against role-specific env hash. Returns signed session cookie.
+// Rate-limited to 5 attempts per IP per 15 minutes.
 
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
@@ -11,6 +12,30 @@ const ROLE_ENV_VARS: Record<Role, string> = {
   sales: 'SALES_PASSWORD_HASH',
   management: 'MANAGEMENT_PASSWORD_HASH',
 };
+
+// ── Rate limiting (in-memory, per-IP) ────────────────────────────────
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX = 5; // max attempts per window
+const attempts = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = attempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    attempts.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= RATE_LIMIT_MAX;
+}
+
+// Clean up stale entries every 30 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of attempts) {
+    if (now > entry.resetAt) attempts.delete(ip);
+  }
+}, 30 * 60 * 1000).unref?.();
 
 async function logLogin(role: string, success: boolean, request: Request) {
   try {
@@ -29,6 +54,17 @@ async function logLogin(role: string, success: boolean, request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip')
+      || 'unknown';
+
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json(
+        { error: 'Too many login attempts. Please try again later.' },
+        { status: 429 },
+      );
+    }
+
     const body = await request.json();
     const { role, password } = body;
 
@@ -44,10 +80,8 @@ export async function POST(request: Request) {
 
     const rawHash = process.env[ROLE_ENV_VARS[role as Role]];
     if (!rawHash) {
-      return NextResponse.json(
-        { error: `${role} role not configured — set ${ROLE_ENV_VARS[role as Role]} in .env` },
-        { status: 500 },
-      );
+      console.error(`[Auth] Missing env var ${ROLE_ENV_VARS[role as Role]} for role ${role}`);
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
     // Vercel may mangle $ in env vars — restore bcrypt prefix if needed
     const hash = rawHash.startsWith('$2b$') || rawHash.startsWith('$2a$') ? rawHash : `$2b${rawHash.startsWith('$') ? '' : '$'}${rawHash}`;
