@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Flame, Layers, Package, Check, Search, ChevronDown, X } from 'lucide-react';
+import { useLang } from '@/lib/i18n-context';
+import { SELECTOR_STEPS, t } from '@/lib/i18n-common';
 
 interface AppOption {
   id: string;
@@ -50,6 +52,8 @@ export default function StepAppGas({
   preferredFamily, onApplicationChange, onRefrigerantChange,
   onPreferredFamilyChange,
 }: Props) {
+  const { lang } = useLang();
+  const i = t(SELECTOR_STEPS, lang);
   const [refOpen, setRefOpen] = useState(false);
   const [refSearch, setRefSearch] = useState('');
   const refDropdownRef = useRef<HTMLDivElement>(null);
@@ -89,11 +93,11 @@ export default function StepAppGas({
         <div className="flex items-center gap-2.5">
           <span className="w-1 h-5 bg-[#E63946] rounded-full flex-shrink-0" />
           <Flame className="w-4 h-4 text-[#E63946]" />
-          <h3 className="text-base font-bold text-[#16354B]">Application</h3>
+          <h3 className="text-base font-bold text-[#16354B]">{i.application}</h3>
         </div>
 
         <div>
-          <label className={labelClass}>Select Application Type</label>
+          <label className={labelClass}>{i.selectAppType}</label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {applications.map(app => {
               const isSelected = application === app.id;
@@ -127,11 +131,11 @@ export default function StepAppGas({
         <div className="flex items-center gap-2.5">
           <span className="w-1 h-5 bg-[#E63946] rounded-full flex-shrink-0" />
           <Layers className="w-4 h-4 text-[#E63946]" />
-          <h3 className="text-base font-bold text-[#16354B]">Refrigerant</h3>
+          <h3 className="text-base font-bold text-[#16354B]">{i.refrigerant}</h3>
         </div>
 
         <div>
-          <label className={labelClass}>Refrigerant</label>
+          <label className={labelClass}>{i.refrigerant}</label>
 
           {/* Selected chip */}
           {selectedRefObj && (
@@ -166,14 +170,14 @@ export default function StepAppGas({
                   type="text"
                   autoFocus
                   className="flex-1 bg-transparent outline-none text-sm text-[#16354B] placeholder:text-[#6b8da5]"
-                  placeholder="Search refrigerant (R744, R32, R717...)"
+                  placeholder={i.searchRefrigerant}
                   value={refSearch}
                   onChange={e => setRefSearch(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Escape') { setRefOpen(false); setRefSearch(''); } }}
                 />
               ) : (
                 <span className="flex-1 text-sm text-[#6b8da5]">
-                  {selectedRefObj ? `${selectedRefObj.id} \u2014 ${selectedRefObj.name}` : 'Select refrigerant...'}
+                  {selectedRefObj ? `${selectedRefObj.id} \u2014 ${selectedRefObj.name}` : i.selectRefrigerant}
                 </span>
               )}
               <ChevronDown className={`w-4 h-4 text-[#6b8da5] transition-transform ${refOpen ? 'rotate-180' : ''}`} />
@@ -183,7 +187,7 @@ export default function StepAppGas({
             {refOpen && (
               <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border-2 border-[#e2e8f0] rounded-xl shadow-xl max-h-80 overflow-y-auto">
                 {filteredRefs.length === 0 ? (
-                  <div className="px-4 py-6 text-center text-sm text-[#6b8da5]">No results</div>
+                  <div className="px-4 py-6 text-center text-sm text-[#6b8da5]">{i.noResults}</div>
                 ) : (
                   filteredRefs.map(r => {
                     const isActive = refrigerant === r.id;
@@ -217,18 +221,18 @@ export default function StepAppGas({
         <div className="flex items-center gap-2.5">
           <span className="w-1 h-5 bg-[#16354B] rounded-full flex-shrink-0" />
           <Package className="w-4 h-4 text-[#16354B]" />
-          <h3 className="text-base font-bold text-[#16354B]">Product Preference</h3>
+          <h3 className="text-base font-bold text-[#16354B]">{i.productPref}</h3>
         </div>
 
         <div>
-          <label className={labelClass}>Preferred Product Range (optional)</label>
+          <label className={labelClass}>{i.prefRange}</label>
           <div className="relative">
             <select
               value={preferredFamily}
               onChange={e => onPreferredFamilyChange(e.target.value)}
               className={`${inputClass} appearance-none cursor-pointer`}
             >
-              <option value="">No preference</option>
+              <option value="">{i.noPref}</option>
               {FAMILIES.map(f => (
                 <option key={f} value={f}>{f}</option>
               ))}

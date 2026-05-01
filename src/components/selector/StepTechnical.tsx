@@ -1,16 +1,12 @@
 'use client';
 
 import { Zap, ShieldAlert, Monitor, Cpu, Check } from 'lucide-react';
+import { useLang } from '@/lib/i18n-context';
+import { SELECTOR_STEPS, t } from '@/lib/i18n-common';
 
 const labelClass = 'block text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider mb-1.5';
 
 const VOLTAGES = ['12V', '24V', '230V'] as const;
-
-const DETECTION_LOCATIONS = [
-  { value: 'ambient', label: 'Ambient Detection', icon: '🌬️', description: 'Gas detection in the room air environment. Standard wall-mounted detector with exposed sensor.' },
-  { value: 'duct', label: 'Duct Detection', icon: '🌀', description: 'Gas detection inside HVAC ducts or ventilation systems. Requires duct sampling probe.' },
-  { value: 'pipe_valve', label: 'Pipe / Valve Detection', icon: '🔧', description: 'Leak detection directly on piping or valves. Close-proximity sensor placement.' },
-];
 
 interface Props {
   voltage: '12V' | '24V' | '230V';
@@ -25,6 +21,15 @@ export default function StepTechnical({
   voltage, atexRequired, mountType,
   onVoltageChange, onAtexChange, onMountChange,
 }: Props) {
+  const { lang } = useLang();
+  const i = t(SELECTOR_STEPS, lang);
+
+  const DETECTION_LOCATIONS = [
+    { value: 'ambient', label: i.ambientLabel, icon: '🌬️', description: i.ambientDesc },
+    { value: 'duct', label: i.ductLabel, icon: '🌀', description: i.ductDesc },
+    { value: 'pipe_valve', label: i.pipeLabel, icon: '🔧', description: i.pipeDesc },
+  ];
+
   return (
     <div className="space-y-5">
 
@@ -33,11 +38,11 @@ export default function StepTechnical({
         <div className="flex items-center gap-2.5">
           <span className="w-1 h-5 bg-[#E63946] rounded-full flex-shrink-0" />
           <Zap className="w-4 h-4 text-[#E63946]" />
-          <h3 className="text-base font-bold text-[#16354B]">Site Voltage</h3>
+          <h3 className="text-base font-bold text-[#16354B]">{i.siteVoltage}</h3>
         </div>
 
         <div>
-          <label className={labelClass}>Select power supply</label>
+          <label className={labelClass}>{i.selectPower}</label>
           <div className="grid grid-cols-3 gap-3">
             {VOLTAGES.map(v => {
               const isSelected = voltage === v;
@@ -71,11 +76,11 @@ export default function StepTechnical({
         <div className="flex items-center gap-2.5">
           <span className="w-1 h-5 bg-[#E63946] rounded-full flex-shrink-0" />
           <ShieldAlert className="w-4 h-4 text-[#E63946]" />
-          <h3 className="text-base font-bold text-[#16354B]">ATEX Classification</h3>
+          <h3 className="text-base font-bold text-[#16354B]">{i.atexClassification}</h3>
         </div>
 
         <div>
-          <label className={labelClass}>Hazardous area classification</label>
+          <label className={labelClass}>{i.hazardousArea}</label>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
@@ -93,10 +98,10 @@ export default function StepTechnical({
               )}
               <span className="text-2xl">✅</span>
               <span className={`text-sm font-bold ${!atexRequired ? 'text-[#16354B]' : 'text-[#6b8da5]'}`}>
-                Non-ATEX
+                {i.nonAtex}
               </span>
               <span className="text-[10px] text-[#6b8da5] text-center leading-tight">
-                Standard installation zone
+                {i.standardZone}
               </span>
             </button>
 
@@ -116,10 +121,10 @@ export default function StepTechnical({
               )}
               <ShieldAlert className={`w-6 h-6 ${atexRequired ? 'text-[#E63946]' : 'text-[#6b8da5]'}`} />
               <span className={`text-sm font-bold ${atexRequired ? 'text-[#E63946]' : 'text-[#6b8da5]'}`}>
-                ATEX Required
+                {i.atexRequired}
               </span>
               <span className="text-[10px] text-[#6b8da5] text-center leading-tight">
-                Explosive atmosphere zone
+                {i.explosiveZone}
               </span>
             </button>
           </div>
@@ -128,7 +133,7 @@ export default function StepTechnical({
             <div className="mt-3 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 flex items-start gap-2.5">
               <ShieldAlert className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-red-600 leading-relaxed">
-                ATEX-certified detectors will be selected. Only EX-approved products are shown.
+                {i.atexNote}
               </p>
             </div>
           )}
@@ -140,11 +145,11 @@ export default function StepTechnical({
         <div className="flex items-center gap-2.5">
           <span className="w-1 h-5 bg-[#E63946] rounded-full flex-shrink-0" />
           <Monitor className="w-4 h-4 text-[#E63946]" />
-          <h3 className="text-base font-bold text-[#16354B]">Detection Location</h3>
+          <h3 className="text-base font-bold text-[#16354B]">{i.detectionLocation}</h3>
         </div>
 
         <div>
-          <label className={labelClass}>Where is the detector installed?</label>
+          <label className={labelClass}>{i.whereInstalled}</label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {DETECTION_LOCATIONS.map(m => {
               const isSelected = mountType === m.value;

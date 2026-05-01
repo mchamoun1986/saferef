@@ -2,6 +2,8 @@
 
 import { MapPin, Plus, Trash2, Hash } from 'lucide-react';
 import type { BOMZone } from '@/lib/m2-engine/types';
+import { useLang } from '@/lib/i18n-context';
+import { SELECTOR_STEPS, t } from '@/lib/i18n-common';
 
 const inputClass = 'w-full bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-lg px-3.5 py-2.5 text-sm font-medium text-[#16354B] focus:border-[#16354B] focus:ring-2 focus:ring-[#16354B]/20 outline-none transition-colors';
 const labelClass = 'block text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider mb-1.5';
@@ -12,6 +14,9 @@ interface Props {
 }
 
 export default function StepZoneQty({ zones, onChange }: Props) {
+  const { lang } = useLang();
+  const i = t(SELECTOR_STEPS, lang);
+
   function addZone() {
     onChange([...zones, { name: `Zone ${zones.length + 1}`, detectorQty: 1 }]);
   }
@@ -42,49 +47,49 @@ export default function StepZoneQty({ zones, onChange }: Props) {
           <div className="flex items-center gap-2.5">
             <span className="w-1 h-5 bg-[#E63946] rounded-full flex-shrink-0" />
             <MapPin className="w-4 h-4 text-[#E63946]" />
-            <h3 className="text-base font-bold text-[#16354B]">Zones & Quantities</h3>
+            <h3 className="text-base font-bold text-[#16354B]">{i.zonesTitle}</h3>
           </div>
           <div className="flex items-center gap-2 bg-[#16354B]/5 px-3 py-1.5 rounded-lg">
             <Hash className="w-3.5 h-3.5 text-[#16354B]" />
             <span className="text-sm font-bold text-[#16354B]">{totalDetectors}</span>
             <span className="text-[10px] font-semibold text-[#6b8da5] uppercase tracking-wider">
-              detector{totalDetectors !== 1 ? 's' : ''}
+              {totalDetectors !== 1 ? i.detectors : i.detector}
             </span>
           </div>
         </div>
 
         {/* Zone cards */}
         <div className="space-y-3">
-          {zones.map((zone, i) => (
+          {zones.map((zone, idx) => (
             <div
-              key={i}
+              key={idx}
               className="bg-white border-l-4 border-[#A7C031] rounded-xl shadow-[0_2px_8px_rgba(22,53,75,0.07)] p-4 transition-all hover:shadow-[0_4px_16px_rgba(22,53,75,0.1)]"
             >
               <div className="flex items-start gap-4">
                 {/* Zone number badge */}
                 <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-[#16354B] flex items-center justify-center mt-5">
-                  <span className="text-white text-xs font-bold">{i + 1}</span>
+                  <span className="text-white text-xs font-bold">{idx + 1}</span>
                 </div>
 
                 {/* Fields */}
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3">
                   <div>
-                    <label className={labelClass}>Zone Name</label>
+                    <label className={labelClass}>{i.zoneName}</label>
                     <input
                       type="text"
                       value={zone.name}
-                      onChange={e => updateZone(i, 'name', e.target.value)}
+                      onChange={e => updateZone(idx, 'name', e.target.value)}
                       className={inputClass}
-                      placeholder="e.g. Cold Room 1"
+                      placeholder={i.zonePlaceholder}
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>Detectors</label>
+                    <label className={labelClass}>{i.detectorsLabel}</label>
                     <input
                       type="number"
                       min={1}
                       value={zone.detectorQty}
-                      onChange={e => updateZone(i, 'detectorQty', e.target.value)}
+                      onChange={e => updateZone(idx, 'detectorQty', e.target.value)}
                       className={`${inputClass} text-center`}
                     />
                   </div>
@@ -93,9 +98,9 @@ export default function StepZoneQty({ zones, onChange }: Props) {
                 {/* Delete button */}
                 {zones.length > 1 && (
                   <button
-                    onClick={() => removeZone(i)}
+                    onClick={() => removeZone(idx)}
                     className="flex-shrink-0 mt-5 w-8 h-8 flex items-center justify-center rounded-lg border-2 border-transparent text-red-300 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all"
-                    title="Remove zone"
+                    title={i.removeZone}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -111,7 +116,7 @@ export default function StepZoneQty({ zones, onChange }: Props) {
           className="mt-4 w-full py-3.5 border-2 border-dashed border-[#e2e8f0] rounded-xl text-[#6b8da5] hover:border-[#A7C031] hover:text-[#A7C031] hover:bg-[#A7C031]/5 transition-all flex items-center justify-center gap-2 font-semibold text-sm group"
         >
           <Plus className="w-4 h-4 transition-transform group-hover:scale-110" />
-          Add Zone
+          {i.addZone}
         </button>
       </div>
     </div>
